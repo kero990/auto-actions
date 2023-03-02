@@ -65,30 +65,46 @@ jobs:
       - name: Build aria2
         run: |
           PATH=$PATH:${{ env.llvm_path }}/bin
-          wget https://github.com/aria2/aria2/releases/download/release-${{ env.aria2_version }}/aria2-${{ env.aria2_version }}.tar.xz
-          tar -xf aria2-${{ env.aria2_version }}.tar.xz
-          cd aria2-${{ env.aria2_version }}
+          git clone https://github.com/agalwood/aria2
+          cd aria2
           export PKG_CONFIG_PATH=${{ github.workspace }}/vcpkg/installed/arm64-mingw-static-release/lib/pkgconfig:${{ env.libssh2_path }}/lib/pkgconfig
           export ARIA2_STATIC=yes
           export CPPFLAGS="-I${{ github.workspace }}/vcpkg/installed/arm64-mingw-static-release/include"
           export LDFLAGS="-L${{ github.workspace }}/vcpkg/installed/arm64-mingw-static-release/lib"
-          ./configure --host=aarch64-w64-mingw32  \
-            --without-libxml2 --with-libexpat
+          ./configure \
+    --host=$HOST \
+    --prefix=$PREFIX \
+    --without-included-gettext \
+    --disable-nls \
+    --with-libcares \
+    --without-gnutls \
+    --without-wintls \
+    --with-openssl \
+    --with-sqlite3 \
+    --without-libxml2 \
+    --with-libexpat \
+    --with-libz \
+    --without-libgmp \
+    --with-libssh2 \
+    --without-libgcrypt \
+    --without-libnettle \
+    --with-cppunit-prefix=$PREFIX \
+    ARIA2_STATIC=yes \
           make -j$(nproc)
 
       - name: Prepare build artifacts
         run: |
           mkdir upload
-          cp ${{ github.workspace }}/aria2-${{ env.aria2_version }}/src/aria2c.exe upload 
+          cp ${{ github.workspace }}/aria2/src/aria2c.exe upload 
           ${{ env.llvm_path }}/bin/aarch64-w64-mingw32-strip upload/aria2c.exe
           cd upload
-          7z a aria2_${{ env.aria2_version }}_arm64.zip aria2c.exe
-          mv aria2_${{ env.aria2_version }}_arm64.zip ..
+          7z a aria2_arm64.zip aria2c.exe
+          mv aria2_arm64.zip ..
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: aria2_${{ env.aria2_version }}_arm64
+          name: aria2_arm64
           path: upload
 
       - name: Batch release
@@ -96,5 +112,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          files: aria2_${{ env.aria2_version }}_arm64.zip
+          files: aria2_arm64.zip
     
