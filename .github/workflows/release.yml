@@ -87,7 +87,7 @@ jobs:
     --without-libgcrypt \
     --without-libnettle \
     --with-cppunit-prefix=$PREFIX \
-    ARIA2_STATIC=yes \
+    ARIA2_STATIC=yes 
           make -j$(nproc)
 
       - name: Prepare build artifacts
