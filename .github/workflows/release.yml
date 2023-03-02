@@ -70,24 +70,24 @@ jobs:
           export CPPFLAGS="-I${{ github.workspace }}/vcpkg/installed/arm64-mingw-static-release/include"
           export LDFLAGS="-L${{ github.workspace }}/vcpkg/installed/arm64-mingw-static-release/lib"
           ./configure \
-    --host=$HOST \
-    --prefix=$PREFIX \
-    --without-included-gettext \
-    --disable-nls \
-    --with-libcares \
-    --without-gnutls \
-    --without-wintls \
-    --with-openssl \
-    --with-sqlite3 \
-    --without-libxml2 \
-    --with-libexpat \
-    --with-libz \
-    --without-libgmp \
-    --with-libssh2 \
-    --without-libgcrypt \
-    --without-libnettle \
-    --with-cppunit-prefix=$PREFIX \
-    ARIA2_STATIC=yes 
+            --host=$HOST \
+            --prefix=$PREFIX \
+            --without-included-gettext \
+            --disable-nls \
+            --with-libcares \
+            --without-gnutls \
+            --without-wintls \
+            --with-openssl \
+            --with-sqlite3 \
+            --without-libxml2 \
+            --with-libexpat \
+            --with-libz \
+            --without-libgmp \
+            --with-libssh2 \
+            --without-libgcrypt \
+            --without-libnettle \
+            --with-cppunit-prefix=$PREFIX \
+            ARIA2_STATIC=yes 
           make -j$(nproc)
 
       - name: Prepare build artifacts
