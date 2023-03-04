@@ -78,7 +78,6 @@ jobs:
             --disable-nls \
             --with-libcares \
             --without-gnutls \
-            --with-wintls \
             --without-openssl \
             --with-sqlite3 \
             --without-libxml2 \
