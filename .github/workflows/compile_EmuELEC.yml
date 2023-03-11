@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  compile EmuELEC:
+  compile_EmuELEC:
     name: Build
     runs-on: ubuntu-latest
     steps:
