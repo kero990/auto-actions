@@ -1,6 +1,6 @@
 name: compile EmuELEC
 on:
-  workflow_dispatch:
+  push:
 
 jobs:
   compile_EmuELEC:
