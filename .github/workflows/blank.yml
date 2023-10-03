@@ -1,10 +1,10 @@
-name: build TV
+name: build_TV
 
 on:
   workflow_dispatch:
 
 jobs:
-  build TV:
+  build_TV:
     name: Build
     runs-on: ubuntu-latest
     permissions:
