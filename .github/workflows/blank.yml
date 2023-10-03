@@ -14,7 +14,7 @@ jobs:
         run: |
             git clone https://github.com/xiaoyaocz/dart_simple_live
             cd dart_simple_live
-            git checkout TV
+            git checkout tv
       #APK签名设置
       - name: Download Android keystore
         id: android_keystore
