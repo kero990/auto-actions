@@ -23,6 +23,7 @@ jobs:
       
       - name: sync
         run: |
+          export PATH=$PATH:$PWD/depot_tools
           gclient
           gclient config --unmanaged https://chromium.googlesource.com/chromium/src.git
           gclient sync
