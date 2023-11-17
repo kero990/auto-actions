@@ -15,14 +15,21 @@ jobs:
         run: |
           git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
           export PATH=$PATH:$PWD/depot_tools
+
+      - name: clone
+        run: |     
           mkdir chromium && cd chromium
           git clone --depth 100 -b 44.0.2403.157 https://gitee.com/mirrors/chromium.git src
+      
+      - name: sync
+        run: |
           gclient
           gclient config --unmanaged https://chromium.googlesource.com/chromium/src.git
           gclient sync
 
       - name: tar
         run: |
+          cd ..
           tar czvf chromium_src_44.0.2403.157.tar.gz $PWD/src
 
       - name: Upload build artifacts
