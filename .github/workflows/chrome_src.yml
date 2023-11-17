@@ -1,0 +1,39 @@
+name: download chromium src
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-windows-arm64:
+    name: download
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install tools
+        run: |
+          git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
+          export PATH=$PATH:$PWD/depot_tools
+          mkdir chromium && cd chromium
+          git clone --depth 100 -b 42.0.2403.157 https://gitee.com/mirrors/chromium.git src
+          gclient
+          gclient config --unmanaged https://chromium.googlesource.com/chromium/src.git
+          gclient sync
+
+      - name: tar
+        run: |
+          tar czvf chromium_src_42.0.2403.157.tar.gz $PWD/src
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: chromium_src
+          path: upload
+
+      - name: Batch release
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          files: chromium_src_42.0.2403.157.tar.gz
