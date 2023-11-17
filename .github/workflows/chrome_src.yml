@@ -16,14 +16,14 @@ jobs:
           git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
           export PATH=$PATH:$PWD/depot_tools
           mkdir chromium && cd chromium
-          git clone --depth 100 -b 42.0.2403.157 https://gitee.com/mirrors/chromium.git src
+          git clone --depth 100 -b 44.0.2403.157 https://gitee.com/mirrors/chromium.git src
           gclient
           gclient config --unmanaged https://chromium.googlesource.com/chromium/src.git
           gclient sync
 
       - name: tar
         run: |
-          tar czvf chromium_src_42.0.2403.157.tar.gz $PWD/src
+          tar czvf chromium_src_44.0.2403.157.tar.gz $PWD/src
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v3
@@ -36,4 +36,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          files: chromium_src_42.0.2403.157.tar.gz
+          files: chromium_src_44.0.2403.157.tar.gz
