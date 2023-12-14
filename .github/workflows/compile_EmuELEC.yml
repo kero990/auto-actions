@@ -15,5 +15,5 @@ jobs:
           git clone https://github.com/EmuELEC/EmuELEC.git
           cd EmuELEC
           git checkout dev
-          PROJECT=Amlogic-ne DEVICE=Amlogic-ne ARCH=aarch64 DISTRO=EmuELEC make image
+          PROJECT=Amlogic-ce DEVICE=Amlogic-ne ARCH=aarch64 DISTRO=EmuELEC make image
      
