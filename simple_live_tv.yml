@@ -43,7 +43,7 @@ jobs:
       #更新Flutter的packages
       - name: Restore packages
         run: |
-          cd simple_live_app
+          cd simple_live_tv_app
           flutter pub get
       #打包APK
       - name: Build APK
