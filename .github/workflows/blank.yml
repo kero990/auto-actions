@@ -12,7 +12,7 @@ jobs:
       - name: clone
         run: |
             apt-get update && \ 
-            apt-get install locales sudo net-tools lsb-release software-properties-common gnupg git -y \
+            apt-get install locales sudo net-tools lsb-release software-properties-common gnupg git -y 
             apt-get install apt-utils \
             vim git wget curl locales ssh htop \
             build-essential libssl-dev zlib1g-dev libbz2-dev \
