@@ -6,9 +6,8 @@ on:
 jobs:
   build_TV:
     name: Build
-    runs-on: ubuntu-18.04
-    permissions:
-      contents: write
+    runs-on: ubuntu-latest
+    container: ubuntu:18.04
     steps:
       - name: clone
         run: |
