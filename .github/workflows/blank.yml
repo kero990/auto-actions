@@ -11,6 +11,14 @@ jobs:
     steps:
       - name: clone
         run: |
+            sudo apt-get update && \ 
+            sudo apt-get install locales sudo net-tools lsb-release software-properties-common gnupg git -y \
+            sudo apt-get install apt-utils \
+            vim git wget curl locales ssh htop \
+            build-essential libssl-dev zlib1g-dev libbz2-dev \
+            libreadline-dev libsqlite3-dev wget curl llvm \
+            libncurses5-dev libncursesw5-dev xz-utils liblzma-dev \
+            g++ make unzip zip -y          
             git clone https://github.com/techcaotri/ubuntu-18.04-build-qt6
             
       - name: install_prerequisites
