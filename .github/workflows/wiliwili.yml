@@ -1,6 +1,7 @@
-name: Build and Package Debian
+name: Build wiliwili arm64&amd64
 
-on: [push]
+on:
+  workflow_dispatch:
 
 jobs:
   build-and-package:
@@ -20,8 +21,8 @@ jobs:
 
     - name: Install dependencies
       run: |
-        apt update
-        apt install -y libcurl4-openssl-dev libmpv-dev libwebp-dev
+        sudo apt update
+        sudo apt install -y libcurl4-openssl-dev libmpv-dev libwebp-dev
 
     - name: Clone repository
       run: |
