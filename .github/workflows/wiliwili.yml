@@ -27,16 +27,18 @@ jobs:
     - name: Clone repository
       run: |
         git clone --recursive https://github.com/xfangfang/wiliwili.git
-      working-directory: ./wiliwili
+      
 
     - name: Build application for ${{ matrix.platform }}
       run: |
+        cd wiliwili
         cmake -B build -DPLATFORM_DESKTOP=ON
         make -C build wiliwili -j$(nproc) PLATFORM=${{ matrix.platform }}
-      working-directory: ${{ github.workspace }}/wiliwili
+     
 
     - name: Prepare package files for ${{ matrix.platform }}
       run: |
+        cd wiliwili
         mkdir -p deb/DEBIAN
         mkdir -p deb/opt/apps/com.github.wiliwili/entries/applications
         mkdir -p deb/opt/apps/com.github.wiliwili/entries/icons/hicolor/scalable/apps
@@ -94,12 +96,15 @@ jobs:
 
     - name: Get and replace release version for ${{ matrix.platform }}
       run: |
+        cd wiliwili
         release_version=$(curl -sL https://api.github.com/repos/xfangfang/wiliwili/releases/latest | jq -r '.tag_name' | sed 's/^v//')
         sed -i "s/VERSION_NUMBER/${release_version}/g" deb/opt/apps/com.github.wiliwili/entries/applications/wiliwili.desktop
 
     - name: Package Debian package for ${{ matrix.platform }}
-      run: dpkg-deb -b deb
-      working-directory: ${{ github.workspace }}
+      run: |
+        cd wiliwili
+        dpkg-deb -b deb
+      
 
     - name: Upload Debian package for ${{ matrix.platform }} to Release
       uses: actions/upload-release-asset@v1
