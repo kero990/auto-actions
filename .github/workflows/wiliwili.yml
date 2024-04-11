@@ -1,0 +1,114 @@
+name: Build and Package Debian
+
+on: [push]
+
+jobs:
+  build-and-package:
+    name: Build and Package
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        platform:
+          - amd64
+          - arm64
+
+    steps:
+    - name: Set up Docker container
+      uses: docker://debian:10
+      with:
+        entrypoint: /bin/bash
+
+    - name: Install dependencies
+      run: |
+        apt update
+        apt install -y libcurl4-openssl-dev libmpv-dev libwebp-dev
+
+    - name: Clone repository
+      run: |
+        git clone --recursive https://github.com/xfangfang/wiliwili.git
+      working-directory: ${{ github.workspace }}
+
+    - name: Build application for ${{ matrix.platform }}
+      run: |
+        cd wiliwili
+        cmake -B build -DPLATFORM_DESKTOP=ON
+        make -C build wiliwili -j$(nproc) PLATFORM=${{ matrix.platform }}
+      working-directory: ${{ github.workspace }}/wiliwili
+
+    - name: Prepare package files for ${{ matrix.platform }}
+      run: |
+        cd wiliwili
+        mkdir -p deb/DEBIAN
+        mkdir -p deb/opt/apps/com.github.wiliwili/entries/applications
+        mkdir -p deb/opt/apps/com.github.wiliwili/entries/icons/hicolor/scalable/apps
+        mkdir -p deb/opt/apps/com.github.wiliwili/files
+        wget https://github.com/xfangfang/wiliwili/raw/yoga/resources/svg/cn.xfangfang.wiliwili.svg -O deb/opt/apps/com.github.wiliwili/entries/icons/hicolor/scalable/apps/com.github.wiliwili.svg
+        mv build/wiliwili deb/opt/apps/com.github.wiliwili/files/
+        mv build/resources deb/opt/apps/com.github.wiliwili/files/
+
+        cat > deb/opt/apps/com.github.wiliwili/entries/applications/wiliwili.desktop << EOF
+        [Desktop Entry]
+        Name=wiliwili
+        Version=VERSION_NUMBER
+        Exec=/opt/apps/com.github.wiliwili/files/wiliwili
+        Icon=com.github.wiliwili
+        Type=Application
+        Terminal=false
+        StartupNotify=true
+        Encoding=UTF-8
+        Categories=Video;
+        Path=/opt/apps/com.github.wiliwili/files/
+        Architecture=${{ matrix.platform }}
+        EOF
+
+        cat > deb/opt/apps/com.github.wiliwili/info << EOF
+        {
+          "appid": "com.github.wiliwili",
+          "name": "wiliwili",
+          "version": "VERSION_NUMBER",
+          "arch": ["${{ matrix.platform }}"],
+          "permissions": {
+            "autostart": false,
+            "notification": true,
+            "trayicon": true,
+            "clipboard": true,
+            "account": true,
+            "bluetooth": false,
+            "camera": true,
+            "audio_record": true,
+            "installed_apps": false
+          }
+        }
+        EOF
+
+        cat > deb/DEBIAN/control << EOF
+        Package: com.github.wiliwili
+        Version: VERSION_NUMBER
+        Installed-Size: 21000
+        Maintainer: kero990 <kero990@qq.com>
+        Section: video
+        Architecture: ${{ matrix.platform }}
+        Priority: optional
+        Description: 专为手柄控制设计的第三方跨平台B站客户端，完美复刻官方UI，体积极小，支持硬解
+          专为手柄控制设计的第三方跨平台B站客户端，完美复刻官方UI，体积极小，支持硬解
+        EOF
+
+    - name: Get and replace release version for ${{ matrix.platform }}
+      run: |
+        cd wiliwili
+        release_version=$(curl -sL https://api.github.com/repos/xfangfang/wiliwili/releases/latest | jq -r '.tag_name' | sed 's/^v//')
+        sed -i "s/VERSION_NUMBER/${release_version}/g" deb/opt/apps/com.github.wiliwili/entries/applications/wiliwili.desktop
+
+    - name: Package Debian package for ${{ matrix.platform }}
+      run: dpkg-deb -b deb
+      working-directory: ${{ github.workspace }}
+
+    - name: Upload Debian package for ${{ matrix.platform }} to Release
+      uses: actions/upload-release-asset@v1
+      with:
+        upload_url: ${{ steps.get-upload-url.outputs.upload_url }}
+        asset_path: ${{ github.workspace }}/deb/com.github.wiliwili_VERSION_NUMBER_${{ matrix.platform }}.deb
+        asset_name: com.github.wiliwili_VERSION_NUMBER_${{ matrix.platform }}.deb
+        asset_content_type: application/x-debian-package
+      env:
+        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
