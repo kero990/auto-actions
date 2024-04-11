@@ -22,7 +22,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt update
-        sudo apt install -y libcurl4-openssl-dev libmpv-dev libwebp-dev
+        sudo apt install -y libcurl4-openssl-dev libmpv-dev libwebp-dev libxrandr-dev
 
     - name: Clone repository
       run: |
