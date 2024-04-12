@@ -109,9 +109,9 @@ jobs:
       
     - name: Create Release
       uses: actions/create-release@v1
-        env:
+      env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
+      with:
           release_name: wiliwili_VERSION_NUMBER
           draft: false
           prerelease: false
