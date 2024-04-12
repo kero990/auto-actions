@@ -109,7 +109,12 @@ jobs:
       run: |
         cd wiliwili
         dpkg-deb -b deb
+        ls *.deb
 
+    - name: find .deb path
+      run: |
+        find ./ -name *.deb
+        
     - name: Upload Release
       uses: ncipollo/release-action@v1
       with:
