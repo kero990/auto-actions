@@ -28,8 +28,8 @@ jobs:
     - name: Build application for ${{ matrix.platform }}
       run: |
         cd wiliwili
-        cmake .. -b build -DPLATFORM_DESKTOP=ON
-        make -C build wiliwili -j$(nproc) 
+        cmake -B build -DPLATFORM_DESKTOP=ON
+        make -C build wiliwili -j$(nproc)
      
 
     - name: Prepare package files
