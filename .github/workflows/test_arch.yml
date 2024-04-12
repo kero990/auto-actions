@@ -6,6 +6,8 @@ on:
 jobs:
   build-and-package:
     name: Build and Package
+    container:
+      image: ${{ matrix.container_image }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -19,7 +21,3 @@ jobs:
 
       - name: Check environment
         run: uname -a && lsb_release -a
-
-        # 在容器中执行命令
-        container:
-          image: ${{ matrix.container_image }}
