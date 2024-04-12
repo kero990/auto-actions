@@ -109,24 +109,17 @@ jobs:
       run: |
         cd wiliwili
         dpkg-deb -b deb
+
+    - name: Upload Release
+      uses: ncipollo/release-action@v1
+      with:
+           name: wiliwili ${{ steps.get_release_version.outputs.release_version }}
+           tag: wiliwili_${{ steps.get_release_version.outputs.release_version }}
+           omitBodyDuringUpdate: true
+           body: This release is built by github-action.
+           token: ${{ secrets.GITHUB_TOKEN }}
+           allowUpdates: true
+           artifacts: >
+              ./wiliwili/deb/com.github.wiliwili_${{ steps.get_release_version.outputs.release_version }}_${{ matrix.platform }}.deb
       
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-          release_name: wiliwili_{{ steps.get_release_version.outputs.release_version }}
-          tag_name: wiliwili_{{ steps.get_release_version.outputs.release_version }}
-          draft: false
-          prerelease: false
-          
-    - name: Upload Debian package for ${{ matrix.platform }} to Release
-      uses: actions/upload-release-asset@v1
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./wiliwili/deb/com.github.wiliwili_{{ steps.get_release_version.outputs.release_version }}_${{ matrix.platform }}.deb
-        asset_name: com.github.wiliwili_{{ steps.get_release_version.outputs.release_version }}_${{ matrix.platform }}.deb
-        asset_content_type: application/x-debian-package
-      env:
-        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+  
