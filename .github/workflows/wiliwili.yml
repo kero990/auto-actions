@@ -23,15 +23,12 @@ jobs:
         git clone --recursive https://github.com/xfangfang/wiliwili.git
       
     - name: cmake
-      uses: threeal/cmake-action@main
-      with:
-        source-dir: wiliwili
-        build-dir: wiliwili/build
-        options: 'PLATFORM_DESKTOP=ON'
-        
+      uses: lukka/get-cmake@latest
+              
     - name: Build application for ${{ matrix.platform }}
       run: |
-      
+        cd wiliwili
+        cmake .. -b build -DPLATFORM_DESKTOP=ON
         make -C build wiliwili -j$(nproc) 
      
 
