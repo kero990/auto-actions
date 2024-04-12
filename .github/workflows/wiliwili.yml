@@ -113,7 +113,8 @@ jobs:
 
     - name: find .deb path
       run: |
-        find ./ -name *.deb
+        DEB_PATH=$(find ./ -name "*.deb")
+        echo "::set-env name=DEB_PATH::$DEB_PATH"
         
     - name: Upload Release
       uses: ncipollo/release-action@v1
@@ -125,6 +126,6 @@ jobs:
            token: ${{ secrets.GITHUB_TOKEN }}
            allowUpdates: true
            artifacts: >
-              ./wiliwili/deb/com.github.wiliwili_${{ steps.get_release_version.outputs.release_version }}_${{ matrix.platform }}.deb
+              ${{ env.DEB_PATH }}
       
   
