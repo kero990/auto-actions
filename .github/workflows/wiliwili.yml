@@ -126,6 +126,6 @@ jobs:
            token: ${{ secrets.GITHUB_TOKEN }}
            allowUpdates: true
            artifacts: >
-              ./wiliwili/deb.deb com.github.wiliwili_${{ steps.get_release_version.outputs.release_version }}_${{ matrix.platform }}".deb
+              ./wiliwili/com.github.wiliwili_${{ steps.get_release_version.outputs.release_version }}_${{ matrix.platform }}.deb
       
   
