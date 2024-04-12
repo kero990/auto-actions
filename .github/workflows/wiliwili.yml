@@ -114,6 +114,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
           release_name: wiliwili_VERSION_NUMBER
+          tag_name: wiliwili_VERSION_NUMBER
           draft: false
           prerelease: false
           
