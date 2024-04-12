@@ -95,9 +95,12 @@ jobs:
         EOF
 
     - name: Get and replace release version for ${{ matrix.platform }}
+      id: get_release_version
       run: |
         cd wiliwili
         release_version=$(curl -sL https://api.github.com/repos/xfangfang/wiliwili/releases/latest | jq -r '.tag_name' | sed 's/^v//')
+        echo "::set-output name=release_version::$release_version"
+        echo "Release version: $release_version"
         sed -i "s/VERSION_NUMBER/${release_version}/g" deb/opt/apps/com.github.wiliwili/entries/applications/wiliwili.desktop
         sed -i "s/VERSION_NUMBER/${release_version}/g" deb/opt/apps/com.github.wiliwili/info
         sed -i "s/VERSION_NUMBER/${release_version}/g" deb/DEBIAN/control
@@ -113,8 +116,8 @@ jobs:
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-          release_name: wiliwili_VERSION_NUMBER
-          tag_name: wiliwili_VERSION_NUMBER
+          release_name: wiliwili_{{ steps.get_release_version.outputs.release_version }}
+          tag_name: wiliwili_{{ steps.get_release_version.outputs.release_version }}
           draft: false
           prerelease: false
           
@@ -122,8 +125,8 @@ jobs:
       uses: actions/upload-release-asset@v1
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./wiliwili/deb/com.github.wiliwili_VERSION_NUMBER_${{ matrix.platform }}.deb
-        asset_name: wiliwili_VERSION_NUMBER
+        asset_path: ./wiliwili/deb/com.github.wiliwili_{{ steps.get_release_version.outputs.release_version }}_${{ matrix.platform }}.deb
+        asset_name: com.github.wiliwili_{{ steps.get_release_version.outputs.release_version }}_${{ matrix.platform }}.deb
         asset_content_type: application/x-debian-package
       env:
         GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
