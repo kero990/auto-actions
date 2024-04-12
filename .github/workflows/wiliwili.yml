@@ -99,6 +99,8 @@ jobs:
         cd wiliwili
         release_version=$(curl -sL https://api.github.com/repos/xfangfang/wiliwili/releases/latest | jq -r '.tag_name' | sed 's/^v//')
         sed -i "s/VERSION_NUMBER/${release_version}/g" deb/opt/apps/com.github.wiliwili/entries/applications/wiliwili.desktop
+        sed -i "s/VERSION_NUMBER/${release_version}/g" deb/opt/apps/com.github.wiliwili/info
+        sed -i "s/VERSION_NUMBER/${release_version}/g" deb/DEBIAN/control
 
     - name: Package Debian package for ${{ matrix.platform }}
       run: |
