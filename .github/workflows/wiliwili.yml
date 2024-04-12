@@ -7,7 +7,9 @@ jobs:
   build-and-package:
     name: Build and Package
     runs-on: ubuntu-latest
-    container: debian:10
+    strategy:
+      matrix:
+        container_image: [debian:10, arm64v8/debian:10]
     defaults:
       run:
         shell: bash
@@ -16,7 +18,7 @@ jobs:
     - name: Install dependencies
       run: |
         apt update
-        apt install -y libcurl4-openssl-dev libmpv-dev libwebp-dev libxrandr-dev libxinerama-dev libxcursor-dev libdbus-1-dev libxi-dev
+        apt install -y libcurl4-openssl-dev libmpv-dev libwebp-dev libxrandr-dev libxinerama-dev libxcursor-dev libdbus-1-dev libxi-dev git cmake make gcc g++
 
     - name: Clone repository
       run: |
