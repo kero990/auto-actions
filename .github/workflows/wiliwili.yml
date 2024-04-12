@@ -22,7 +22,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt update
-        sudo apt install -y libcurl4-openssl-dev libmpv-dev libwebp-dev libxrandr-dev libxinerama-dev libxcursor-dev
+        sudo apt install -y libcurl4-openssl-dev libmpv-dev libwebp-dev libxrandr-dev libxinerama-dev libxcursor-dev libdbus-1-dev libxi-dev
 
     - name: Clone repository
       run: |
