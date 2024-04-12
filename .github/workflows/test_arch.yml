@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        container_image: [debian:10, arm64v8/debian:10]
+        container_image: [debian:10, alpine:latest]
     defaults:
       run:
         shell: bash
