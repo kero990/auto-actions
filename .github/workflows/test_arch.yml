@@ -1,0 +1,26 @@
+name: test arch
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-and-package:
+    name: Build and Package
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        platform:
+          - amd64
+          - arm64
+
+    steps:
+    - name: Set up Docker container
+      uses: docker://debian:10
+      with:
+        entrypoint: /bin/bash
+
+    - name: echo info
+      run: |
+        echo (uname -a)
+        lsb_release -a
+        
