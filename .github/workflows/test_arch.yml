@@ -21,6 +21,6 @@ jobs:
 
     - name: echo info
       run: |
-        echo (uname -a)
+        uname -a
         lsb_release -a
         
