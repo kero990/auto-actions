@@ -109,7 +109,7 @@ jobs:
       run: |
         cd wiliwili
         dpkg-deb -b deb
-        ls *.deb
+        mv deb.deb com.github.wiliwili_$release_version_${{ matrix.platform }}".deb
 
     - name: find .deb path
       run: |
@@ -126,6 +126,6 @@ jobs:
            token: ${{ secrets.GITHUB_TOKEN }}
            allowUpdates: true
            artifacts: >
-              ${{ env.DEB_PATH }}
+              ./wiliwili/deb.deb com.github.wiliwili_$release_version_${{ matrix.platform }}".deb
       
   
