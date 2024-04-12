@@ -4,11 +4,16 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  build-and-package:
+    name: Build and Package
     runs-on: ubuntu-latest
-    container:
-      image: debian:10
-
+    strategy:
+      matrix:
+        container_image: [debian:10, arm64v8/debian:10]
+    defaults:
+      run:
+        shell: bash
+        
     steps:
     - name: echo info
       run: |
