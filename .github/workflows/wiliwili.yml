@@ -22,15 +22,20 @@ jobs:
       run: |
         git clone --recursive https://github.com/xfangfang/wiliwili.git
       
-
+    - name: cmake
+      uses: threeal/cmake-action@main
+      with:
+        source-dir: wiliwili
+        build-dir: wiliwili/build
+        options: 'PLATFORM_DESKTOP=ON'
+        
     - name: Build application for ${{ matrix.platform }}
       run: |
-        cd wiliwili
-        cmake -B build -DPLATFORM_DESKTOP=ON
-        make -C build wiliwili -j$(nproc) PLATFORM=${{ matrix.platform }}
+      
+        make -C build wiliwili -j$(nproc) 
      
 
-    - name: Prepare package files for ${{ matrix.platform }}
+    - name: Prepare package files
       run: |
         cd wiliwili
         mkdir -p deb/DEBIAN
@@ -53,7 +58,7 @@ jobs:
         Encoding=UTF-8
         Categories=Video;
         Path=/opt/apps/com.github.wiliwili/files/
-        Architecture=${{ matrix.platform }}
+        Architecture=amd64
         EOF
 
         cat > deb/opt/apps/com.github.wiliwili/info << EOF
@@ -61,7 +66,7 @@ jobs:
           "appid": "com.github.wiliwili",
           "name": "wiliwili",
           "version": "VERSION_NUMBER",
-          "arch": ["${{ matrix.platform }}"],
+          "arch": ["amd64"],
           "permissions": {
             "autostart": false,
             "notification": true,
@@ -82,7 +87,7 @@ jobs:
         Installed-Size: 21000
         Maintainer: kero990 <kero990@qq.com>
         Section: video
-        Architecture: ${{ matrix.platform }}
+        Architecture: amd64
         Priority: optional
         Description: 专为手柄控制设计的第三方跨平台B站客户端，完美复刻官方UI，体积极小，支持硬解
           专为手柄控制设计的第三方跨平台B站客户端，完美复刻官方UI，体积极小，支持硬解
@@ -108,7 +113,7 @@ jobs:
       run: |
         cd wiliwili
         dpkg-deb -b deb
-        mv deb.deb com.github.wiliwili_${{ steps.get_release_version.outputs.release_version }}_${{ matrix.platform }}.deb
+        mv deb.deb com.github.wiliwili_${{ steps.get_release_version.outputs.release_version }}_amd64.deb
         
     - name: Upload Release
       uses: ncipollo/release-action@v1
@@ -120,6 +125,6 @@ jobs:
            token: ${{ secrets.GITHUB_TOKEN }}
            allowUpdates: true
            artifacts: >
-              ./wiliwili/com.github.wiliwili_${{ steps.get_release_version.outputs.release_version }}_${{ matrix.platform }}.deb
+              ./wiliwili/com.github.wiliwili_${{ steps.get_release_version.outputs.release_version }}_amd64.deb
       
   
