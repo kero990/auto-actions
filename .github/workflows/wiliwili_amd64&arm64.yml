@@ -1,0 +1,179 @@
+name: Build wiliwili arm64&amd64 for cross
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-and-package:
+    name: Build and Package
+    runs-on: ubuntu-latest
+    container: debian:10
+    defaults:
+      run:
+        shell: bash
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        arch: [amd64, arm64]
+
+    steps:
+    - name: Install dependencies amd64
+      if: matrix.arch == 'amd64'
+      run: |
+        apt update
+        apt install -y libcurl4-openssl-dev libmpv-dev libwebp-dev libxrandr-dev libxinerama-dev libxcursor-dev libdbus-1-dev libxi-dev git make gcc g++ wget curl jq
+        apt install -y libssl-dev libmbedtls-dev zlib1g-dev
+
+    steps:
+    - name: Install dependencies arm64
+      if: matrix.arch == 'arm64'
+      run: |
+        dpkg --add-architecture arm64
+        apt update
+        apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu aarch64-linux-gnu-ld aarch64-linux-gnu-strip
+        apt install -y libcurl4-openssl-dev:arm64 libmpv-dev:arm64 libwebp-dev:arm64 libxrandr-dev:arm64 libxinerama-dev:arm64 libxcursor-dev:arm64 libdbus-1-dev:arm64 libxi-dev:arm64 libssl-dev:arm64 libmbedtls-dev:arm64 zlib1g-dev:arm64
+        apt install git make wget curl jq
+        export CC=aarch64-linux-gnu-gcc
+        export CXX=aarch64-linux-gnu-g++
+        export AR=aarch64-linux-gnu-ar
+        export LD=aarch64-linux-gnu-ld
+        export CROSS_COMPILE=aarch64-linux-gnu- 
+
+
+    - name: Clone repository
+      run: |
+        git clone --recursive https://github.com/xfangfang/wiliwili.git
+      
+    - name: cmake
+      uses: lukka/get-cmake@latest
+
+    -name: cmake cross file
+      if: matrix.arch == 'arm64'
+      run:|
+        cat > arm64_cross.cmake << EOF
+        set(CMAKE_SYSTEM_NAME Linux) #设置目标系统名字
+        set(CMAKE_SYSTEM_PROCESSOR arm) #设置目标处理器架构
+        set(CMAKE_C_COMPILER aarch64-linux-gnu-gcc)
+        set(CMAKE_CXX_COMPILER aarch64-linux-gnu-g++)
+        set(CMAKE_LINKER aarch64-linux-gnu-ld)
+        set(CMAKE_STRIP aarch64-linux-gnu-strip)
+
+        set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+        set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+        set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+        set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
+
+              
+    - name: Build application for ${{ matrix.platform }}
+      run: |
+        cd wiliwili
+        if [ "${{ matrix.arch }}" == "arm64" ]; then
+          cmake -B build -DPLATFORM_DESKTOP=ON -DCMAKE_TOOLCHAIN_FILE=arm64_cross.cmake
+        else
+          cmake -B build -DPLATFORM_DESKTOP=ON
+        fi
+        make -C build wiliwili -j$(nproc)
+        if [ "${{ matrix.arch }}" == "arm64" ]; then
+          aarch64-linux-gnu-strip build/wiliwili
+        else
+          strip wiliwili
+        fi
+
+     
+
+    - name: Prepare package files
+      run: |
+        cd wiliwili
+        mkdir -p deb/DEBIAN
+        mkdir -p deb/opt/apps/com.github.wiliwili/entries/applications
+        mkdir -p deb/opt/apps/com.github.wiliwili/entries/icons/hicolor/scalable/apps
+        mkdir -p deb/opt/apps/com.github.wiliwili/files
+        wget https://github.com/xfangfang/wiliwili/raw/yoga/resources/svg/cn.xfangfang.wiliwili.svg -O deb/opt/apps/com.github.wiliwili/entries/icons/hicolor/scalable/apps/com.github.wiliwili.svg
+        mv build/wiliwili deb/opt/apps/com.github.wiliwili/files/
+        mv build/resources deb/opt/apps/com.github.wiliwili/files/
+
+        cat > deb/opt/apps/com.github.wiliwili/entries/applications/wiliwili.desktop << EOF
+        [Desktop Entry]
+        Name=wiliwili
+        Version=VERSION_NUMBER
+        Exec=/opt/apps/com.github.wiliwili/files/wiliwili
+        Icon=com.github.wiliwili
+        Type=Application
+        Terminal=false
+        StartupNotify=true
+        Encoding=UTF-8
+        Categories=Video;
+        Path=/opt/apps/com.github.wiliwili/files/
+        Architecture=<ARCH>
+        EOF
+
+        cat > deb/opt/apps/com.github.wiliwili/info << EOF
+        {
+          "appid": "com.github.wiliwili",
+          "name": "wiliwili",
+          "version": "VERSION_NUMBER",
+          "arch": ["<ARCH>"],
+          "permissions": {
+            "autostart": false,
+            "notification": true,
+            "trayicon": true,
+            "clipboard": true,
+            "account": true,
+            "bluetooth": false,
+            "camera": true,
+            "audio_record": true,
+            "installed_apps": false
+          }
+        }
+        EOF
+
+        cat > deb/DEBIAN/control << EOF
+        Package: com.github.wiliwili
+        Version: VERSION_NUMBER
+        Installed-Size: 21000
+        Maintainer: kero990 <kero990@qq.com>
+        Section: video
+        Architecture: <ARCH>
+        Priority: optional
+        Description: 专为手柄控制设计的第三方跨平台B站客户端，完美复刻官方UI，体积极小，支持硬解
+          专为手柄控制设计的第三方跨平台B站客户端，完美复刻官方UI，体积极小，支持硬解
+        EOF
+
+    - name: Get and replace release version for ${{ matrix.platform }}
+      id: get_release_version
+      run: |
+            cd wiliwili
+            release_version=$(curl -sL https://api.github.com/repos/xfangfang/wiliwili/releases/latest | jq -r '.tag_name' | sed 's/^v//')
+            if [ -z "$release_version" ]; then
+              while [ -z "$release_version" ]; do
+                release_version=$(curl -sL https://api.github.com/repos/xfangfang/wiliwili/releases/latest | jq -r '.tag_name' | sed 's/^v//')
+              done
+            fi
+            echo "::set-output name=release_version::$release_version"
+            echo "Release version: $release_version"
+            sed -i "s/VERSION_NUMBER/${release_version}/g" deb/opt/apps/com.github.wiliwili/entries/applications/wiliwili.desktop
+            sed -i "s/VERSION_NUMBER/${release_version}/g" deb/opt/apps/com.github.wiliwili/info
+            sed -i "s/VERSION_NUMBER/${release_version}/g" deb/DEBIAN/control
+            sed -i "s/<ARCH>/${{ matrix.arch }}/g" deb/opt/apps/com.github.wiliwili/entries/applications/wiliwili.desktop
+            sed -i "s/<ARCH>/${{ matrix.arch }}/g" deb/opt/apps/com.github.wiliwili/info
+            sed -i "s/<ARCH>/${{ matrix.arch }}/g" deb/DEBIAN/control
+
+    - name: Package Debian package for ${{ matrix.platform }}
+      run: |
+        cd wiliwili
+        dpkg-deb -b deb
+        mv deb.deb com.github.wiliwili_${{ steps.get_release_version.outputs.release_version }}_${{ matrix.arch }}.deb
+        
+    - name: Upload Release
+      uses: ncipollo/release-action@v1
+      with:
+           name: wiliwili ${{ steps.get_release_version.outputs.release_version }}
+           tag: wiliwili_${{ steps.get_release_version.outputs.release_version }}
+           omitBodyDuringUpdate: true
+           body: This release is built by github-action.
+           token: ${{ secrets.GITHUB_TOKEN }}
+           allowUpdates: true
+           artifacts: >
+              ./wiliwili/com.github.wiliwili_${{ steps.get_release_version.outputs.release_version }}_${{ matrix.arch }}.deb
+      
+  
