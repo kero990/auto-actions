@@ -27,6 +27,15 @@ jobs:
             docker run --rm -it -v $PWD:/workspace -w /workspace arm64v8/debian:10
           fi
 
+      - name: Run commands inside the container
+        run: |
+         if [ ${{ matrix.platform }} == 'amd64' ]; then
+          docker exec -it $(docker ps -q) bash -c "echo 'Running on amd64'; exec bash"
+         else
+          docker exec -it $(docker ps -q) bash -c "echo 'Running on arm64'; exec bash"
+         fi
       
       - name: Check environment
-        run: uname -a && lsb_release -a
+        run: |
+          apt install lsb_release
+          uname -a && lsb_release -a
