@@ -30,7 +30,7 @@ jobs:
       run: |
         dpkg --add-architecture arm64
         apt update
-        apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu aarch64-linux-gnu-ld aarch64-linux-gnu-strip
+        apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
         apt install -y libcurl4-openssl-dev:arm64 libmpv-dev:arm64 libwebp-dev:arm64 libxrandr-dev:arm64 libxinerama-dev:arm64 libxcursor-dev:arm64 libdbus-1-dev:arm64 libxi-dev:arm64 libssl-dev:arm64 libmbedtls-dev:arm64 zlib1g-dev:arm64
         apt install git make wget curl jq
         export CC=aarch64-linux-gnu-gcc
