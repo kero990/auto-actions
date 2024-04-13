@@ -4,38 +4,22 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
-    strategy:
-      matrix:
-        platform: [amd64, arm64]
-
+  set_qemu:
     runs-on: ubuntu-latest
-
     steps:
-      
-      # Set up QEMU for arm64 if necessary
       - name: Set up QEMU for arm64
         if: matrix.platform == 'arm64'
         uses: docker/setup-qemu-action@v1
-
-      # Use different Docker container based on platform
-      - name: Use different Docker container based on platform
-        run: |
-          if [ ${{ matrix.platform }} == 'amd64' ]; then
-            docker run --rm -it -v $PWD:/workspace -w /workspace debian:10
-          else
-            docker run --rm -it -v $PWD:/workspace -w /workspace arm64v8/debian:10
-          fi
-
-      - name: Run commands inside the container
-        run: |
-         if [ ${{ matrix.platform }} == 'amd64' ]; then
-          docker exec -it $(docker ps -q) bash -c "echo 'Running on amd64'; exec bash"
-         else
-          docker exec -it $(docker ps -q) bash -c "echo 'Running on arm64'; exec bash"
-         fi
-      
+  
+  build:
+    runs-on: ubuntu-latest
+    needs: set_qemu
+    strategy:
+      matrix:
+        platform: [amd64, arm64]
+    container: ${{ matrix.platform == 'amd64' && 'debian:10' || 'arm64v8/debian:10' }}
+    steps:
       - name: Check environment
         run: |
-          apt install lsb_release
+          sudo apt install lsb_release
           uname -a && lsb_release -a
