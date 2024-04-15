@@ -17,7 +17,7 @@ jobs:
         
     - name: create sysroot
       run: |
-        debootstrap --variant=minbase --foreign --include=libcurl4-openssl-dev,libmpv-dev,libwebp-dev,libxrandr-dev,libxinerama-dev,libxcursor-dev,libdbus-1-dev,libxi-dev,libssl-dev,libmbedtls-dev,zlib1g-dev \
+        debootstrap  --foreign --include=libcurl4-openssl-dev,libmpv-dev,libwebp-dev,libxrandr-dev,libxinerama-dev,libxcursor-dev,libdbus-1-dev,libxi-dev,libssl-dev,libmbedtls-dev,zlib1g-dev \
         --arch=arm64 buster /tmp/arm64 http://deb.debian.org/debian/
         export CC=aarch64-linux-gnu-gcc
         export CXX=aarch64-linux-gnu-g++
