@@ -53,7 +53,7 @@ jobs:
     - name: Build application for arm64
       run: |
         cd wiliwili
-        cmake -B build -DPLATFORM_DESKTOP=ON -DCMAKE_TOOLCHAIN_FILE=arm64_cross.cmake
+        cmake -B build -DPLATFORM_DESKTOP=ON -DCMAKE_TOOLCHAIN_FILE=../arm64_cross.cmake
         cmake -B build -DPLATFORM_DESKTOP=ON
         make -C build wiliwili -j$(nproc)
         aarch64-linux-gnu-strip build/wiliwili
