@@ -33,7 +33,7 @@ jobs:
       run: |
         docker run --name debian10 arm64v8/debian:10
         docker exec  debian10 apt update
-        docker exec  apt install -y libcurl4-openssl-dev libmpv-dev libwebp-dev libxrandr-dev libxinerama-dev libxcursor-dev libdbus-1-dev libxi-dev libssl-dev libmbedtls-dev zlib1g-dev
+        docker exec  debian10 apt install -y libcurl4-openssl-dev libmpv-dev libwebp-dev libxrandr-dev libxinerama-dev libxcursor-dev libdbus-1-dev libxi-dev libssl-dev libmbedtls-dev zlib1g-dev
         docker cp debian10:/ /tmp/arm64/
 
     - name: Install dependencies arm64
