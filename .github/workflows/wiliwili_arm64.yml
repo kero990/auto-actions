@@ -7,23 +7,27 @@ jobs:
   build-and-package:
     name: Build and Package
     runs-on: ubuntu-latest
-    container: debian:10
+    
     
     steps:
     - name: Install dependencies
       run: |
-        apt update && apt install -y debootstrap gcc-aarch64-linux-gnu g++-aarch64-linux-gnu git make wget curl jq qemu qemu-user-static binfmt-support
-        
-        
+        apt update && apt install -y  gcc-aarch64-linux-gnu-8 g++-aarch64-linux-gnu-8 git make wget curl jq binutils-aarch64-linux-gnu
+    
+    - name: set qemu
+      uses: docker/setup-qemu-action@v3.0.0
+    
     - name: create sysroot
       run: |
-        debootstrap  --foreign --include=libcurl4-openssl-dev,libmpv-dev,libwebp-dev,libxrandr-dev,libxinerama-dev,libxcursor-dev,libdbus-1-dev,libxi-dev,libssl-dev,libmbedtls-dev,zlib1g-dev \
-        --arch=arm64 buster /tmp/arm64 http://deb.debian.org/debian/
-        export CC=aarch64-linux-gnu-gcc
-        export CXX=aarch64-linux-gnu-g++
-        export AR=aarch64-linux-gnu-ar
+        mkdir /tmp/arm64
+        docker run --p --name debian10 arm64v8/debian:10
+        docker exec debian10 apt update && apt install -y libcurl4-openssl-dev libmpv-dev libwebp-dev libxrandr-dev libxinerama-dev libxcursor-dev libdbus-1-dev libxi-dev libssl-dev libmbedtls-dev zlib1g-dev
+        docker cp debian10:/ /tmp/arm64
+        export CC=aarch64-linux-gnu-gcc-8
+        export CXX=aarch64-linux-gnu-g++-8
+        export AR=aarch64-linux-gnu-ar-8
         export LD=aarch64-linux-gnu-ld
-        export CROSS_COMPILE=aarch64-linux-gnu- 
+        export CROSS_COMPILE=aarch64-linux-gnu-
        
 
 
@@ -39,8 +43,8 @@ jobs:
         cat > arm64_cross.cmake << EOF
         set(CMAKE_SYSTEM_NAME Linux) #设置目标系统名字
         set(CMAKE_SYSTEM_PROCESSOR arm) #设置目标处理器架构
-        set(CMAKE_C_COMPILER aarch64-linux-gnu-gcc)
-        set(CMAKE_CXX_COMPILER aarch64-linux-gnu-g++)
+        set(CMAKE_C_COMPILER aarch64-linux-gnu-gcc-8)
+        set(CMAKE_CXX_COMPILER aarch64-linux-gnu-g++-8)
         set(CMAKE_LINKER aarch64-linux-gnu-ld)
         set(CMAKE_STRIP aarch64-linux-gnu-strip)
         set(CMAKE_SYSROOT “/tmp/arm64”)
