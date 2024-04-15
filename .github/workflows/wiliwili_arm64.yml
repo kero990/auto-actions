@@ -9,19 +9,11 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - name: set qemu
-      uses: docker/setup-qemu-action@v1
-
-    - name: set docker for arm64
-      uses:  docker/setup-buildx-action@v1
-      
-   
-    - name: Install dependencies in docker
+    
+    - name: Install dependencies in sysroot
       run: |
-        docker run --platform linux/arm64 --name debian10 arm64v8/debian:10 
-        docker exec  debian10 apt update
-        docker exec  debian10 apt install -y libcurl4-openssl-dev libmpv-dev libwebp-dev libxrandr-dev libxinerama-dev libxcursor-dev libdbus-1-dev libxi-dev libssl-dev libmbedtls-dev zlib1g-dev
-        docker cp debian10:/ /tmp/arm64/
+        debootstrap --variant=minbase --include=libcurl4-openssl-dev,libmpv-dev,libwebp-dev,libxrandr-dev,libxinerama-dev,libxcursor-dev,libdbus-1-dev,libxi-dev,libssl-dev,libmbedtls-dev,zlib1g-dev --arch=arm64 buster /tmp/arm64 http://deb.debian.org/debian/
+       
 
     - name: Install dependencies
       run: |
