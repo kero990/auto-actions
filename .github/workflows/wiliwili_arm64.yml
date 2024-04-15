@@ -11,9 +11,12 @@ jobs:
     
     steps:
     
-    - name: Install dependencies in sysroot
+    - name: Install dependencies
       run: |
         apt update && apt install -y debootstrap gcc-aarch64-linux-gnu g++-aarch64-linux-gnu git make wget curl jq
+        
+    - name: create sysroot
+      run: |
         debootstrap --variant=minbase --include=libcurl4-openssl-dev,libmpv-dev,libwebp-dev,libxrandr-dev,libxinerama-dev,libxcursor-dev,libdbus-1-dev,libxi-dev,libssl-dev,libmbedtls-dev,zlib1g-dev --arch=arm64 buster /tmp/arm64 http://deb.debian.org/debian/
         export CC=aarch64-linux-gnu-gcc
         export CXX=aarch64-linux-gnu-g++
