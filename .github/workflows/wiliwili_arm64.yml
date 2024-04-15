@@ -5,7 +5,7 @@ on:
 
 jobs:
   build-and-package:
-    name: Build and Package
+    name: Build wiliwili arm64
     runs-on: ubuntu-latest
     
     
