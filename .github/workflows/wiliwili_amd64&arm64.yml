@@ -1,4 +1,4 @@
-name: Build wiliwili arm64&amd64 for cross
+name: Build wiliwili for cross
 
 on:
   workflow_dispatch:
@@ -24,14 +24,22 @@ jobs:
         apt install -y libcurl4-openssl-dev libmpv-dev libwebp-dev libxrandr-dev libxinerama-dev libxcursor-dev libdbus-1-dev libxi-dev git make gcc g++ wget curl jq
         apt install -y libssl-dev libmbedtls-dev zlib1g-dev
 
-    
+    - name: set docker for arm64
+      if: matrix.arch == 'arm64'
+      uses: docker/setup-qemu-action@v1
+      uses: docker/setup-buildx-action@v1
+      run: |
+        docker run --name debian10 arm64v8/debian:10
+        docker exec --name debian10 apt update
+        docker exec --name debian10 apt install -y libcurl4-openssl-dev libmpv-dev libwebp-dev libxrandr-dev libxinerama-dev libxcursor-dev libdbus-1-dev libxi-dev libssl-dev libmbedtls-dev zlib1g-dev
+        docker cp debian10:/ /tmp/arm64/
+
     - name: Install dependencies arm64
       if: matrix.arch == 'arm64'
       run: |
         dpkg --add-architecture arm64
         apt update
         apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
-        apt install -y libcurl4-openssl-dev:arm64 libmpv-dev:arm64 libwebp-dev:arm64 libxrandr-dev:arm64 libxinerama-dev:arm64 libxcursor-dev:arm64 libdbus-1-dev:arm64 libxi-dev:arm64 libssl-dev:arm64 libmbedtls-dev:arm64 zlib1g-dev:arm64
         apt install git make wget curl jq
         export CC=aarch64-linux-gnu-gcc
         export CXX=aarch64-linux-gnu-g++
@@ -57,11 +65,12 @@ jobs:
         set(CMAKE_CXX_COMPILER aarch64-linux-gnu-g++)
         set(CMAKE_LINKER aarch64-linux-gnu-ld)
         set(CMAKE_STRIP aarch64-linux-gnu-strip)
-
+        set(CMAKE_SYSROOT “/tmp/arm64”)
         set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
         set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
         set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
         set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
+        EOF
 
               
     - name: Build application for ${{ matrix.platform }}
