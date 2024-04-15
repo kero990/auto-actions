@@ -39,7 +39,6 @@ jobs:
     - name: Install dependencies arm64
       if: matrix.arch == 'arm64'
       run: |
-        dpkg --add-architecture arm64
         apt update
         apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
         apt install git make wget curl jq
