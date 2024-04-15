@@ -7,42 +7,25 @@ jobs:
   build-and-package:
     name: Build and Package
     runs-on: ubuntu-latest
-    container: debian:10
-    defaults:
-      run:
-        shell: bash
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        arch: [amd64, arm64]
+    env: 
+        arch: arm64
 
     steps:
-    - name: Install dependencies amd64
-      if: matrix.arch == 'amd64'
-      run: |
-        apt update
-        apt install -y libcurl4-openssl-dev libmpv-dev libwebp-dev libxrandr-dev libxinerama-dev libxcursor-dev libdbus-1-dev libxi-dev git make gcc g++ wget curl jq
-        apt install -y libssl-dev libmbedtls-dev zlib1g-dev
-
-    - name: set qemu for arm64
-      if: matrix.arch == 'arm64'
+    - name: set qemu
       uses: docker/setup-qemu-action@v1
 
     - name: set docker for arm64
-      if: matrix.arch == 'arm64'
       uses:  docker/setup-buildx-action@v1
       
    
     - name: Install dependencies in docker
-      if: matrix.arch == 'arm64'
       run: |
         docker run --name debian10 arm64v8/debian:10
         docker exec  debian10 apt update
         docker exec  debian10 apt install -y libcurl4-openssl-dev libmpv-dev libwebp-dev libxrandr-dev libxinerama-dev libxcursor-dev libdbus-1-dev libxi-dev libssl-dev libmbedtls-dev zlib1g-dev
         docker cp debian10:/ /tmp/arm64/
 
-    - name: Install dependencies arm64
-      if: matrix.arch == 'arm64'
+    - name: Install dependencies
       run: |
         apt update
         apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
@@ -62,7 +45,6 @@ jobs:
       uses: lukka/get-cmake@latest
 
     - name: cmake cross file
-      if: matrix.arch == 'arm64'
       run: |
         cat > arm64_cross.cmake << EOF
         set(CMAKE_SYSTEM_NAME Linux) #设置目标系统名字
@@ -79,20 +61,13 @@ jobs:
         EOF
 
               
-    - name: Build application for ${{ matrix.platform }}
+    - name: Build application for arm64
       run: |
         cd wiliwili
-        if [ "${{ matrix.arch }}" == "arm64" ]; then
-          cmake -B build -DPLATFORM_DESKTOP=ON -DCMAKE_TOOLCHAIN_FILE=arm64_cross.cmake
-        else
-          cmake -B build -DPLATFORM_DESKTOP=ON
-        fi
+        cmake -B build -DPLATFORM_DESKTOP=ON -DCMAKE_TOOLCHAIN_FILE=arm64_cross.cmake
+        cmake -B build -DPLATFORM_DESKTOP=ON
         make -C build wiliwili -j$(nproc)
-        if [ "${{ matrix.arch }}" == "arm64" ]; then
-          aarch64-linux-gnu-strip build/wiliwili
-        else
-          strip wiliwili
-        fi
+        aarch64-linux-gnu-strip build/wiliwili
 
      
 
@@ -119,7 +94,7 @@ jobs:
         Encoding=UTF-8
         Categories=Video;
         Path=/opt/apps/com.github.wiliwili/files/
-        Architecture=<ARCH>
+        Architecture=amr64
         EOF
 
         cat > deb/opt/apps/com.github.wiliwili/info << EOF
@@ -127,7 +102,7 @@ jobs:
           "appid": "com.github.wiliwili",
           "name": "wiliwili",
           "version": "VERSION_NUMBER",
-          "arch": ["<ARCH>"],
+          "arch": ["arm64"],
           "permissions": {
             "autostart": false,
             "notification": true,
@@ -148,13 +123,13 @@ jobs:
         Installed-Size: 21000
         Maintainer: kero990 <kero990@qq.com>
         Section: video
-        Architecture: <ARCH>
+        Architecture: arm64
         Priority: optional
         Description: 专为手柄控制设计的第三方跨平台B站客户端，完美复刻官方UI，体积极小，支持硬解
           专为手柄控制设计的第三方跨平台B站客户端，完美复刻官方UI，体积极小，支持硬解
         EOF
 
-    - name: Get and replace release version for ${{ matrix.platform }}
+    - name: Get and replace release version for arm64
       id: get_release_version
       run: |
             cd wiliwili
@@ -169,15 +144,13 @@ jobs:
             sed -i "s/VERSION_NUMBER/${release_version}/g" deb/opt/apps/com.github.wiliwili/entries/applications/wiliwili.desktop
             sed -i "s/VERSION_NUMBER/${release_version}/g" deb/opt/apps/com.github.wiliwili/info
             sed -i "s/VERSION_NUMBER/${release_version}/g" deb/DEBIAN/control
-            sed -i "s/<ARCH>/${{ matrix.arch }}/g" deb/opt/apps/com.github.wiliwili/entries/applications/wiliwili.desktop
-            sed -i "s/<ARCH>/${{ matrix.arch }}/g" deb/opt/apps/com.github.wiliwili/info
-            sed -i "s/<ARCH>/${{ matrix.arch }}/g" deb/DEBIAN/control
+            
 
-    - name: Package Debian package for ${{ matrix.platform }}
+    - name: Package Debian package for arm64
       run: |
         cd wiliwili
         dpkg-deb -b deb
-        mv deb.deb com.github.wiliwili_${{ steps.get_release_version.outputs.release_version }}_${{ matrix.arch }}.deb
+        mv deb.deb com.github.wiliwili_${{ steps.get_release_version.outputs.release_version }}_arm64.deb
         
     - name: Upload Release
       uses: ncipollo/release-action@v1
@@ -189,6 +162,6 @@ jobs:
            token: ${{ secrets.GITHUB_TOKEN }}
            allowUpdates: true
            artifacts: >
-              ./wiliwili/com.github.wiliwili_${{ steps.get_release_version.outputs.release_version }}_${{ matrix.arch }}.deb
+              ./wiliwili/com.github.wiliwili_${{ steps.get_release_version.outputs.release_version }}_arm64.deb
       
   
