@@ -24,9 +24,14 @@ jobs:
         apt install -y libcurl4-openssl-dev libmpv-dev libwebp-dev libxrandr-dev libxinerama-dev libxcursor-dev libdbus-1-dev libxi-dev git make gcc g++ wget curl jq
         apt install -y libssl-dev libmbedtls-dev zlib1g-dev
 
+    - name: set qemu for arm64
+      if: matrix.arch == 'arm64'
+      uses: docker/setup-qemu-action@v1
+
     - name: set docker for arm64
       if: matrix.arch == 'arm64'
-      uses: docker/setup-qemu-action@v1, docker/setup-buildx-action@v1
+      uses:  docker/setup-buildx-action@v1
+
 
     - name: Install dependencies in docker
       if: matrix.arch == 'arm64'
