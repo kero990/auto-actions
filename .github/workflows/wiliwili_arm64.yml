@@ -12,7 +12,7 @@ jobs:
     steps:
     - name: Install dependencies
       run: |
-        apt update && apt install -y  gcc-aarch64-linux-gnu-8 g++-aarch64-linux-gnu-8 git make wget curl jq binutils-aarch64-linux-gnu
+        sudo apt update && sudo apt install -y  gcc-aarch64-linux-gnu-8 g++-aarch64-linux-gnu-8 git make wget curl jq binutils-aarch64-linux-gnu
     
     - name: set qemu
       uses: docker/setup-qemu-action@v3.0.0
@@ -20,10 +20,11 @@ jobs:
     - name: create sysroot
       run: |
         mkdir /tmp/arm64
-        docker run --p --name debian10 arm64v8/debian:10
-        docker exec debian10 apt update && apt install -y libcurl4-openssl-dev libmpv-dev libwebp-dev libxrandr-dev libxinerama-dev libxcursor-dev libdbus-1-dev libxi-dev libssl-dev libmbedtls-dev zlib1g-dev
-        docker cp debian10:/ /tmp/arm64
-        export CC=aarch64-linux-gnu-gcc-8
+        sudo docker run --p --name debian10 arm64v8/debian:10
+        sudo docker exec debian10 apt update && apt install -y libcurl4-openssl-dev libmpv-dev libwebp-dev libxrandr-dev libxinerama-dev libxcursor-dev libdbus-1-dev libxi-dev libssl-dev libmbedtls-dev zlib1g-dev
+        sudo docker cp debian10:/ /tmp/arm64
+        sudo chmod 777 -R /tmp/arm64
+        export CC=aarch64-linux-gnu-gc-8
         export CXX=aarch64-linux-gnu-g++-8
         export AR=aarch64-linux-gnu-ar-8
         export LD=aarch64-linux-gnu-ld
