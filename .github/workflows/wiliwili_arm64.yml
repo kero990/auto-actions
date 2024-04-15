@@ -12,7 +12,12 @@ jobs:
     steps:
     - name: Install dependencies
       run: |
-        sudo apt update && sudo apt install -y  gcc-8-aarch64* g++-8-aarch64* git make wget curl jq binutils-aarch64-linux-gnu
+        sudo apt update && sudo apt install -y git make wget curl jq 
+        wget https://toolchains.bootlin.com/downloads/releases/toolchains/aarch64/tarballs/aarch64--glibc--bleeding-edge-2018.11-1.tar.bz2 
+        tar xvf aarch64--glibc--bleeding-edge-2018.11-1.tar.bz2 
+        mv aarch64--glibc--bleeding-edge-2018.11-1 /tmp/
+        export PATH=$PATH:/tmp/aarch64--glibc--bleeding-edge-2018.11-1/bin
+        export LD_LIBRARY_PATH=/tmp/aarch64--glibc--bleeding-edge-2018.11-1:/tmp/arm64
     
     - name: set qemu
       uses: docker/setup-qemu-action@v3.0.0
