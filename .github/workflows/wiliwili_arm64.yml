@@ -7,19 +7,14 @@ jobs:
   build-and-package:
     name: Build and Package
     runs-on: ubuntu-latest
+    container: debian:10
     
     steps:
     
     - name: Install dependencies in sysroot
       run: |
+        apt update && apt install -y debootstrap gcc-aarch64-linux-gnu g++-aarch64-linux-gnu git make wget curl jq
         debootstrap --variant=minbase --include=libcurl4-openssl-dev,libmpv-dev,libwebp-dev,libxrandr-dev,libxinerama-dev,libxcursor-dev,libdbus-1-dev,libxi-dev,libssl-dev,libmbedtls-dev,zlib1g-dev --arch=arm64 buster /tmp/arm64 http://deb.debian.org/debian/
-       
-
-    - name: Install dependencies
-      run: |
-        apt update
-        apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
-        apt install git make wget curl jq
         export CC=aarch64-linux-gnu-gcc
         export CXX=aarch64-linux-gnu-g++
         export AR=aarch64-linux-gnu-ar
