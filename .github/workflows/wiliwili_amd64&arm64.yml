@@ -26,8 +26,10 @@ jobs:
 
     - name: set docker for arm64
       if: matrix.arch == 'arm64'
-      uses: docker/setup-qemu-action@v1
-      uses: docker/setup-buildx-action@v1
+      uses: docker/setup-qemu-action@v1, docker/setup-buildx-action@v1
+
+    - name: Install dependencies in docker
+      if: matrix.arch == 'arm64'
       run: |
         docker run --name debian10 arm64v8/debian:10
         docker exec --name debian10 apt update
