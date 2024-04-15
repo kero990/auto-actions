@@ -12,7 +12,7 @@ jobs:
     steps:
     - name: Install dependencies
       run: |
-        sudo apt update && sudo apt install -y  gcc-aarch64-linux-gnu-8 g++-aarch64-linux-gnu-8 git make wget curl jq binutils-aarch64-linux-gnu
+        sudo apt update && sudo apt install -y  gcc-8-aarch64* g++-8-aarch64* git make wget curl jq binutils-aarch64-linux-gnu
     
     - name: set qemu
       uses: docker/setup-qemu-action@v3.0.0
