@@ -10,14 +10,9 @@ jobs:
     container: debian:10
     
     steps:
-    - name: set qemu
-      uses: docker/setup-qemu-action@v3.0.0
-      with:
-          platforms: arm64
-      
     - name: Install dependencies
       run: |
-        apt update && apt install -y debootstrap gcc-aarch64-linux-gnu g++-aarch64-linux-gnu git make wget curl jq
+        apt update && apt install -y debootstrap gcc-aarch64-linux-gnu g++-aarch64-linux-gnu git make wget curl jq qemu qemu-user-static binfmt-support
         
         
     - name: create sysroot
