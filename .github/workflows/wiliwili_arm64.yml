@@ -21,9 +21,12 @@ jobs:
     - name: Install dependencies for sysroot
       run: |
         mkdir -p dep/root  && cd dep
+        sudo dpkg --add-architecture arm64
+        sudo apt update
         sudo apt install aptitude
         rm /var/cache/apt/archives/* -rf
-        sudo aptitude --download-only install libcurl4-openssl-dev libmpv-dev libwebp-dev libxrandr-dev libxinerama-dev libxcursor-dev libdbus-1-dev libxi-dev libssl-dev libmbedtls-dev zlib1g-dev
+        sudo aptitude --download-only install libcurl4-openssl-dev:arm64 libmpv-dev:arm64 libwebp-dev:arm64 libxrandr-dev:arm64 \
+        libxinerama-dev:arm64 libxcursor-dev:arm64 libdbus-1-dev:arm64 libxi-dev:arm64 libssl-dev:arm64 libmbedtls-dev:arm64 zlib1g-dev:arm64
         mv /var/cache/apt/archives/*.deb .
         for deb_file in ./*.deb; do
           sudo dpkg-deb -x "$deb_file" ./root
