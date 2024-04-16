@@ -12,7 +12,7 @@ jobs:
     steps:
     - name: Install dependencies
       run: |
-        apt update && apt install -y git make wget curl jq 
+        apt update && apt install -y git make wget curl jq bzip2
         wget https://toolchains.bootlin.com/downloads/releases/toolchains/aarch64/tarballs/aarch64--glibc--bleeding-edge-2018.11-1.tar.bz2 
         tar xvf aarch64--glibc--bleeding-edge-2018.11-1.tar.bz2 
         mv aarch64--glibc--bleeding-edge-2018.11-1 /tmp/
