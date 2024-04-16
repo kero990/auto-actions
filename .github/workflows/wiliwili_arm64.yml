@@ -28,7 +28,6 @@ jobs:
         echo "deb [arm64] http://ports.ubuntu.com/ jammy-security main restricted universe multiverse" >> sources.tmp
 
         # 将临时文件复制到 /etc/apt/sources.list
-        sudo mv /etc/apt/sources.list.bak
         sudo cp sources.tmp /etc/apt/sources.list
         sudo apt install aptitude
         rm /var/cache/apt/archives/* -rf
