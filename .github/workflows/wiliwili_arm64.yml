@@ -30,7 +30,7 @@ jobs:
         for deb_file in ./*.deb; do
           dpkg-deb -x "$deb_file" ./root
         done
-        mv root/* /tmp/aarch64--glibc--bleeding-edge-2018.11-1/aarch64-buildroot-linux-gnu/sysroot
+        cp root/* /tmp/aarch64--glibc--bleeding-edge-2018.11-1/aarch64-buildroot-linux-gnu/sysroot
     
     - name: Clone repository
       run: |
