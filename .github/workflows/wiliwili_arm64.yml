@@ -16,28 +16,20 @@ jobs:
         wget https://toolchains.bootlin.com/downloads/releases/toolchains/aarch64/tarballs/aarch64--glibc--bleeding-edge-2018.11-1.tar.bz2 
         tar xvf aarch64--glibc--bleeding-edge-2018.11-1.tar.bz2 
         mv aarch64--glibc--bleeding-edge-2018.11-1 /tmp/
-        export PATH=$PATH:/tmp/aarch64--glibc--bleeding-edge-2018.11-1/bin
-        export LD_LIBRARY_PATH=/tmp/aarch64--glibc--bleeding-edge-2018.11-1:/tmp/arm64
+        
     
-    - name: set qemu
-      uses: docker/setup-qemu-action@v3.0.0
-    
-    - name: create sysroot
+    - name: Install dependencies for sysroot
       run: |
-        mkdir /tmp/arm64
-        sudo docker run --platform linux/arm64 --name debian10 arm64v8/debian:10
-        sudo docker start debian10
-        sudo docker exec debian10 apt update && apt install -y libcurl4-openssl-dev libmpv-dev libwebp-dev libxrandr-dev libxinerama-dev libxcursor-dev libdbus-1-dev libxi-dev libssl-dev libmbedtls-dev zlib1g-dev
-        sudo docker cp debian10:/ /tmp/arm64
-        sudo chmod 777 -R /tmp/arm64
-        export CC=aarch64-linux-gcc
-        export CXX=aarch64-linux-g++
-        export AR=aarch64-linux-ar
-        export LD=aarch64-linux-ld
-        export CROSS_COMPILE=aarch64-linux-gnu-
-       
-
-
+        mkdir -p dep/root  && cd dep
+        sudo apt install aptitude
+        rm /var/cache/apt/archives/* -rf
+        sudo aptitude --download-only install libcurl4-openssl-dev libmpv-dev libwebp-dev libxrandr-dev libxinerama-dev libxcursor-dev libdbus-1-dev libxi-dev libssl-dev libmbedtls-dev zlib1g-dev
+        mv /var/cache/apt/archives/*.deb .
+        for deb_file in ./*.deb; do
+          sudo dpkg-deb -x "$deb_file" ./root
+        done
+        mv root/* /tmp/aarch64--glibc--bleeding-edge-2018.11-1/aarch64-buildroot-linux-gnu/sysroot
+    
     - name: Clone repository
       run: |
         git clone --recursive https://github.com/xfangfang/wiliwili.git
@@ -54,23 +46,28 @@ jobs:
         set(CMAKE_CXX_COMPILER aarch64-linuxg++)
         set(CMAKE_LINKER aarch64-linux-ld)
         set(CMAKE_STRIP aarch64-linux-strip)
-        set(CMAKE_SYSROOT “/tmp/arm64”)
+        set(CMAKE_SYSROOT “/tmp/aarch64--glibc--bleeding-edge-2018.11-1/aarch64-buildroot-linux-gnu/sysroot”)
         set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
         set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
         set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
         set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
-        set(CMAKE_FIND_ROOT_PATH /tmp/arm64)
+        set(CMAKE_FIND_ROOT_PATH "/tmp/aarch64--glibc--bleeding-edge-2018.11-1/aarch64-buildroot-linux-gnu/sysroot")
         EOF
-
               
     - name: Build application for arm64
       run: |
+        export PATH=$PATH:/tmp/aarch64--glibc--bleeding-edge-2018.11-1/bin
+        export LD_LIBRARY_PATH=/tmp/aarch64--glibc--bleeding-edge-2018.11-1
+        export CC=aarch64-linux-gcc
+        export CXX=aarch64-linux-g++
+        export AR=aarch64-linux-ar
+        export LD=aarch64-linux-ld
+        export CROSS_COMPILE=aarch64-linux-gnu-
         cd wiliwili
         cmake -B build -DPLATFORM_DESKTOP=ON -DCMAKE_TOOLCHAIN_FILE=../arm64_cross.cmake
         cmake -B build -DPLATFORM_DESKTOP=ON
         make -C build wiliwili -j$(nproc)
         aarch64-linux-gnu-strip build/wiliwili
-
      
 
     - name: Prepare package files
@@ -83,7 +80,6 @@ jobs:
         wget https://github.com/xfangfang/wiliwili/raw/yoga/resources/svg/cn.xfangfang.wiliwili.svg -O deb/opt/apps/com.github.wiliwili/entries/icons/hicolor/scalable/apps/com.github.wiliwili.svg
         mv build/wiliwili deb/opt/apps/com.github.wiliwili/files/
         mv build/resources deb/opt/apps/com.github.wiliwili/files/
-
         cat > deb/opt/apps/com.github.wiliwili/entries/applications/wiliwili.desktop << EOF
         [Desktop Entry]
         Name=wiliwili
@@ -98,7 +94,6 @@ jobs:
         Path=/opt/apps/com.github.wiliwili/files/
         Architecture=amr64
         EOF
-
         cat > deb/opt/apps/com.github.wiliwili/info << EOF
         {
           "appid": "com.github.wiliwili",
@@ -118,7 +113,6 @@ jobs:
           }
         }
         EOF
-
         cat > deb/DEBIAN/control << EOF
         Package: com.github.wiliwili
         Version: VERSION_NUMBER
@@ -130,7 +124,6 @@ jobs:
         Description: 专为手柄控制设计的第三方跨平台B站客户端，完美复刻官方UI，体积极小，支持硬解
           专为手柄控制设计的第三方跨平台B站客户端，完美复刻官方UI，体积极小，支持硬解
         EOF
-
     - name: Get and replace release version for arm64
       id: get_release_version
       run: |
@@ -147,7 +140,6 @@ jobs:
             sed -i "s/VERSION_NUMBER/${release_version}/g" deb/opt/apps/com.github.wiliwili/info
             sed -i "s/VERSION_NUMBER/${release_version}/g" deb/DEBIAN/control
             
-
     - name: Package Debian package for arm64
       run: |
         cd wiliwili
@@ -166,4 +158,3 @@ jobs:
            artifacts: >
               ./wiliwili/com.github.wiliwili_${{ steps.get_release_version.outputs.release_version }}_arm64.deb
       
-  
