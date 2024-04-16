@@ -21,10 +21,10 @@ jobs:
     - name: Install dependencies for sysroot
       run: |
         mkdir -p dep/root  && cd dep
-        echo “deb [arm64] http://ports.ubuntu.com/ jammy main restricted universe multiverse” >> /etc/apt/source.list
-        echo “deb [arm64] http://ports.ubuntu.com/ jammy-updates main restricted universe multiverse” >> /etc/apt/source.list
-        echo “deb [arm64] http://ports.ubuntu.com/ jammy-backports main restricted universe multiverse” >> /etc/apt/source.list
-        echo “deb [arm64] http://ports.ubuntu.com/ jammy-security main restricted universe multiverse” >> /etc/apt/source.list
+        sudo echo “deb [arm64] http://ports.ubuntu.com/ jammy main restricted universe multiverse” >> /etc/apt/source.list
+        sudo echo “deb [arm64] http://ports.ubuntu.com/ jammy-updates main restricted universe multiverse” >> /etc/apt/source.list
+        sudo echo “deb [arm64] http://ports.ubuntu.com/ jammy-backports main restricted universe multiverse” >> /etc/apt/source.list
+        sudo echo “deb [arm64] http://ports.ubuntu.com/ jammy-security main restricted universe multiverse” >> /etc/apt/source.list
         sudo apt update
         sudo apt install aptitude
         rm /var/cache/apt/archives/* -rf
