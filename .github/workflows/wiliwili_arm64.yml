@@ -31,7 +31,7 @@ jobs:
           dpkg-deb -x "$deb_file" ./root
         done
         cp root/* /tmp/aarch64--glibc--bleeding-edge-2018.11-1/aarch64-buildroot-linux-gnu/sysroot -r
-        ls /tmp/aarch64--glibc--bleeding-edge-2018.11-1/aarch64-buildroot-linux-gnu/sysroot
+        ls /tmp/aarch64--glibc--bleeding-edge-2018.11-1/aarch64-buildroot-linux-gnu/sysroot/usr/lib/aarch64-linux-gnu/libmpv.so
     
     - name: Clone repository
       run: |
