@@ -60,6 +60,8 @@ jobs:
       run: |
         export PATH=$PATH:/tmp/aarch64--glibc--bleeding-edge-2018.11-1/bin
         export LD_LIBRARY_PATH=/tmp/aarch64--glibc--bleeding-edge-2018.11-1/aarch64-buildroot-linux-gnu/sysroot/usr/lib
+        export PKG_CONFIG_LIBDIR=/tmp/aarch64--glibc--bleeding-edge-2018.11-1/aarch64-buildroot-linux-gnu/sysroot/usr/lib/pkgconfig
+        export CMAKE_PREFIX_PATH=/tmp/aarch64--glibc--bleeding-edge-2018.11-1/aarch64-buildroot-linux-gnu/sysroot/usr/lib/cmake
         export CC=aarch64-linux-gcc
         export CXX=aarch64-linux-g++
         export AR=aarch64-linux-ar
