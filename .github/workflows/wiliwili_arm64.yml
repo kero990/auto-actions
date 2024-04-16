@@ -31,6 +31,7 @@ jobs:
           dpkg-deb -x "$deb_file" ./root
         done
         cp root/* /tmp/aarch64--glibc--bleeding-edge-2018.11-1/aarch64-buildroot-linux-gnu/sysroot -r
+        ls /tmp/aarch64--glibc--bleeding-edge-2018.11-1/aarch64-buildroot-linux-gnu/sysroot
     
     - name: Clone repository
       run: |
@@ -48,7 +49,7 @@ jobs:
         set(CMAKE_CXX_COMPILER aarch64-linux-g++)
         set(CMAKE_LINKER aarch64-linux-ld)
         set(CMAKE_STRIP aarch64-linux-strip)
-        set(CMAKE_SYSROOT “/tmp/aarch64--glibc--bleeding-edge-2018.11-1/aarch64-buildroot-linux-gnu/sysroot”)
+        set(CMAKE_SYSROOT /tmp/aarch64--glibc--bleeding-edge-2018.11-1/aarch64-buildroot-linux-gnu/sysroot)
         set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
         set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
         set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
