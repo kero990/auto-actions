@@ -7,12 +7,12 @@ jobs:
   build-and-package:
     name: Build wiliwili arm64
     runs-on: ubuntu-latest
-    
+    container: debian:10
     
     steps:
     - name: Install dependencies
       run: |
-        sudo apt update && sudo apt install -y git make wget curl jq 
+        apt update && sudo apt install -y git make wget curl jq 
         wget https://toolchains.bootlin.com/downloads/releases/toolchains/aarch64/tarballs/aarch64--glibc--bleeding-edge-2018.11-1.tar.bz2 
         tar xvf aarch64--glibc--bleeding-edge-2018.11-1.tar.bz2 
         mv aarch64--glibc--bleeding-edge-2018.11-1 /tmp/
@@ -21,21 +21,14 @@ jobs:
     - name: Install dependencies for sysroot
       run: |
         mkdir -p dep/root  && cd dep
-        sudo cat /etc/apt/sources.list > sources.tmp
-        echo "deb [arm64] http://ports.ubuntu.com/ jammy main restricted universe multiverse" >> sources.tmp
-        echo "deb [arm64] http://ports.ubuntu.com/ jammy-updates main restricted universe multiverse" >> sources.tmp
-        echo "deb [arm64] http://ports.ubuntu.com/ jammy-backports main restricted universe multiverse" >> sources.tmp
-        echo "deb [arm64] http://ports.ubuntu.com/ jammy-security main restricted universe multiverse" >> sources.tmp
-
-        # 将临时文件复制到 /etc/apt/sources.list
-        sudo cp sources.tmp /etc/apt/sources.list
-        sudo apt install aptitude
+        dpkg --add-architecture arm64
+        apt install aptitude
         rm /var/cache/apt/archives/* -rf
-        sudo aptitude --download-only install libcurl4-openssl-dev:arm64 libmpv-dev:arm64 libwebp-dev:arm64 libxrandr-dev:arm64 \
+        aptitude --download-only install libcurl4-openssl-dev:arm64 libmpv-dev:arm64 libwebp-dev:arm64 libxrandr-dev:arm64 \
         libxinerama-dev:arm64 libxcursor-dev:arm64 libdbus-1-dev:arm64 libxi-dev:arm64 libssl-dev:arm64 libmbedtls-dev:arm64 zlib1g-dev:arm64
         mv /var/cache/apt/archives/*.deb .
         for deb_file in ./*.deb; do
-          sudo dpkg-deb -x "$deb_file" ./root
+          dpkg-deb -x "$deb_file" ./root
         done
         mv root/* /tmp/aarch64--glibc--bleeding-edge-2018.11-1/aarch64-buildroot-linux-gnu/sysroot
     
@@ -76,7 +69,7 @@ jobs:
         cmake -B build -DPLATFORM_DESKTOP=ON -DCMAKE_TOOLCHAIN_FILE=../arm64_cross.cmake
         cmake -B build -DPLATFORM_DESKTOP=ON
         make -C build wiliwili -j$(nproc)
-        aarch64-linux-gnu-strip build/wiliwili
+        aarch64-linux-strip build/wiliwili
      
 
     - name: Prepare package files
