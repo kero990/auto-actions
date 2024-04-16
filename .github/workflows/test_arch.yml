@@ -14,9 +14,9 @@ jobs:
         
       - name: Run build in Docker container
         run: |
-           sudo echo "deb [arm64] http://ports.ubuntu.com/ jammy main restricted universe multiverse" >> /etc/apt/source.list
-           cat /etc/apt/source.list
-           echo "deb [arm64] http://ports.ubuntu.com/ jammy-security main restricted universe multiverse" >> sources.tmp
-           # 将临时文件复制到 /etc/apt/sources.list
-           sudo cp sources.tmp /etc/apt/sources.list
-           cat /etc/apt/source.list
+            echo "deb [arm64] http://ports.ubuntu.com/ jammy-security main restricted universe multiverse" >> sources.tmp
+            # 将临时文件复制到 /etc/apt/sources.list
+            sudo cp sources.tmp /etc/apt/sources.list
+            cat /etc/apt/source.list
+            sudo echo "deb [arm64] http://ports.ubuntu.com/ jammy main restricted universe multiverse" >> /etc/apt/source.list
+            cat /etc/apt/source.list
