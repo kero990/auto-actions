@@ -54,7 +54,6 @@ jobs:
         set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
         set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
         set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
-        set(CMAKE_FIND_ROOT_PATH "/tmp/aarch64--glibc--bleeding-edge-2018.11-1/aarch64-buildroot-linux-gnu/sysroot")
         EOF
               
     - name: Build application for arm64
