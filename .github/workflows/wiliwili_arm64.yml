@@ -21,11 +21,15 @@ jobs:
     - name: Install dependencies for sysroot
       run: |
         mkdir -p dep/root  && cd dep
-        sudo echo “deb [arm64] http://ports.ubuntu.com/ jammy main restricted universe multiverse” >> /etc/apt/source.list
-        sudo echo “deb [arm64] http://ports.ubuntu.com/ jammy-updates main restricted universe multiverse” >> /etc/apt/source.list
-        sudo echo “deb [arm64] http://ports.ubuntu.com/ jammy-backports main restricted universe multiverse” >> /etc/apt/source.list
-        sudo echo “deb [arm64] http://ports.ubuntu.com/ jammy-security main restricted universe multiverse” >> /etc/apt/source.list
-        sudo apt update
+        sudo cat /etc/apt/sources.list > sources.tmp
+        echo "deb [arm64] http://ports.ubuntu.com/ jammy main restricted universe multiverse" >> sources.tmp
+        echo "deb [arm64] http://ports.ubuntu.com/ jammy-updates main restricted universe multiverse" >> sources.tmp
+        echo "deb [arm64] http://ports.ubuntu.com/ jammy-backports main restricted universe multiverse" >> sources.tmp
+        echo "deb [arm64] http://ports.ubuntu.com/ jammy-security main restricted universe multiverse" >> sources.tmp
+
+        # 将临时文件复制到 /etc/apt/sources.list
+        sudo mv /etc/apt/sources.list.bak
+        sudo cp sources.tmp /etc/apt/sources.list
         sudo apt install aptitude
         rm /var/cache/apt/archives/* -rf
         sudo aptitude --download-only install libcurl4-openssl-dev:arm64 libmpv-dev:arm64 libwebp-dev:arm64 libxrandr-dev:arm64 \
