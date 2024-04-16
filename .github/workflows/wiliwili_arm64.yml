@@ -24,7 +24,7 @@ jobs:
         dpkg --add-architecture arm64
         rm /var/cache/apt/archives/* -rf
         apt update
-        aptitude --download-only install libcurl4-openssl-dev:arm64 libmpv-dev:arm64 libwebp-dev:arm64 libxrandr-dev:arm64 \
+        aptitude -y --download-only install libcurl4-openssl-dev:arm64 libmpv-dev:arm64 libwebp-dev:arm64 libxrandr-dev:arm64 \
         libxinerama-dev:arm64 libxcursor-dev:arm64 libdbus-1-dev:arm64 libxi-dev:arm64 libssl-dev:arm64 libmbedtls-dev:arm64 zlib1g-dev:arm64
         mv /var/cache/apt/archives/*.deb .
         for deb_file in ./*.deb; do
