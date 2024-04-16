@@ -59,11 +59,11 @@ jobs:
     - name: Build application for arm64
       run: |
         export PATH=$PATH:/tmp/aarch64--glibc--bleeding-edge-2018.11-1/bin
-        #export LD_LIBRARY_PATH=/tmp/aarch64--glibc--bleeding-edge-2018.11-1/aarch64-buildroot-linux-gnu/sysroot
-        #export CC=aarch64-linux-gcc
-        #export CXX=aarch64-linux-g++
-        #export AR=aarch64-linux-ar
-        #export LD=aarch64-linux-ld
+        export LD_LIBRARY_PATH=/tmp/aarch64--glibc--bleeding-edge-2018.11-1/aarch64-buildroot-linux-gnu/sysroot/usr/lib
+        export CC=aarch64-linux-gcc
+        export CXX=aarch64-linux-g++
+        export AR=aarch64-linux-ar
+        export LD=aarch64-linux-ld
         export CROSS_COMPILE=aarch64-linux-
         cd wiliwili
         cmake -B build -DPLATFORM_DESKTOP=ON -DCMAKE_TOOLCHAIN_FILE=../arm64_cross.cmake
