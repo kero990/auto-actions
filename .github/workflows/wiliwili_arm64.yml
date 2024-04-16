@@ -12,7 +12,7 @@ jobs:
     steps:
     - name: Install dependencies
       run: |
-        apt update && apt install -y git make wget curl jq bzip2
+        apt update && apt install -y git make wget curl jq bzip2 aptitude
         wget https://toolchains.bootlin.com/downloads/releases/toolchains/aarch64/tarballs/aarch64--glibc--bleeding-edge-2018.11-1.tar.bz2 
         tar xvf aarch64--glibc--bleeding-edge-2018.11-1.tar.bz2 
         mv aarch64--glibc--bleeding-edge-2018.11-1 /tmp/
@@ -22,8 +22,8 @@ jobs:
       run: |
         mkdir -p dep/root  && cd dep
         dpkg --add-architecture arm64
-        apt install -y aptitude
         rm /var/cache/apt/archives/* -rf
+        apt update
         aptitude --download-only install libcurl4-openssl-dev:arm64 libmpv-dev:arm64 libwebp-dev:arm64 libxrandr-dev:arm64 \
         libxinerama-dev:arm64 libxcursor-dev:arm64 libdbus-1-dev:arm64 libxi-dev:arm64 libssl-dev:arm64 libmbedtls-dev:arm64 zlib1g-dev:arm64
         mv /var/cache/apt/archives/*.deb .
