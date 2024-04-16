@@ -22,7 +22,7 @@ jobs:
       run: |
         mkdir -p dep/root  && cd dep
         dpkg --add-architecture arm64
-        apt install aptitude
+        apt install -y aptitude
         rm /var/cache/apt/archives/* -rf
         aptitude --download-only install libcurl4-openssl-dev:arm64 libmpv-dev:arm64 libwebp-dev:arm64 libxrandr-dev:arm64 \
         libxinerama-dev:arm64 libxcursor-dev:arm64 libdbus-1-dev:arm64 libxi-dev:arm64 libssl-dev:arm64 libmbedtls-dev:arm64 zlib1g-dev:arm64
