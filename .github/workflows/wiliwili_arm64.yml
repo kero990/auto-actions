@@ -67,7 +67,6 @@ jobs:
         export CROSS_COMPILE=aarch64-linux-
         cd wiliwili
         cmake -B build -DPLATFORM_DESKTOP=ON -DCMAKE_TOOLCHAIN_FILE=../arm64_cross.cmake
-        cmake -B build -DPLATFORM_DESKTOP=ON
         make -C build wiliwili -j$(nproc)
         aarch64-linux-strip build/wiliwili
      
