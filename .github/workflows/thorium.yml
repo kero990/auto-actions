@@ -29,6 +29,7 @@ jobs:
         fi
         wget $(curl -s https://api.github.com/repos/Alex313031/Thorium${PLATFORM}/releases/latest | grep "browser_download_url.*${{ matrix.architecture }}.deb" | cut -d : -f 2,3 | tr -d \")
         dpkg-deb -R *.deb thorium
+        echo "deb file has been unpacked"
 
         # Handle content and organize into new package format
         cd thorium
@@ -44,7 +45,7 @@ jobs:
         mkdir -p opt/apps/rocks.thorium.thorium-browser/entries/icons/hicolor/256x256/apps/
         cp opt/apps/rocks.thorium.thorium-browser/files/product_logo_128.png opt/apps/rocks.thorium.thorium-browser/entries/icons/hicolor/128x128/apps/rocks.thorium.thorium-browser.png
         cp opt/apps/rocks.thorium.thorium-browser/files/product_logo_256.png opt/apps/rocks.thorium.thorium-browser/entries/icons/hicolor/256x256/apps/rocks.thorium.thorium-browser.png
-
+        echo "Delete some directories and organize the directory format to UOS standard,finished"
         # Create and modify info, control, and desktop files
         cat > opt/apps/rocks.thorium.thorium-browser/info << EOF
         {
@@ -65,10 +66,12 @@ jobs:
           }
         }
         EOF
+        echo "creaet info file"
         sed -i s@Icon=/opt/chromium.org/thorium@Icon=/opt/apps/rocks.thorium.thorium-browser/files@g opt/apps/rocks.thorium.thorium-browser/entries/applications/thorium-shell.desktop
         sed -i s@Exec=/usr/bin@Exec=/opt/apps/rocks.thorium.thorium-browser/files@g opt/apps/rocks.thorium.thorium-browser/entries/applications/thorium-shell.desktop
         sed -i s@Exec=/usr/bin@Exec=/opt/apps/rocks.thorium.thorium-browser/files@g opt/apps/rocks.thorium.thorium-browser/entries/applications/thorium-browser.desktop
         sed -i s@Icon=thorium-browser@Icon=rocks.thorium.thorium-browser@g opt/apps/rocks.thorium.thorium-browser/entries/applications/thorium-browser.desktop
+        echo "Replace contents in xx file"
 
         VERSION=$(grep -Po '^Version: \K.*' DEBIAN/control)
         sed -i "s/VERSION_NUMBER/$VERSION/g" opt/apps/rocks.thorium.thorium-browser/info
