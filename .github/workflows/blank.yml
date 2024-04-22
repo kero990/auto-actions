@@ -1,0 +1,77 @@
+name: Thorium
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build_and_upload:
+    name: Build and Upload Thorium Deb Packages
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        architecture: [amd64, arm64]
+    container: debian:10
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v2
+
+    - name: Download and Prepare Thorium Deb Package
+      run: |
+        mkdir -p thorium_$architecture
+        cd thorium_$architecture
+        wget $(curl -s https://api.github.com/repos/Alex313031/Thorium${{ matrix.architecture == 'amd64' ? '' : '-Raspi'}}/releases/latest | grep "browser_download_url.*${{ matrix.architecture }}.deb" | cut -d : -f 2,3 | tr -d \")
+        dpkg-deb -R *.deb thorium
+
+        # Handle content and organize into new package format
+        cd thorium
+        rm etc -r
+        rm DEBIAN/p*
+        mv opt/chromium.org/ opt/apps
+        mkdir opt/apps/rocks.thorium.thorium-browser
+        mv opt/apps/thorium/ opt/apps/rocks.thorium.thorium-browser/files
+        mkdir opt/apps/rocks.thorium.thorium-browser/entries
+        mv usr/share/applications/ opt/apps/rocks.thorium.thorium-browser/entries/
+        mv usr/share/doc/ opt/apps/rocks.thorium.thorium-browser/entries/
+        mkdir -p opt/apps/rocks.thorium.thorium-browser/entries/icons/hicolor/128x128/apps/
+        mkdir -p opt/apps/rocks.thorium.thorium-browser/entries/icons/hicolor/256x256/apps/
+        cp opt/apps/rocks.thorium.thorium-browser/files/product_logo_128.png opt/apps/rocks.thorium.thorium-browser/entries/icons/hicolor/128x128/apps/rocks.thorium.thorium-browser.png
+        cp opt/apps/rocks.thorium.thorium-browser/files/product_logo_256.png opt/apps/rocks.thorium.thorium-browser/entries/icons/hicolor/256x256/apps/rocks.thorium.thorium-browser.png
+
+        # Create and modify info, control, and desktop files
+        cat > opt/apps/rocks.thorium.thorium-browser/info << EOF
+        {
+          "appid": "rocks.thorium.thorium-browser",
+          "name": "thorium",
+          "version": "VERSION_NUMBER",
+          "arch": ["${{ matrix.architecture }}"],
+          "permissions": {
+            "autostart": true,
+            "notification": true,
+            "trayicon": true,
+            "clipboard": true,
+            "account": true,
+            "bluetooth": true,
+            "camera": true,
+            "audio_record": true,
+            "installed_apps": true
+          }
+        }
+        EOF
+        sed -i s@Icon=/opt/chromium.org/thorium@Icon=/opt/apps/rocks.thorium.thorium-browser/files@g opt/apps/rocks.thorium.thorium-browser/entries/applications/thorium-shell.desktop
+        sed -i s@Exec=/usr/bin@Exec=/opt/apps/rocks.thorium.thorium-browser/files@g opt/apps/rocks.thorium.thorium-browser/entries/applications/thorium-shell.desktop
+        sed -i s@Exec=/usr/bin@Exec=/opt/apps/rocks.thorium.thorium-browser/files@g opt/apps/rocks.thorium.thorium-browser/entries/applications/thorium-browser.desktop
+        sed -i s@Icon=thorium-browser@Icon=rocks.thorium.thorium-browser@g opt/apps/rocks.thorium.thorium-browser/entries/applications/thorium-browser.desktop
+
+        VERSION=$(grep -Po '^Version: \K.*' DEBIAN/control)
+        sed -i "s/VERSION_NUMBER/$VERSION/g" opt/apps/rocks.thorium.thorium-browser/info
+        dpkg-deb -b thorium
+        mv thorium.deb rocks.thorium.thorium-browser_$VERSION_${{ matrix.architecture }}.deb
+
+    - name: Upload Packaged Deb to Release
+      uses: actions/upload-artifact@v2
+      with:
+        name: thorium_deb
+        path: thorium_${{ matrix.architecture }}/*.deb
