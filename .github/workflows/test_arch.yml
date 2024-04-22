@@ -20,6 +20,8 @@ jobs:
       
       - name: Install Qt
         uses: jurplel/install-qt-action@v3
+        with: 
+            install-deps: 'nosudo'
 
       - name: Install LinuxDeployQt
         uses: miurahr/install-linuxdeployqt-action@v1.0.1
