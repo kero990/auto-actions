@@ -83,4 +83,4 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: thorium_deb
-        path: thorium_${{ matrix.architecture }}/*.deb
+        path: rocks.thorium.thorium-browser_$VERSION_${{ matrix.architecture }}.deb
