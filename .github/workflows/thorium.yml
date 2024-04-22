@@ -19,6 +19,7 @@ jobs:
 
     - name: Download and Prepare Thorium Deb Package
       run: |
+        apt update && apt install wget curl tar
         mkdir -p thorium_$architecture
         cd thorium_$architecture
         if [ "${{ matrix.architecture }}" = "amd64" ]; then
