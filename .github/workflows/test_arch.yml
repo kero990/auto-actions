@@ -7,6 +7,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    container: debian:10
 
     steps:
       - name: Checkout repository
@@ -21,7 +22,7 @@ jobs:
         uses: jurplel/install-qt-action@v3
 
       - name: Install LinuxDeployQt
-        uses: miurahr/install-linuxdeployqt-action@v0
+        uses: miurahr/install-linuxdeployqt-action@v1.0.1
         
       - name: Run build in Docker container
         run: |
