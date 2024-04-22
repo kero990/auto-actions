@@ -75,6 +75,7 @@ jobs:
 
         VERSION=$(grep -Po '^Version: \K.*' DEBIAN/control)
         sed -i "s/VERSION_NUMBER/$VERSION/g" opt/apps/rocks.thorium.thorium-browser/info
+        cd ..
         dpkg-deb -b thorium
         mv thorium.deb rocks.thorium.thorium-browser_$VERSION_${{ matrix.architecture }}.deb
 
