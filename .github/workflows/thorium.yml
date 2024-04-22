@@ -30,6 +30,7 @@ jobs:
         fi
         wget $(curl -s https://api.github.com/repos/Alex313031/Thorium${PLATFORM}/releases/latest | grep "browser_download_url.*${{ matrix.architecture }}.deb" | cut -d : -f 2,3 | tr -d \")
         dpkg-deb -R *.deb thorium
+        rm *.deb
         echo "deb file has been unpacked"
 
         # Handle content and organize into new package format
@@ -73,12 +74,19 @@ jobs:
         sed -i s@Exec=/usr/bin@Exec=/opt/apps/rocks.thorium.thorium-browser/files@g opt/apps/rocks.thorium.thorium-browser/entries/applications/thorium-browser.desktop
         sed -i s@Icon=thorium-browser@Icon=rocks.thorium.thorium-browser@g opt/apps/rocks.thorium.thorium-browser/entries/applications/thorium-browser.desktop
         echo "Replace contents in xx file"
+        find ./ -name '*.deb' 
 
         VERSION=$(grep -Po '^Version: \K.*' DEBIAN/control)
+        echo "::set-output name=VERSION::$VERSION"
         sed -i "s/VERSION_NUMBER/$VERSION/g" opt/apps/rocks.thorium.thorium-browser/info
         cd ..
         dpkg-deb -b thorium
         mv thorium.deb rocks.thorium.thorium-browser_$VERSION_${{ matrix.architecture }}.deb
+        ls *.deb
+    
+    - name: find deb path
+      run: |
+        find ./ -name '*.deb'
 
     - name: Upload Packaged Deb to Release
       uses: actions/upload-artifact@v2
