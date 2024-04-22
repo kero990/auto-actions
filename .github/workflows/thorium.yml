@@ -74,14 +74,15 @@ jobs:
         sed -i s@Exec=/usr/bin@Exec=/opt/apps/rocks.thorium.thorium-browser/files@g opt/apps/rocks.thorium.thorium-browser/entries/applications/thorium-browser.desktop
         sed -i s@Icon=thorium-browser@Icon=rocks.thorium.thorium-browser@g opt/apps/rocks.thorium.thorium-browser/entries/applications/thorium-browser.desktop
         echo "Replace contents in xx file"
-        find ./ -name '*.deb' 
+        
 
-        VERSION=$(grep -Po '^Version: \K.*' DEBIAN/control)
-        echo "::set-output name=VERSION::$VERSION"
-        sed -i "s/VERSION_NUMBER/$VERSION/g" opt/apps/rocks.thorium.thorium-browser/info
+        release_version=$(grep -Po '^Version: \K.*' DEBIAN/control)
+        echo 'VERSION='$release_version
+        echo "::set-output name=release_version::$release_version"
+        sed -i "s/VERSION_NUMBER/${release_version}/g" opt/apps/rocks.thorium.thorium-browser/info
         cd ..
         dpkg-deb -b thorium
-        mv thorium.deb rocks.thorium.thorium-browser_$VERSION_${{ matrix.architecture }}.deb
+        mv thorium.deb rocks.thorium.thorium-browser_${release_version}_${{ matrix.architecture }}.deb
         ls *.deb
     
     - name: find deb path
@@ -92,5 +93,5 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: thorium_deb
-        path: thorium_${{ matrix.architecture }}/*.deb
+        path: thorium_${{ matrix.architecture }}/rocks.thorium.thorium-browser_${{ steps.prepare.outputs.release_version }}_${{ matrix.architecture }}.deb
     
