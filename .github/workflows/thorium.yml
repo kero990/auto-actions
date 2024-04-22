@@ -21,8 +21,8 @@ jobs:
       id: prepare
       run: |
         apt update && apt install -y wget curl tar
-        mkdir -p thorium_$architecture
-        cd thorium_$architecture
+        mkdir -p thorium_${{ matrix.architecture }}
+        cd thorium_${{ matrix.architecture }}
         if [ "${{ matrix.architecture }}" = "amd64" ]; then
           PLATFORM=""
         else
