@@ -80,6 +80,7 @@ jobs:
         echo 'VERSION='$release_version
         echo "::set-output name=release_version::$release_version"
         sed -i "s/VERSION_NUMBER/${release_version}/g" opt/apps/rocks.thorium.thorium-browser/info
+        sed -i s@thorium-browser@rocks.thorium.thorium-browser@g DEBIAN/control
         cd ..
         dpkg-deb -b thorium
         mv thorium.deb rocks.thorium.thorium-browser_${release_version}_${{ matrix.architecture }}.deb
