@@ -21,7 +21,12 @@ jobs:
       run: |
         mkdir -p thorium_$architecture
         cd thorium_$architecture
-        wget $(curl -s https://api.github.com/repos/Alex313031/Thorium${{ if eq(matrix.architecture, 'amd64') }}/{{ else }}-Raspi{{ endif }}/releases/latest | grep "browser_download_url.*${{ matrix.architecture }}.deb" | cut -d : -f 2,3 | tr -d \")
+        if [ "${{ matrix.architecture }}" = "amd64" ]; then
+          PLATFORM=""
+        else
+          PLATFORM="-Raspi"
+        fi
+        wget $(curl -s https://api.github.com/repos/Alex313031/Thorium${PLATFORM}/releases/latest | grep "browser_download_url.*${{ matrix.architecture }}.deb" | cut -d : -f 2,3 | tr -d \")
         dpkg-deb -R *.deb thorium
 
         # Handle content and organize into new package format
