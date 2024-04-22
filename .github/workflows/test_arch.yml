@@ -27,12 +27,9 @@ jobs:
             #setup-python: 'false'
 
       -   name: Install Qt
-          uses: WillBrennan/yaqti@2021.07.27.1
-          with:
-            version: '5.15.2'
-            host: 'linux'
-            target: 'desktop'
-            
+          run: |
+               pip3 install yaqti
+               python3 -m yaqti install --os linux --platform desktop --version 5.15.2   
 
       - name: Install LinuxDeployQt
         uses: miurahr/install-linuxdeployqt-action@v1.0.1
