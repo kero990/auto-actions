@@ -1,4 +1,4 @@
-name: test source.list
+name: landlords amd64
 
 on:
   workflow_dispatch:
@@ -11,12 +11,97 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
+
+      - name: clone 
+        run: |
+            apt update && apt install wget curl make gcc g++ patchelf 
+            git clone https://gitee.com/subingwen/landlords
+      
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v3
+
+      - name: Install LinuxDeployQt
+        uses: miurahr/install-linuxdeployqt-action@v0
         
       - name: Run build in Docker container
         run: |
-            echo "deb [arm64] http://ports.ubuntu.com/ jammy-security main restricted universe multiverse" >> sources.tmp
-            # 将临时文件复制到 /etc/apt/sources.list
-            sudo cp sources.tmp /etc/apt/sources.list
-            cat /etc/apt/source.list
-            sudo echo "deb [arm64] http://ports.ubuntu.com/ jammy main restricted universe multiverse" >> /etc/apt/source.list
-            cat /etc/apt/source.list
+            cd landlords
+            qmake Landlords.pro
+            make -j8
+             mkdir build && cd build
+            cp Landlords .
+            cp resource.rcc .
+            linuxdeployqt-continuous-x86_64.AppImage Landlords -verbose2
+            cp /usr/lib/x86_64-linux-gnu/libxcb-xinput.so.0.1.0 lib/libxcb-xinput.so.0
+    
+      - name: deb
+        run: |
+           mkdir -p deb/DEBIAN
+           mkdir -p deb/opt/apps/com.gitee.landlords/entries/applications
+           mkdir -p deb/opt/apps/com.gitee.landlords/entries/
+           mkdir -p deb/opt/apps/com.gitee.landlords/entries/icons/hicolor/512x512/apps/
+           mv landlords/build deb/opt/apps/com.gitee.landlords/files
+           cp ./com.gitee.landlords.png  deb/opt/apps/com.gitee.landlords/entries/icons/hicolor/512x512/apps/
+           
+           cat deb/DEBIAN/control << EOF
+           Package: com.gitee.landlords
+           Version: 0.1
+           Installed-Size: 89584
+           Maintainer: kero990 <kero990@qq.com>
+           Section: games
+           Architecture: amd64
+           Priority: optional
+           Description: 一个基于Qt开发的 斗地主小游戏。
+            一个基于Qt开发的 斗地主小游戏。
+            EOF
+
+            cat deb/opt/apps/com.gitee.landlords/info << EOF
+            {
+              "appid": "com.gitee.landlords",
+              "name": "landlords",
+              "version": "0.1",
+              "arch": ["amd64"],
+              "permissions": {
+                "autostart": true,
+                "notification": true,
+                "trayicon": true,
+                "clipboard": true,
+                "account": true,
+                "bluetooth": true,
+                "camera": true,
+                "audio_record": true,
+                "installed_apps": true
+              }
+            }
+            EOF
+
+            cat deb/opt/apps/com.gitee.landlords/entries/applications/Landlords.desktop << EOF
+            [Desktop Entry]
+            Name=Landlords 单机斗地主
+            Version=1.0
+            Exec=/opt/apps/com.gitee.landlords/files/Landlords
+            Comment=Landlords 单机斗地主
+            Icon=com.gitee.landlords
+            Type=Application
+            Terminal=false
+            StartupNotify=true
+            Encoding=UTF-8
+            Categories=Game;
+            EOF
+            dpkg-deb -b deb
+            mv deb.deb com.gitee.landlords_0.1_amd64.deb
+            
+
+      - name: Upload Packaged Deb to Release
+        uses: actions/upload-artifact@v2
+        with:
+          name: landlords
+          path: ./com.gitee.landlords_0.1_amd64.deb
+    
+            
+
+            
+
+            
+            
+          
