@@ -39,19 +39,24 @@ jobs:
           run: |
                pip3 install yaqti
                python3 -m yaqti install --os linux --platform desktop --version 5.15.2   
+               qmake -v
 
       - name: Install LinuxDeployQt
-        uses: miurahr/install-linuxdeployqt-action@v1.0.1
+        run : |
+          wget https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage
+          chmod a+x linuxdeployqt-continuous-x86_64.AppImage
+          mv linuxdeployqt-continuous-x86_64.AppImage /tmp
+          /tmp/linuxdeployqt-continuous-x86_64.AppImage --help
         
       - name: build Landlrods
         run: |
             cd landlords
             qmake Landlords.pro
             make -j8
-             mkdir build && cd build
+            mkdir build && cd build
             cp Landlords .
             cp resource.rcc .
-            linuxdeployqt-continuous-x86_64.AppImage Landlords -verbose2
+            /tmp/linuxdeployqt-continuous-x86_64.AppImage Landlords -verbose2
             cp /usr/lib/x86_64-linux-gnu/libxcb-xinput.so.0.1.0 lib/libxcb-xinput.so.0
     
       - name: deb
