@@ -29,7 +29,7 @@ jobs:
       -   name: Install python3
           run: |
                wget https://www.python.org/ftp/python/3.12.3/Python-3.12.3.tar.xz
-               tar xvf python3.tar.gz
+               tar xvf Python-3.12.3.tar.xz
                cd Python-3.12.3
                ./configure –enable-optimizations –with-ensurepip=install –enable-shared
                make -j8
