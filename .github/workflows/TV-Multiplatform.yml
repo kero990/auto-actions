@@ -1,0 +1,33 @@
+name: TV-Multiplatform Build
+on:
+  workflow_dispatch:
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    container: debian:10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: 17
+      - run: |
+         apt update
+         apt install git make wget curl
+         git clone https://github.com/Greatwallcorner/TV-Multiplatform
+         cd TV-Multiplatform && ls
+         chmod +x ./gradlew && ./gradlew createReleaseDistributable
+         ./gradlew packageReleaseDistributionForCurrentOS
+         ls && tree
+         cd ./desktopApp/build/compose/binaries/main-release/app/ && zip -q -r ./TV-linux-$GITHUB_REF_NAME.zip ./TV
+      - run: |
+         mv ./desktopApp/build/compose/binaries/main-release/deb/*.deb ./ && mv ./desktopApp/build/compose/binaries/main-release/app/*.zip ./
+         ls
+      - name: Upload Packaged Deb to Release
+        uses: actions/upload-artifact@v2
+        with:
+          name: TV-Multiplatform
+          path: |
+            *.deb
+            *.zip
