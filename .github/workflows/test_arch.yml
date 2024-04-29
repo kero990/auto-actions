@@ -17,7 +17,7 @@ jobs:
         run: |
             apt update && apt install -y wget curl make gcc g++ patchelf git build-essential libgl1-mesa-dev libgstreamer-gl1.0-0 libpulse-dev libxcb-glx0 libxcb-icccm4 libxcb-image0 \
             libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-render0 libxcb-shape0 libxcb-shm0 libxcb-sync1 libxcb-*-dev libxcb-xfixes0 libxcb-xinerama0 libxcb1 libxkbcommon-dev \
-            libxkbcommon-x11-0 libxcb-xkb-dev python3 python3-pip
+            libxkbcommon-x11-0 libxcb-xkb-dev 
             git clone https://gitee.com/subingwen/landlords
       
       #- name: Install Qt
@@ -26,17 +26,22 @@ jobs:
           #  install-deps: 'false'
             #setup-python: 'false'
 
+      -   name: Install python3
+          run: |
+               wget https://github.com/kero990/auto-actions/releases/download/python_3.12_arm64/python3.tar.gz
+               mv python3.tar.gz /opt
+               cd /opt
+               tar zxvf python3.tar.gz
       -   name: Install Qt
           run: |
-               mkdir -p /github/home/.cache/pip
-               chmod -R 777 /github/home/.cache/pip
+               export PATH=$PATH:/opt/python3/bin
                pip3 install yaqti
                python3 -m yaqti install --os linux --platform desktop --version 5.15.2   
 
       - name: Install LinuxDeployQt
         uses: miurahr/install-linuxdeployqt-action@v1.0.1
         
-      - name: Run build in Docker container
+      - name: build Landlrods
         run: |
             cd landlords
             qmake Landlords.pro
