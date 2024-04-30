@@ -58,8 +58,8 @@ jobs:
                cp python3_cache/* /usr/ -r
                pip3 install yaqti
                python3 -m yaqti install --os linux --platform desktop --version 5.15.2   
-               find ./ -name 'qmake'
-               qmake -v
+               ls ./qt/5152/bin
+               ./qt/5152/bin/qmake -v
       - name: Install LinuxDeployQt
         run : |
           wget https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage
@@ -69,6 +69,7 @@ jobs:
         
       - name: build Landlrods
         run: |
+            export PATH=$PATH:./qt/5152/bin/
             cd landlords
             qmake Landlords.pro
             make -j8
