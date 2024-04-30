@@ -17,7 +17,7 @@ jobs:
         run: |
             apt update && apt install -y wget curl make gcc g++ patchelf git build-essential libgl1-mesa-dev libgstreamer-gl1.0-0 libpulse-dev libxcb-glx0 libxcb-icccm4 libxcb-image0 \
             libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-render0 libxcb-shape0 libxcb-shm0 libxcb-sync1 libxcb-*-dev libxcb-xfixes0 libxcb-xinerama0 libxcb1 libxkbcommon-dev \
-            libxkbcommon-x11-0 libxcb-xkb-dev  xz-utils libssl-dev liblzma-dev libbz2-dev
+            libxkbcommon-x11-0 libxcb-xkb-dev  xz-utils libssl-dev liblzma-dev libbz2-dev bc
             git clone https://gitee.com/subingwen/landlords
       
       #- name: Install Qt
@@ -53,13 +53,17 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-python-
 
-      -   name: Install Qt
-          run: |
-               cp python3_cache/* /usr/ -r
-               pip3 install yaqti
-               python3 -m yaqti install --os linux --platform desktop --version 5.15.2   
-               ls ./qt/5152/bin
-               ./qt/5152/bin/qmake -v
+      - name: Compile and install Python if not cached
+        if: steps.check-cache.outputs.cached != 'false'
+        run: cp python3_cache/* /usr/ -r
+
+      - name: Install Qt
+        uses: WillBrennan/yaqti@2021.07.29
+        with:
+         version: '5.15.2'
+         host: 'linux'
+         target: 'desktop'
+        
       - name: Install LinuxDeployQt
         run : |
           wget https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage
