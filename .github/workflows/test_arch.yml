@@ -26,21 +26,40 @@ jobs:
           #  install-deps: 'false'
             #setup-python: 'false'
 
-      -   name: Install python3
-          run: |
+
+      - name: Check if Python cached
+        run: echo "::set-output name=cached::$(echo ${{ steps.cache-python.outputs.cache-hit }} == 'true' | bc -l)"
+        id: check-cache
+
+      - name: Compile and install Python if not cached
+        if: steps.check-cache.outputs.cached != 'true'
+        run: |
+               # 编译安装 Python
                wget https://www.python.org/ftp/python/3.12.3/Python-3.12.3.tar.xz
                tar xvf Python-3.12.3.tar.xz
                cd Python-3.12.3
                ./configure 
                make -j8
                make install 
+               mkdir -p $PWD/../python3_cache
+               make install DESTDIR=$PWD/../python3_cache
+
+      - name: Cache Python
+        id: cache-python
+        uses: actions/cache@v2
+        with:
+          path: ../python3_cache
+          key: ${{ runner.os }}-python-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-python-
 
       -   name: Install Qt
           run: |
+               cp python3_cache/* /usr/ -r
                pip3 install yaqti
                python3 -m yaqti install --os linux --platform desktop --version 5.15.2   
+               find ./ -name 'qmake'
                qmake -v
-
       - name: Install LinuxDeployQt
         run : |
           wget https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage
