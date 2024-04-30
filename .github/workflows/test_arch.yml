@@ -52,15 +52,12 @@ jobs:
           key: ${{ runner.os }}-python-${{ hashFiles('**/requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-python-
-
-      - name: Compile and install Python if not cached
-        if: steps.check-cache.outputs.cached != 'false'
-        run: cp python3_cache/* /usr/ -r
-
+            
       - name: Install Qt
         run: |
+          cp python3_cache/* /usr/ -r
           pip3 install yaqti
-          python -m yaqti install --os linux --platform desktop --version 5.15.2 --set-envs
+          python3 -m yaqti install --os linux --platform desktop --version 5.15.2 --set-envs
           qmake -v
           which qmake
         
