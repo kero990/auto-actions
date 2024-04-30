@@ -58,6 +58,7 @@ jobs:
           cp python3_cache/* /usr/ -r
           pip3 install yaqti
           python3 -m yaqti install --os linux --platform desktop --version 5.15.2 --set-envs
+          export PATH=$PATH:/__w/auto-actions/auto-actions/qt/5.15.2/bin
           qmake -v
           which qmake
         
