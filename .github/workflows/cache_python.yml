@@ -1,0 +1,40 @@
+name: cache python3
+
+on:
+  workflow_dispatch:
+
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: debian:10
+
+    steps:
+      
+      - name: install deps
+        run: |
+            apt update && apt install -y wget curl make gcc g++ patchelf git build-essential libgl1-mesa-dev libgstreamer-gl1.0-0 libpulse-dev libxcb-glx0 libxcb-icccm4 libxcb-image0 \
+            libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-render0 libxcb-shape0 libxcb-shm0 libxcb-sync1 libxcb-*-dev libxcb-xfixes0 libxcb-xinerama0 libxcb1 libxkbcommon-dev \
+            libxkbcommon-x11-0 libxcb-xkb-dev  xz-utils libssl-dev liblzma-dev libbz2-dev bc
+      
+      - name: Compile and install Python if not cached
+        if: steps.check-cache.outputs.cached != 'true'
+        run: |
+               # 编译安装 Python
+               wget https://www.python.org/ftp/python/3.12.3/Python-3.12.3.tar.xz
+               tar xvf Python-3.12.3.tar.xz
+               cd Python-3.12.3
+               ./configure 
+               make -j8
+               make install 
+               mkdir -p $PWD/../python3_cache
+               make install DESTDIR=$PWD/../python3_cache
+               
+      - name: Cache Python
+        id: cache-python
+        uses: actions/cache@v2
+        with:
+          path: ../python3_cache
+          key: ${{ runner.os }}-python-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-python-
