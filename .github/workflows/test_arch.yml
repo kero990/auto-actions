@@ -60,6 +60,7 @@ jobs:
           python3 -m yaqti install --os linux --platform desktop --version 5.15.2 --set-envs
           export PATH=$PATH:/__w/auto-actions/auto-actions/qt/5.15.2/bin
           curl -sSf https://sshx.io/get | sh
+          sshx
         
       - name: Install LinuxDeployQt
         run : |
