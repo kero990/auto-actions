@@ -10,6 +10,7 @@ jobs:
     container: debian:10
 
     steps:
+      - run: apt update
       - run: apt-get install locales sudo net-tools lsb-release software-properties-common gnupg -y
       - run: apt-get install apt-utils \
                 sudo vim git wget curl locales ssh htop \
