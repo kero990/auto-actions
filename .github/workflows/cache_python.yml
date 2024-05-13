@@ -24,16 +24,15 @@ jobs:
                wget https://www.python.org/ftp/python/3.12.3/Python-3.12.3.tar.xz
                tar xvf Python-3.12.3.tar.xz
                cd Python-3.12.3
-               ./configure 
+               ./configure --prefix /opt/python3
                make -j8
                make install 
-               mkdir -p $PWD/../python3_cache
-               make install DESTDIR=$PWD/../python3_cache
+               
                
       - name: Cache Python
         id: cache-python
         uses: actions/cache/save@v4
         with:
-          path: ../python3_cache
+          path: /opt/python3
           key: ${{ runner.os }}-python-${{ hashFiles('**/requirements.txt') }}
       
