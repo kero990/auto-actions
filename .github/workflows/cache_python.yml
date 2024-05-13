@@ -22,14 +22,14 @@ jobs:
                qmake
                make -j8
                make install
-               mkdir /opt/linuxdeployqt
-               make DESTDIR=/opt/linuxdeployqt
+               strip /usr/lib/qt5/bin/linuxdeployqt
+               cp  /usr/lib/qt5/bin/linuxdeployqt /usr/bin
                
                
       - name: Cache  linuxdeployqt
         id: cache-linuxdeployqt
         uses: actions/cache/save@v4
         with:
-          path: /opt/linuxdeployqt
+          path:  /usr/bin/linuxdeployqt
           key: ${{ runner.os }}-python-linuxdeployqt}}
       
