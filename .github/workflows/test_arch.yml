@@ -53,12 +53,13 @@ jobs:
       - name: build Landlrods
         run: |
             cd landlords
+            export PATH=$PATH:/__w/auto-actions/auto-actions/qt/5.15.2/gcc_64/bin
             qmake Landlords.pro
             make -j8
             mkdir build && cd build
             cp Landlords .
             cp resource.rcc .
-            linuxdeployqt-continuous-x86_64.AppImage Landlords -verbose2
+            linuxdeployqt Landlords -verbose2
             cp /usr/lib/x86_64-linux-gnu/libxcb-xinput.so.0.1.0 lib/libxcb-xinput.so.0
     
       - name: deb
