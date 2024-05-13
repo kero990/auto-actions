@@ -45,14 +45,13 @@ jobs:
           export PATH=$PATH:/__w/auto-actions/auto-actions/qt/5.15.2/gcc_64/bin
           qmake -v
         
-      #- name: Install LinuxDeployQt
-        #run : |
-          #wget --quiet https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage
-          #chmod a+x linuxdeployqt-continuous-x86_64.AppImage
-          #mv linuxdeployqt-continuous-x86_64.AppImage /tmp
-          #/tmp/linuxdeployqt-continuous-x86_64.AppImage --help
       - name: Install LinuxDeployQt
-        uses: miurahr/install-linuxdeployqt-action@v1.0.1
+        run : |
+          wget --quiet https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage
+          chmod a+x linuxdeployqt-continuous-x86_64.AppImage
+          mv linuxdeployqt-continuous-x86_64.AppImage /tmp
+          modprobe fuse
+          /tmp/linuxdeployqt-continuous-x86_64.AppImage --help
       
       - name: build Landlrods
         run: |
