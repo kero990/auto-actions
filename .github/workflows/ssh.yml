@@ -17,11 +17,10 @@ jobs:
         export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
         [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" # This loads nvm
         nvm install 16
-    - run: git clone https://github.com/CNOliverZhang/PotatofieldImageToolkit
-    - run: |
+        git clone https://github.com/CNOliverZhang/PotatofieldImageToolkit
         cd PotatofieldImageToolkit
         npm i
-    - run: npm build
+        npm build
     - run: curl -sSf https://sshx.io/get | sh
     
     - name: Upload Packaged Deb to Release
