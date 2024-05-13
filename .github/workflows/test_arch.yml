@@ -27,35 +27,17 @@ jobs:
             #setup-python: 'false'
 
 
-      - name: Check if Python cached
-        run: echo "::set-output name=cached::$(echo ${{ steps.cache-python.outputs.cache-hit }} == 'true' | bc -l)"
-        id: check-cache
-
-      - name: Compile and install Python if not cached
-        if: steps.check-cache.outputs.cached != 'true'
-        run: |
-               # 编译安装 Python
-               wget https://www.python.org/ftp/python/3.12.3/Python-3.12.3.tar.xz
-               tar xvf Python-3.12.3.tar.xz
-               cd Python-3.12.3
-               ./configure 
-               make -j8
-               make install 
-               mkdir -p $PWD/../python3_cache
-               make install DESTDIR=$PWD/../python3_cache
-
       - name: Cache Python
         id: cache-python
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
-          path: ../python3_cache
-          key: ${{ runner.os }}-python-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-python-
+          path: /opt/python3
+          key: Linux-python-ea444e7416ccfb42cbb2f48a3fcb3abe53a97ef19d5565c4044d4819c3719d93
+
             
       - name: Install Qt
         run: |
-          cp python3_cache/* /usr/ -r
+          cp /opt/python3/* /usr/ -r
           pip3 install yaqti
           python3 -m yaqti install --os linux --platform desktop --version 5.15.2 --modules qtcharts --set-envs
           export PATH=$PATH:/__w/auto-actions/auto-actions/qt/5.15.2/gcc_x64/bin
