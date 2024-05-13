@@ -32,9 +32,8 @@ jobs:
                
       - name: Cache Python
         id: cache-python
-        uses: actions/cache@v2
+        uses: actions/cache/save@v4
         with:
           path: ../python3_cache
           key: ${{ runner.os }}-python-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-python-
+      
