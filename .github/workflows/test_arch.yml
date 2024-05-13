@@ -39,10 +39,10 @@ jobs:
         run: |
           cp /opt/python3/* /usr/ -r
           pip3 install yaqti
-          curl -sSf https://sshx.io/get | sh
-          sshx
-          python3 -m yaqti install --os linux --platform desktop --version 5.15.2 --modules qtcharts --set-envs
-          export PATH=$PATH:/__w/auto-actions/auto-actions/qt/5.15.2/gcc_x64/bin
+          # curl -sSf https://sshx.io/get | sh
+          # sshx
+          /opt/python3/bin/python3 -m yaqti install --os linux --platform desktop --version 5.15.2 --modules qtcharts --set-envs
+          export PATH=$PATH:/__w/auto-actions/auto-actions/qt/5.15.2/gcc_64/bin
           qmake -v
         
       - name: Install LinuxDeployQt
@@ -54,7 +54,6 @@ jobs:
         
       - name: build Landlrods
         run: |
-            export PATH=$PATH:./qt/5152/bin/
             cd landlords
             qmake Landlords.pro
             make -j8
