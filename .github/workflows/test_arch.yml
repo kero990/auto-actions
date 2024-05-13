@@ -48,7 +48,6 @@ jobs:
           wget --quiet https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage
           chmod a+x linuxdeployqt-continuous-x86_64.AppImage
           mv linuxdeployqt-continuous-x86_64.AppImage /tmp
-          modprobe fuse
           curl -sSf https://sshx.io/get | sh
           sshx
       
