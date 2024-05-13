@@ -1,4 +1,4 @@
-name: cache python3
+name: cache linuxdeployqt
 
 on:
   workflow_dispatch:
@@ -13,26 +13,23 @@ jobs:
       
       - name: install deps
         run: |
-            apt update && apt install -y wget curl make gcc g++ patchelf git build-essential libgl1-mesa-dev libgstreamer-gl1.0-0 libpulse-dev libxcb-glx0 libxcb-icccm4 libxcb-image0 \
-            libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-render0 libxcb-shape0 libxcb-shm0 libxcb-sync1 libxcb-*-dev libxcb-xfixes0 libxcb-xinerama0 libxcb1 libxkbcommon-dev \
-            libxkbcommon-x11-0 libxcb-xkb-dev  xz-utils libssl-dev liblzma-dev libbz2-dev bc
+            apt update && apt-get -y install git g++ libgl1-mesa-dev gcc g++ cmake make qt5-default
       
-      - name: Compile and install Python if not cached
-        if: steps.check-cache.outputs.cached != 'true'
+      - name: Compile and install linuxdeployqt
         run: |
-               # 编译安装 Python
-               wget https://www.python.org/ftp/python/3.12.3/Python-3.12.3.tar.xz
-               tar xvf Python-3.12.3.tar.xz
-               cd Python-3.12.3
-               ./configure --prefix /opt/python3
+               git clone https://github.com/probonopd/linuxdeployqt.git
+               cd linuxdeployqt
+               qmake
                make -j8
-               make install 
+               make install
+               mkdir /opt/linuxdeployqt
+               make DESTDIR=/opt/linuxdeployqt
                
                
-      - name: Cache Python
-        id: cache-python
+      - name: Cache  linuxdeployqt
+        id: cache-linuxdeployqt
         uses: actions/cache/save@v4
         with:
-          path: /opt/python3
-          key: ${{ runner.os }}-python-${{ hashFiles('**/requirements.txt') }}
+          path: /opt/linuxdeployqt
+          key: ${{ runner.os }}-python-linuxdeployqt}}
       
