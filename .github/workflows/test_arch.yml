@@ -44,9 +44,8 @@ jobs:
           qmake -v
         
       - name: Install LinuxDeployQt
-        run : |
-         uses: actions/cache@v4
-         with:
+        uses: actions/cache@v4
+        with:
            path: /usr/bin/
            key: Linux-python-linuxdeployqt}}
       
