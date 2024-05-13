@@ -3,10 +3,24 @@ on: workflow_dispatch
 jobs:
   build:
     runs-on: ubuntu-latest
+    container: debian:10
     steps:
     - uses: actions/checkout@v3
     - name: Setup tmate session
-      uses: mxschmitt/action-tmate@v3
+      run : |
+        apt update && apt install curl wget
+        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+        export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")" [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" # This loads nvm
+        nvm install 16
+    - run: git clone https://github.com/CNOliverZhang/PotatofieldImageToolkit
+    - run: |
+        cd PotatofieldImageToolkit
+        npm i
+    - run: npm build
+    - run: curl -sSf https://sshx.io/get | sh
+    
+    - name: Upload Packaged Deb to Release
+      uses: actions/upload-artifact@v2
       with:
-        timeout-minutes: 15
-        
+          name: PotatofieldImageToolkit
+          path: /opt/1/
