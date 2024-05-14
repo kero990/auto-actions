@@ -14,6 +14,8 @@ jobs:
          node-version: 16
     - run:  git clone https://github.com/CNOliverZhang/PotatofieldImageToolkit
     - run: |
+        mkdir .cache -p
+        npm config set cache $PWD/.cache
         cd PotatofieldImageToolkit
         npm i
     - run: |
