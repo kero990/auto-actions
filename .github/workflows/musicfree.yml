@@ -8,7 +8,7 @@ jobs:
     - uses: actions/checkout@v3
     - name: Setup tmate session
       run : |
-        apt update && apt install curl wget git make libgtk-3-0 libnotify4 libnss3 libxtst6 xdg-utils libatspi2.0-0 libdrm2 libgbm1 libxcb-dri3-0 lsb-release kde-cli-tools kde-runtime  trash-cli libglib2.0-bin gvfs-bin pulseaudio -y
+        apt update && apt install dpkg fakeroot curl wget git make libgtk-3-0 libnotify4 libnss3 libxtst6 xdg-utils libatspi2.0-0 libdrm2 libgbm1 libxcb-dri3-0 lsb-release kde-cli-tools kde-runtime  trash-cli libglib2.0-bin gvfs-bin pulseaudio -y
     - uses: actions/setup-node@v4
       with:
          node-version: 20
