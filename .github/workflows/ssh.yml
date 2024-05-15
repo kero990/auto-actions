@@ -23,7 +23,7 @@ jobs:
         npm run make
       
     - name: Upload Packaged Deb to Release
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
           name: MusicFreeDesktop
-          path: MusicFreeDesktop/out/MusicFree-linux-64
+          path: MusicFreeDesktop/out/make/deb/x64/
