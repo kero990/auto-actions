@@ -76,7 +76,7 @@ jobs:
         release_version=$(grep -Po '^Version: \K.*' tmp/DEBIAN/control)
         echo 'VERSION='$release_version
         echo "::set-output name=release_version::$release_version"
-        sed -i "s/VERSION_NUMBER/${release_version}/g" deb/opt/apps/rocks.thorium.thorium-browser/info
+        sed -i "s/VERSION_NUMBER/${release_version}/g" deb/opt/apps/fun.upup.musicfree/info
         sed -i "s/VERSION_NUMBER/${release_version}/g" deb/DEBIAN/control
         wget -P deb/opt/apps/fun.upup.musicfree/entries/icons/hicolor/128x128/apps https://raw.githubusercontent.com/kero990/auto-actions/main/icons/fun.upup.musicfree.png
         dpkg-deb -b deb
