@@ -12,7 +12,7 @@ jobs:
     - uses: actions/setup-node@v4
       with:
          node-version: 20
-    - run:  https://github.com/maotoumao/MusicFreeDesktop
+    - run:  git clone https://github.com/maotoumao/MusicFreeDesktop
     - run: |
         mkdir .cache -p
         npm config set cache $PWD/.cache
