@@ -34,8 +34,6 @@ jobs:
         rm *.deb
         echo "deb file has been unpacked"
         #复制文件
-        sed -i s@musicfree@fun.upup.musicfree@g tmp/DEBIAN/control
-        mv  tmp/DEBIAN deb/
         mv tmp/usr/lib/musicfree/* deb/opt/apps/fun.upup.musicfree/files
         mv tmp/usr/share/applications/musicfree.desktop deb/opt/apps/fun.upup.musicfree/entries/applications
         sed -i s@Exec=musicfree@Exec=/opt/apps/fun.upup.musicfree/files/musicfree@g deb/opt/apps/fun.upup.musicfree/entries/applications/musicfree.desktop
