@@ -1,0 +1,75 @@
+name: musicfree_x64
+on: workflow_dispatch
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: debian:10
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup tmate session
+      run : |
+        apt update && apt install curl wget git make libgtk-3-0 libnotify4 libnss3 libxtst6 xdg-utils libatspi2.0-0 libdrm2 libgbm1 libxcb-dri3-0 gir1.2-gnomekeyring-1.0 libgnome-keyring0 lsb-release kde-cli-tools kde-runtime  trash-cli libglib2.0-bin gvfs-bin -y
+    - uses: actions/setup-node@v4
+      with:
+         node-version: 20
+    - run:  git clone https://github.com/maotoumao/MusicFreeDesktop
+    - run: |
+        mkdir .cache -p
+        npm config set cache $PWD/.cache
+        cd MusicFreeDesktop
+        npm i
+    - run: |
+        cd MusicFreeDesktop
+        npm run make
+    - name: prepair deb
+      run: |
+        #创建目录
+        mkdir -p deb/DEBIAN
+        mkdir -p deb/opt/apps/fun.upup.musicfree/entries/applications
+        mkdir -p deb/opt/apps/fun.upup.musicfree/entries/icons/hicolor/128x128/apps
+        mkdir -p deb/opt/apps/fun.upup.musicfree/files
+        #解压deb包
+        cp MusicFreeDesktop/out/make/deb/x64/*.deb .
+        dpkg-deb -R *.deb tmp
+        rm *.deb
+        echo "deb file has been unpacked"
+        #复制文件
+        sed -i s@musicfree@fun.upup.musicfree@g tmp/DEBIAN/control
+        mv  tmp/DEBIAN deb/
+        mv tmp/usr/lib/musicfree/* deb/opt/apps/fun.upup.musicfree/files
+        mv tmp/usr/share/applications/musicfree.desktop deb/opt/apps/fun.upup.musicfree/entries/applications
+        sed -i s@Exec=musicfree@Exec=/opt/apps/fun.upup.musicfree/files/musicfree@g deb/opt/apps/fun.upup.musicfree/entries/applications
+        sed -i s@Icon=musicfree@Icon=fun.upup.musicfree@g deb/opt/apps/fun.upup.musicfree/entries/applications
+        #创建文件
+        cat > /opt/apps/fun.upup.musicfree/info << EOF
+        {
+          "appid": "fun.upup.musicfree",
+          "name": "musicfree",
+          "version": "VERSION_NUMBER",
+          "arch": ["arm64"],
+          "permissions": {
+            "autostart": true,
+            "notification": true,
+            "trayicon": true,
+            "clipboard": true,
+            "account": true,
+            "bluetooth": truee,
+            "camera": true,
+            "audio_record": true,
+            "installed_apps": true
+          }
+        }
+        EOF
+        release_version=$(grep -Po '^Version: \K.*' tmp/DEBIAN/control)
+        echo 'VERSION='$release_version
+        echo "::set-output name=release_version::$release_version"
+        sed -i "s/VERSION_NUMBER/${release_version}/g" opt/apps/rocks.thorium.thorium-browser/info
+        wget -P deb/opt/apps/fun.upup.musicfree/entries/icons/hicolor/128x128/apps https://raw.githubusercontent.com/kero990/auto-actions/main/icons/fun.upup.musicfree.png
+        dpkg-deb -b deb
+        mv deb.deb fun.upup.musicfree_${release_version}_amd64.deb
+        
+    - name: Upload Packaged Deb to Release
+      uses: actions/upload-artifact@v3
+      with:
+          name: MusicFreeDesktop
+          path: ./*.deb
