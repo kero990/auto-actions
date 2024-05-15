@@ -8,7 +8,7 @@ jobs:
     - uses: actions/checkout@v3
     - name: Setup tmate session
       run : |
-        apt update && apt install curl wget git make libgtk-3-0 libnotify4 libnss3 libxtst6 xdg-utils libatspi2.0-0 libdrm2 libgbm1 libxcb-dri3-0 lsb-release kde-cli-tools kde-runtime  trash-cli libglib2.0-bin gvfs-bin -y
+        apt update && apt install curl wget git make libgtk-3-0 libnotify4 libnss3 libxtst6 xdg-utils libatspi2.0-0 libdrm2 libgbm1 libxcb-dri3-0 lsb-release kde-cli-tools kde-runtime  trash-cli libglib2.0-bin gvfs-bin pulseaudio-y
     - uses: actions/setup-node@v4
       with:
          node-version: 20
@@ -41,7 +41,7 @@ jobs:
         sed -i s@Exec=musicfree@Exec=/opt/apps/fun.upup.musicfree/files/musicfree@g deb/opt/apps/fun.upup.musicfree/entries/applications
         sed -i s@Icon=musicfree@Icon=fun.upup.musicfree@g deb/opt/apps/fun.upup.musicfree/entries/applications
         #创建文件
-        cat > /opt/apps/fun.upup.musicfree/info << EOF
+        cat  << EOF >> deb/opt/apps/fun.upup.musicfree/info
         {
           "appid": "fun.upup.musicfree",
           "name": "musicfree",
@@ -60,10 +60,26 @@ jobs:
           }
         }
         EOF
+        
+        cat  << EOF >> deb/DEBIAN/control
+        Package: fun.upup.musicfree
+        Version: VERSION_NUMBER
+        Section: utils
+        Priority: optional
+        Architecture: amd64
+        Depends: libgtk-3-0, libnotify4, libnss3, libxtst6, xdg-utils, libatspi2.0-0, libdrm2, libgbm1, libxcb-dri3-0, kde-cli-tools | kde-runtime | trash-cli | libglib2.0-bin | gvfs-bin
+        Recommends: pulseaudio | libasound2
+        Suggests: lsb-release
+        Installed-Size: 281860
+        Maintainer: kero990 <kero990@qq.com>
+        Description: 一个插件化、定制化、无广告的免费音乐播放器。你需要自己导入音源使用。
+        EOF
+        
         release_version=$(grep -Po '^Version: \K.*' tmp/DEBIAN/control)
         echo 'VERSION='$release_version
         echo "::set-output name=release_version::$release_version"
-        sed -i "s/VERSION_NUMBER/${release_version}/g" opt/apps/rocks.thorium.thorium-browser/info
+        sed -i "s/VERSION_NUMBER/${release_version}/g" deb/opt/apps/rocks.thorium.thorium-browser/info
+        sed -i "s/VERSION_NUMBER/${release_version}/g" deb/DEBIAN/control
         wget -P deb/opt/apps/fun.upup.musicfree/entries/icons/hicolor/128x128/apps https://raw.githubusercontent.com/kero990/auto-actions/main/icons/fun.upup.musicfree.png
         dpkg-deb -b deb
         mv deb.deb fun.upup.musicfree_${release_version}_amd64.deb
