@@ -20,6 +20,11 @@ jobs:
           curl -s https://raw.githubusercontent.com/jcfr/qt-easy-build/5.15.2/Build-qt.sh -o Build-qt.sh && chmod u+x Build-qt.sh
           ./Build-qt.sh -y -q /opt/qt -j 4
           curl -sSf https://sshx.io/get | sh
-          
+
+      - name: Upload Packaged Deb to Release
+        uses: actions/upload-artifact@v3
+        with:
+          name: QT_5.15.2_amd64
+          path: /opt/qt/
           
           
