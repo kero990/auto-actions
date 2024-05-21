@@ -18,11 +18,13 @@ jobs:
 
     - name: Install dependencies
       run: |
-        npm install -g 7zip asar icoutils
+        npm install -g asar 
+        sudo apt install 7zip icoutils wget
 
     - name: Prepare package
       run: |
         mkdir -p dist
+        wget https://desktop-release.notion-static.com/Notion%20Setup%203.7.0.exe
         7z x ./*.exe
         rm ./*.exe
         7z x ./**/app-64.7z
