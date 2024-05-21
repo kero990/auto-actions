@@ -1,0 +1,65 @@
+name: Build and Package
+
+on:
+  workflow_dispatch:
+
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: '14'
+
+    - name: Install dependencies
+      run: |
+        npm install -g 7zip asar icoutils
+
+    - name: Prepare package
+      run: |
+        mkdir -p dist
+        7z x ./*.exe
+        rm ./*.exe
+        7z x ./**/app-64.7z
+        rm ./**/app-64.7z
+        asar e ${{ github.workspace }}/**/app.asar ${{ github.workspace }}/unpacked
+        icotool -x -w 256 ${{ github.workspace }}/unpacked/icon.ico -o ${{ github.workspace }}/notion.png
+        icotool -x -w 256 ${{ github.workspace }}/resources/trayIcon.ico -o ${{ github.workspace }}/trayIcon.png
+        sed -i -e 's/"win32"===process.platform/(true)/g' \
+               -e 's/_.Store.getState().app.preferences?.isAutoUpdaterDisabled/(true)/g' \
+               -e 's!extra-resources!/usr/share/notion-app!g' \
+               -e 's/trayIcon.ico/trayIcon.png/g' ${{ github.workspace }}/unpacked/.webpack/main/index.js
+        find ${{ github.workspace }} \( -name "clang-format.js" -or -name "conversion.js" -or -name "eslint-format.js" \) -delete -printf "rm %p to make namcap happy.\n"
+
+    - name: Package DEB
+      run: |
+        mkdir -p dist/usr/share/notion-app
+        mkdir -p dist/usr/lib/notion-app
+        mkdir -p dist/usr/bin
+        mkdir -p dist/usr/share/applications
+        mkdir -p dist/usr/share/icons/hicolor/256x256/apps
+
+        cp -a ${{ github.workspace }}/unpacked/{package.json,node_modules,.webpack} dist/usr/lib/notion-app
+        cp ${{ github.workspace }}/build/Release/better_sqlite3.node dist/usr/lib/notion-app/node_modules/better-sqlite3/build/Release/
+        cp notion-app dist/usr/bin
+        cp notion.desktop dist/usr/share/applications
+        cp notion.png dist/usr/share/icons/hicolor/256x256/apps
+        cp trayIcon.png dist/usr/share/notion-app
+        find dist -type d -empty -delete
+
+    - name: Create DEB package
+      run: |
+        cd dist
+        dpkg-deb --build notion-app-electron-${{ env.PKGVER }}-${{ env.PKGREL }}
+
+    - name: Upload DEB artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: notion-app-deb
+        path: dist/*.deb
