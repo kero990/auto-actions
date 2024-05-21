@@ -82,13 +82,12 @@ jobs:
         cp trayIcon.png dist/usr/share/notion-app
         find dist -type d -empty -delete
 
-    - name: Create DEB package
+    - name: Create package
       run: |
-        cd dist
-        dpkg-deb --build notion-app-electron-${{ env.PKGVER }}-${{ env.PKGREL }}
+        tar czf notion-electron.tar.gz dist/
 
-    - name: Upload DEB artifact
+    - name: Upload artifact
       uses: actions/upload-artifact@v2
       with:
         name: notion-app-deb
-        path: dist/*.deb
+        path: notion-electron.tar.gz
