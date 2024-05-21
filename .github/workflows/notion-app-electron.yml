@@ -48,6 +48,32 @@ jobs:
         mkdir -p dist/usr/share/applications
         mkdir -p dist/usr/share/icons/hicolor/256x256/apps
 
+        cat << EOF >> notion-app
+        #!/usr/bin/bash
+
+        XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-~/.config}
+
+        # Allow users to override command-line options
+        if [[ -f $XDG_CONFIG_HOME/notion-flags.conf ]]; then
+            NOTION_USER_FLAGS="$(grep -v '^#' $XDG_CONFIG_HOME/notion-flags.conf)"
+        fi
+        
+        # Launch
+        exec electron29 /usr/lib/notion-app $NOTION_USER_FLAGS "$@"
+        EOF
+        cat << EOF >> notion.desktop
+        [Desktop Entry]
+        Version=1.0
+        Type=Application
+        Name=Notion
+        GenericName=Online Document Editor
+        Comment=Your connected workspace for wiki, docs & projects
+        Exec=notion-app %U
+        Icon=notion
+        Categories=Office;
+        MimeType=x-scheme-handler/notion;
+        EOF
+
         cp -a ${{ github.workspace }}/unpacked/{package.json,node_modules,.webpack} dist/usr/lib/notion-app
         cp ${{ github.workspace }}/build/Release/better_sqlite3.node dist/usr/lib/notion-app/node_modules/better-sqlite3/build/Release/
         cp notion-app dist/usr/bin
