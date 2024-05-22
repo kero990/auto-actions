@@ -29,12 +29,12 @@ jobs:
         rm ./*.exe
         7z x ./**/app-64.7z
         rm ./**/app-64.7z
-        asar e ${{ github.workspace }}/**/app.asar ${{ github.workspace }}/unpacked
+        asar e ${{ github.workspace }}/resources/app.asar ${{ github.workspace }}/unpacked
         icotool -x -w 256 ${{ github.workspace }}/unpacked/icon.ico -o ${{ github.workspace }}/notion.png
         icotool -x -w 256 ${{ github.workspace }}/resources/trayIcon.ico -o ${{ github.workspace }}/trayIcon.png
         sed -i -e 's/"win32"===process.platform/(true)/g' \
                -e 's/_.Store.getState().app.preferences?.isAutoUpdaterDisabled/(true)/g' \
-               -e 's!extra-resources!/usr/share/notion-app!g' \
+               -e 's!extra-resources!/opt/apps/so.notion.notion/entries/notion-app!g' \
                -e 's/trayIcon.ico/trayIcon.png/g' ${{ github.workspace }}/unpacked/.webpack/main/index.js
         find ${{ github.workspace }} \( -name "clang-format.js" -or -name "conversion.js" -or -name "eslint-format.js" \) -delete -printf "rm %p to make namcap happy.\n"
 
@@ -51,6 +51,7 @@ jobs:
         mkdir -p dist/opt/apps/so.notion.notion/files
         mkdir -p dist/opt/apps/so.notion.notion/entries/applications
         mkdir -p dist/opt/apps/so.notion.notion/entries/icons/hicolor/256x256/apps
+        mkdir -p dist/opt/apps/so.notion.notion/entries/notion-app
         
         cat << EOF >> dist/opt/apps/so.notion.notion/files/notion
         #!/usr/bin/bash
@@ -93,6 +94,7 @@ jobs:
         cp -a ${{ github.workspace }}/unpacked/{package.json,node_modules,.webpack} dist/opt/apps/so.notion.notion/files/notion-app
         cp node_modules/better_sqlite3/build/Release/* dist/opt/apps/so.notion.notion/files/notion-app/node_modules/better-sqlite3/build/Release/
         cp node_modules/node-mac-window/build/Release/* dist/opt/apps/so.notion.notion/files/notion-app/node_modules/node-mac-window/build/Release/
+        cp trayIcon.png dist/opt/apps/so.notion.notion/entries/notion-app
         wget https://github.com/electron/electron/releases/download/v29.3.0/electron-v29.3.0-linux-x64.zip
         unzip electron-v29.3.0-linux-x64.zip -d electron
         cp electron/* dist/opt/apps/so.notion.notion/files -r
