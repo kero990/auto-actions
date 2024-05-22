@@ -45,6 +45,7 @@ jobs:
         npm install --save better-sqlite3 --build-from-source
         npm install --save-dev electron-rebuild
         npm i --save node-mac-window
+        npm i --save electron@29.3.0
         node_modules/.bin/electron-rebuild -f -w better-sqlite3
 
     - name: Package DEB
