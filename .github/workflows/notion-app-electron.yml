@@ -42,7 +42,7 @@ jobs:
 
     - name: rebuild better-sqlite3
       run: |
-        npm install --save better-sqlite3
+        npm install --save better-sqlite3 --build-from-source
         npm install --save-dev electron-rebuild
         npm i --save node-mac-window
         node_modules/.bin/electron-rebuild -f -w better-sqlite3
