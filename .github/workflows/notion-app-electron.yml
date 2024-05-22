@@ -19,7 +19,7 @@ jobs:
       run: |
         npm install -g asar 
         apt update
-        apt install p7zip-full icoutils wget unzip -y
+        apt install p7zip-full icoutils wget unzip python -y
 
     - name: Prepare package
       run: |
