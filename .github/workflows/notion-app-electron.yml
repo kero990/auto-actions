@@ -6,15 +6,14 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    container: debian:10
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
-
+    
     - name: Set up Node.js
       uses: actions/setup-node@v2
       with:
-        node-version: '14'
+        node-version: '20'
 
     - name: Install dependencies
       run: |
@@ -25,8 +24,6 @@ jobs:
       run: |
         mkdir -p dist
         wget https://desktop-release.notion-static.com/Notion%20Setup%203.7.0.exe
-        wget https://github.com/WiseLibs/better-sqlite3/releases/download/v9.4.5/better-sqlite3-v9.4.5-electron-v121-linux-x64.tar.gz
-        tar zxf better-sqlite3-v9.4.5-electron-v121-linux-x64.tar.gz
         7z x ./*.exe
         rm ./*.exe
         7z x ./**/app-64.7z
@@ -40,54 +37,73 @@ jobs:
                -e 's/trayIcon.ico/trayIcon.png/g' ${{ github.workspace }}/unpacked/.webpack/main/index.js
         find ${{ github.workspace }} \( -name "clang-format.js" -or -name "conversion.js" -or -name "eslint-format.js" \) -delete -printf "rm %p to make namcap happy.\n"
 
+    - name: rebuild better-sqlite3
+      run: |
+        npm install --save better-sqlite3
+        npm install --save-dev electron-rebuild
+        npm i --save node-mac-window
+        node_modules/.bin/electron-rebuild -f -w better-sqlite3
+
     - name: Package DEB
       run: |
-        mkdir -p dist/usr/share/notion-app
-        mkdir -p dist/usr/lib/notion-app
-        mkdir -p dist/usr/bin
-        mkdir -p dist/usr/share/applications
-        mkdir -p dist/usr/share/icons/hicolor/256x256/apps
-
-        cat << EOF >> notion-app
-        #!/usr/bin/bash
-
-        XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-~/.config}
-
-        # Allow users to override command-line options
-        if [[ -f $XDG_CONFIG_HOME/notion-flags.conf ]]; then
-            NOTION_USER_FLAGS="$(grep -v '^#' $XDG_CONFIG_HOME/notion-flags.conf)"
-        fi
+        mkdir -p dist/DEBIAN
+        mkdir -p dist/opt/apps/so.notion.notion/files
+        mkdir -p dist/opt/apps/so.notion.notion/entries/applications
+        mkdir -p dist/opt/apps/so.notion.notion/entries/icons/hicolor/256x256/apps
         
+        cat << EOF >> dist/opt/apps/so.notion.notion/files/notion
+        #!/usr/bin/bash
+        
+        XDG_CONFIG_HOME=$HOME/.config
+        
+        # Allow users to override command-line options
+        if [[ -f $HOME/.config/notion-flags.conf ]]; then
+            NOTION_USER_FLAGS=""
+        fi
+
         # Launch
-        exec electron29 /usr/lib/notion-app $NOTION_USER_FLAGS "$@"
+        $(dirname "$(readlink -f "$0")")/electron $(dirname "$(readlink -f "$0")")/notion-app  ""
         EOF
-        cat << EOF >> notion.desktop
+
+        cat << EOF >> dist/opt/apps/so.notion.notion/entries/applications/notion.desktop
         [Desktop Entry]
         Version=1.0
         Type=Application
         Name=Notion
         GenericName=Online Document Editor
         Comment=Your connected workspace for wiki, docs & projects
-        Exec=notion-app %U
-        Icon=notion
+        Exec=/opt/apps/so.notion.notion/files/notion %U
+        Icon=so.notion.notion
         Categories=Office;
         MimeType=x-scheme-handler/notion;
         EOF
+        
+        cat << EOF >> dist/DEBIAN/control
+        Package: so.notion.notion
+        Version: 3.7.0
+        Installed-Size: 21000
+        Maintainer: kero990 <kero990@qq.com>
+        Section: text
+        Architecture: arm64
+        Priority: optional
+        Description: notion是享誉全球的著名笔记软件。该版本由windows版本移植而来。
+        EOF
 
-        cp -a ${{ github.workspace }}/unpacked/{package.json,node_modules,.webpack} dist/usr/lib/notion-app
-        cp ${{ github.workspace }}/build/Release/better_sqlite3.node dist/usr/lib/notion-app/node_modules/better-sqlite3/build/Release/
-        cp notion-app dist/usr/bin
-        cp notion.desktop dist/usr/share/applications
-        cp notion.png dist/usr/share/icons/hicolor/256x256/apps
-        cp trayIcon.png dist/usr/share/notion-app
+        cp -a ${{ github.workspace }}/unpacked/{package.json,node_modules,.webpack} dist/opt/apps/so.notion.notion/files/notion-app
+        cp node_modules/better_sqlite3/build/Release/* dist/opt/apps/so.notion.notion/files/notion-app/node_modules/better-sqlite3/build/Release/
+        cp node_modules/node-mac-window/build/Release/* dist/opt/apps/so.notion.notion/files/notion-app/node_modules/node-mac-window/build/Release/
+        wget https://github.com/electron/electron/releases/download/v29.3.0/electron-v29.3.0-linux-x64.zip
+        unzip electron-v29.3.0-linux-x64.zip -d electron
+        cp electron/* dist/opt/apps/so.notion.notion/files -r
         find dist -type d -empty -delete
 
-    - name: Create package
+    - name: Create deb package
       run: |
-        tar czf notion-electron.tar.gz dist/
+        dpkg-deb -b dist/
+        mv dist.deb so.notion.notion_3.7.0_amd.deb
 
     - name: Upload artifact
       uses: actions/upload-artifact@v2
       with:
         name: notion-app-deb
-        path: notion-electron.tar.gz
+        path: so.notion.notion_3.7.0_amd.deb
