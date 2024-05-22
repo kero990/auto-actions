@@ -30,8 +30,10 @@ jobs:
         7z x ./**/app-64.7z
         rm ./**/app-64.7z
         asar e resources/app.asar ./unpacked
-        icotool -x -w 256 ${{ github.workspace }}/unpacked/icon.ico -o ${{ github.workspace }}/notion.png
-        icotool -x -w 256 ${{ github.workspace }}/resources/trayIcon.ico -o ${{ github.workspace }}/trayIcon.png
+        echo '当前目录='$PWD
+        echo 'github.workspace='${{ github.workspace }}
+        icotool -x -w 256 ./unpacked/icon.ico -o ${{ github.workspace }}/notion.png
+        icotool -x -w 256 ./resources/trayIcon.ico -o ${{ github.workspace }}/trayIcon.png
         sed -i -e 's/"win32"===process.platform/(true)/g' \
                -e 's/_.Store.getState().app.preferences?.isAutoUpdaterDisabled/(true)/g' \
                -e 's!extra-resources!/opt/apps/so.notion.notion/entries/notion-app!g' \
