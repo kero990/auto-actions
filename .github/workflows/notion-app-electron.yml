@@ -18,6 +18,7 @@ jobs:
     - name: Install dependencies
       run: |
         npm install -g asar 
+        apt update
         apt install 7zip icoutils wget unzip -y
 
     - name: Prepare package
