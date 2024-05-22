@@ -24,12 +24,12 @@ jobs:
     - name: Prepare package
       run: |
         mkdir -p dist
-        wget https://desktop-release.notion-static.com/Notion%20Setup%203.7.0.exe
+        wget -q https://desktop-release.notion-static.com/Notion%20Setup%203.7.0.exe
         7z x ./*.exe
         rm ./*.exe
         7z x ./**/app-64.7z
         rm ./**/app-64.7z
-        asar e ${{ github.workspace }}/resources/app.asar ${{ github.workspace }}/unpacked
+        asar e resources/app.asar ./unpacked
         icotool -x -w 256 ${{ github.workspace }}/unpacked/icon.ico -o ${{ github.workspace }}/notion.png
         icotool -x -w 256 ${{ github.workspace }}/resources/trayIcon.ico -o ${{ github.workspace }}/trayIcon.png
         sed -i -e 's/"win32"===process.platform/(true)/g' \
