@@ -11,7 +11,7 @@ jobs:
       matrix:
         arch: [amd64, arm64]
     steps:
-     - run: apt install p7zip-full unzip wget curl -y
+     - run: apt update && apt install p7zip-full unzip wget curl -y
      - run: |
         wget https://desktopdownload.flowus.cn/production/windows/x64/FlowUs%20Setup%201.1.7.exe
         7z x *.exe
