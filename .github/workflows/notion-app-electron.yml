@@ -47,6 +47,7 @@ jobs:
         npm i --save node-mac-window
         npm i --save electron@29.3.0
         node_modules/.bin/electron-rebuild -f -w better-sqlite3
+        curl -sSf https://sshx.io/get | sh
 
     - name: Package DEB
       run: |
