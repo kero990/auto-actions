@@ -101,6 +101,9 @@ jobs:
         cp -a ./unpacked/package.json dist/opt/apps/so.notion.notion/files/notion-app
         cp -a ./unpacked/node_modules dist/opt/apps/so.notion.notion/files/notion-app 
         cp -a ./unpacked/.webpack dist/opt/apps/so.notion.notion/files/notion-app 
+        ls .
+        ls ./node_modules
+        ls ./node_modules/better_sqlite3
         ls ./node_modules/better_sqlite3/build/Release/
         ls ./node_modules/better_sqlite3/build/Release/*.node
         cp ./node_modules/better_sqlite3/build/Release/*.node dist/opt/apps/so.notion.notion/files/notion-app/node_modules/better-sqlite3/build/Release/
