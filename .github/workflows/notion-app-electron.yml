@@ -141,4 +141,4 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: notion-app-deb
-        path: so.notion.notion_3.7.0_amd.deb
+        path: so.notion.notion_3.7.0_amd64.deb
