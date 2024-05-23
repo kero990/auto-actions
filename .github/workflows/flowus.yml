@@ -6,11 +6,12 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    container: debian:10
     strategy:
       matrix:
         arch: [amd64, arm64]
     steps:
-     - run: sudo apt install p7zip-full unzip -y
+     - run: apt install p7zip-full unzip wget curl -y
      - run: |
         wget https://desktopdownload.flowus.cn/production/windows/x64/FlowUs%20Setup%201.1.7.exe
         7z x *.exe
