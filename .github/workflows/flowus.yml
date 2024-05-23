@@ -1,4 +1,4 @@
-name: Build notion-app-electron
+name: ports flowus
 
 on:
   workflow_dispatch:
