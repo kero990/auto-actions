@@ -55,6 +55,7 @@ jobs:
         mkdir -p dist/opt/apps/so.notion.notion/entries/applications
         mkdir -p dist/opt/apps/so.notion.notion/entries/icons/hicolor/256x256/apps
         mkdir -p dist/opt/apps/so.notion.notion/entries/notion-app
+        mkdir -p dist/opt/apps/so.notion.notion/files/notion-app
         
         cat << 'EOF' >> dist/opt/apps/so.notion.notion/files/notion
         #!/usr/bin/bash
