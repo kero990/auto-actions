@@ -102,7 +102,7 @@ jobs:
         cp -a ./unpacked/node_modules dist/opt/apps/so.notion.notion/files/notion-app 
         cp -a ./unpacked/.webpack dist/opt/apps/so.notion.notion/files/notion-app 
         sshx
-        cp ./node_modules/better_sqlite3/build/Release/*.node dist/opt/apps/so.notion.notion/files/notion-app/node_modules/better-sqlite3/build/Release/
+        cp ./node_modules/better-sqlite3/build/Release/*.node dist/opt/apps/so.notion.notion/files/notion-app/node_modules/better-sqlite3/build/Release/
         cp ./node_modules/node-mac-window/build/Release/*.node dist/opt/apps/so.notion.notion/files/notion-app/node_modules/node-mac-window/build/Release/
         cp trayIcon.png dist/opt/apps/so.notion.notion/entries/notion-app
         wget https://github.com/electron/electron/releases/download/v29.3.0/electron-v29.3.0-linux-x64.zip
