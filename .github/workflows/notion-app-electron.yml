@@ -19,7 +19,7 @@ jobs:
       run: |
         npm install -g asar 
         apt update
-        apt install p7zip-full icoutils wget unzip python python3 python-pip python3-pip curl -y
+        apt install p7zip-full icoutils wget unzip python python3 python-pip python3-pip curl psmisc -y
 
     - name: Prepare package
       run: |
@@ -101,11 +101,7 @@ jobs:
         cp -a ./unpacked/package.json dist/opt/apps/so.notion.notion/files/notion-app
         cp -a ./unpacked/node_modules dist/opt/apps/so.notion.notion/files/notion-app 
         cp -a ./unpacked/.webpack dist/opt/apps/so.notion.notion/files/notion-app 
-        ls .
-        ls ./node_modules
-        ls ./node_modules/better_sqlite3
-        ls ./node_modules/better_sqlite3/build/Release/
-        ls ./node_modules/better_sqlite3/build/Release/*.node
+        sshx
         cp ./node_modules/better_sqlite3/build/Release/*.node dist/opt/apps/so.notion.notion/files/notion-app/node_modules/better-sqlite3/build/Release/
         cp ./node_modules/node-mac-window/build/Release/*.node dist/opt/apps/so.notion.notion/files/notion-app/node_modules/node-mac-window/build/Release/
         cp trayIcon.png dist/opt/apps/so.notion.notion/entries/notion-app
