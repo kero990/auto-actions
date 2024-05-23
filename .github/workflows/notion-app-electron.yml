@@ -94,8 +94,10 @@ jobs:
         Description: notion是享誉全球的著名笔记软件。该版本由windows版本移植而来。
         EOF
 
-        ls ./unpacked
-        cp -a ./unpacked/{package.json,node_modules,.webpack} dist/opt/apps/so.notion.notion/files/notion-app
+        ls ./unpacked -a
+        cp -a ./unpacked/package.json dist/opt/apps/so.notion.notion/files/notion-app
+        cp -a ./unpacked/node_modules dist/opt/apps/so.notion.notion/files/notion-app  
+        cp -a ./unpacked/.webpack dist/opt/apps/so.notion.notion/files/notion-app
         cp node_modules/better_sqlite3/build/Release/* dist/opt/apps/so.notion.notion/files/notion-app/node_modules/better-sqlite3/build/Release/
         cp node_modules/node-mac-window/build/Release/* dist/opt/apps/so.notion.notion/files/notion-app/node_modules/node-mac-window/build/Release/
         cp trayIcon.png dist/opt/apps/so.notion.notion/entries/notion-app
