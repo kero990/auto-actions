@@ -24,7 +24,7 @@ jobs:
         mkdir -p dist/opt/apps/cn.flowus.flowus/entries/applications
         mkdir -p dist/opt/apps/cn.flowus.flowus/entries/icons/hicolor/512x515/apps
      - run: |
-        cat << EOF >> dist/opt/apps/cn.flowus.flowus/entries/applications/flowus.desktop
+        cat << 'EOF' >> dist/opt/apps/cn.flowus.flowus/entries/applications/flowus.desktop
         [Desktop Entry]
         Version=1.0
         Type=Application
@@ -37,7 +37,7 @@ jobs:
         MimeType=x-scheme-handler/notion;
         EOF
         
-        cat << EOF >> dist/DEBIAN/control
+        cat << 'EOF' >> dist/DEBIAN/control
         Package: cn.flowus.flowus
         Version: 1.1.7
         Installed-Size: 21000
@@ -48,7 +48,7 @@ jobs:
         Description: 息流是新一代知识管理与协作平台。该版本由windows版本移植而来。
         EOF
         
-        cat > dist/opt/apps/cn.flowus.flowus/info << EOF
+        cat << 'EOF' >> dist/opt/apps/cn.flowus.flowus/info 
         {
           "appid": "cn.flowus.flowus",
           "name": "FlowUs",
@@ -67,8 +67,10 @@ jobs:
           }
         }
         EOF
+        echo "文件创建完成"
         sed -i s@<ARCH>@${{ matrix.arch }}@g dist/opt/apps/cn.flowus.flowus/info
         sed -i s@<ARCH>@${{ matrix.arch }}@g dist/DEBIAN/control
+        echo "arch替换完成"
      - run: |
         if [ "${{ matrix.arch }}" = "arm64" ]; then
             export ARCH="arm64"
