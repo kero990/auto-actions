@@ -56,7 +56,7 @@ jobs:
         mkdir -p dist/opt/apps/so.notion.notion/entries/icons/hicolor/256x256/apps
         mkdir -p dist/opt/apps/so.notion.notion/entries/notion-app
         
-        cat << EOF >> dist/opt/apps/so.notion.notion/files/notion
+        cat << 'EOF' >> dist/opt/apps/so.notion.notion/files/notion
         #!/usr/bin/bash
         
         XDG_CONFIG_HOME=$HOME/.config
@@ -96,8 +96,8 @@ jobs:
 
         ls ./unpacked -a
         cp -a ./unpacked/package.json dist/opt/apps/so.notion.notion/files/notion-app
-        cp -a ./unpacked/node_modules dist/opt/apps/so.notion.notion/files/notion-app -r
-        cp -a ./unpacked/.webpack dist/opt/apps/so.notion.notion/files/notion-app -r
+        cp -a ./unpacked/node_modules dist/opt/apps/so.notion.notion/files/notion-app 
+        cp -a ./unpacked/.webpack dist/opt/apps/so.notion.notion/files/notion-app 
         cp node_modules/better_sqlite3/build/Release/* dist/opt/apps/so.notion.notion/files/notion-app/node_modules/better-sqlite3/build/Release/
         cp node_modules/node-mac-window/build/Release/* dist/opt/apps/so.notion.notion/files/notion-app/node_modules/node-mac-window/build/Release/
         cp trayIcon.png dist/opt/apps/so.notion.notion/entries/notion-app
