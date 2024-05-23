@@ -68,8 +68,8 @@ jobs:
         }
         EOF
         echo "文件创建完成"
-        sed -i s@<ARCH>@${{ matrix.arch }}@g dist/opt/apps/cn.flowus.flowus/info
-        sed -i s@<ARCH>@${{ matrix.arch }}@g dist/DEBIAN/control
+        sed -i s@\<ARCH\>@${{ matrix.arch }}@g dist/opt/apps/cn.flowus.flowus/info
+        sed -i s@\<ARCH\>@${{ matrix.arch }}@g dist/DEBIAN/control
         echo "arch替换完成"
      - run: |
         if [ "${{ matrix.arch }}" = "arm64" ]; then
