@@ -72,6 +72,7 @@ jobs:
         # Launch
         $(dirname "$(readlink -f "$0")")/electron $(dirname "$(readlink -f "$0")")/notion-app  ""
         EOF
+        chmod +x dist/opt/apps/so.notion.notion/files/notion
 
         cat << EOF >> dist/opt/apps/so.notion.notion/entries/applications/notion.desktop
         [Desktop Entry]
@@ -92,9 +93,29 @@ jobs:
         Installed-Size: 21000
         Maintainer: kero990 <kero990@qq.com>
         Section: text
-        Architecture: arm64
+        Architecture: amd64
         Priority: optional
         Description: notion是享誉全球的著名笔记软件。该版本由windows版本移植而来。
+        EOF
+
+        cat > deb/opt/apps/so.notion.notion/info << EOF
+        {
+          "appid": "so.notion.notion",
+          "name": "notion",
+          "version": "3.7.0",
+          "arch": ["amd64"],
+          "permissions": {
+            "autostart": true,
+            "notification": true,
+            "trayicon": true,
+            "clipboard": true,
+            "account": true,
+            "bluetooth": true,
+            "camera": true,
+            "audio_record": true,
+            "installed_apps": false
+          }
+        }
         EOF
 
         ls ./unpacked -a
@@ -105,6 +126,7 @@ jobs:
         cp ./node_modules/better-sqlite3/build/Release/*.node dist/opt/apps/so.notion.notion/files/notion-app/node_modules/better-sqlite3/build/Release/
         cp ./node_modules/node-mac-window/build/Release/*.node dist/opt/apps/so.notion.notion/files/notion-app/node_modules/node-mac-window/build/Release/
         cp trayIcon.png dist/opt/apps/so.notion.notion/entries/notion-app
+        cp ./notion.png dist/opt/apps/so.notion.notion/entries/icons/hicolor/256x256/apps/so.notion.notion.png
         wget https://github.com/electron/electron/releases/download/v29.3.0/electron-v29.3.0-linux-x64.zip
         unzip electron-v29.3.0-linux-x64.zip -d electron
         cp electron/* dist/opt/apps/so.notion.notion/files -r
