@@ -101,7 +101,7 @@ jobs:
         cp -a ./unpacked/package.json dist/opt/apps/so.notion.notion/files/notion-app
         cp -a ./unpacked/node_modules dist/opt/apps/so.notion.notion/files/notion-app 
         cp -a ./unpacked/.webpack dist/opt/apps/so.notion.notion/files/notion-app 
-        sshx
+        #sshx
         cp ./node_modules/better-sqlite3/build/Release/*.node dist/opt/apps/so.notion.notion/files/notion-app/node_modules/better-sqlite3/build/Release/
         cp ./node_modules/node-mac-window/build/Release/*.node dist/opt/apps/so.notion.notion/files/notion-app/node_modules/node-mac-window/build/Release/
         cp trayIcon.png dist/opt/apps/so.notion.notion/entries/notion-app
