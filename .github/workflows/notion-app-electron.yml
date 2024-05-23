@@ -98,7 +98,7 @@ jobs:
         Description: notion是享誉全球的著名笔记软件。该版本由windows版本移植而来。
         EOF
 
-        cat > deb/opt/apps/so.notion.notion/info << EOF
+        cat > dist/opt/apps/so.notion.notion/info << EOF
         {
           "appid": "so.notion.notion",
           "name": "notion",
