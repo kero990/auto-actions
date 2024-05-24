@@ -78,11 +78,11 @@ jobs:
         else
             export ARCH="x64"
         fi
-        wget https://github.com/electron/electron/releases/download/v22.0.2/electron-v22.0.2-linux-$ARCH.zip
+        wget -q https://github.com/electron/electron/releases/download/v22.0.2/electron-v22.0.2-linux-$ARCH.zip
         unzip electron-v22.0.2-linux-$ARCH.zip -d electron
         cp electron/* dist/opt/apps/cn.flowus.flowus/files -r
         rm dist/opt/apps/cn.flowus.flowus/files/resources -r
-        cp resources/app/resource/icon.png dist/opt/apps/cn.flowus.flowus/entries/icons/hicolor/512x515/apps/cn.flowus.flowus.png
+        cp resources/app/resource/icon.png dist/opt/apps/cn.flowus.flowus/entries/icons/hicolor/512x512/apps/cn.flowus.flowus.png
         mv resources dist/opt/apps/cn.flowus.flowus/files/
         mv dist/opt/apps/cn.flowus.flowus/files/electron dist/opt/apps/cn.flowus.flowus/files/flowus
      - run: |
