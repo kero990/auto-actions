@@ -23,7 +23,7 @@ jobs:
         mkdir -p dist/DEBIAN
         mkdir -p dist/opt/apps/cn.flowus.flowus/files
         mkdir -p dist/opt/apps/cn.flowus.flowus/entries/applications
-        mkdir -p dist/opt/apps/cn.flowus.flowus/entries/icons/hicolor/512x515/apps
+        mkdir -p dist/opt/apps/cn.flowus.flowus/entries/icons/hicolor/512x512/apps
      - run: |
         cat << 'EOF' >> dist/opt/apps/cn.flowus.flowus/entries/applications/flowus.desktop
         [Desktop Entry]
