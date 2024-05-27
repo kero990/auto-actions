@@ -1,0 +1,18 @@
+name: clone github
+
+on:
+  workflow_dispatch:
+
+
+jobs:
+  clone:
+    runs-on: ubuntu-latest
+
+    steps:
+    - run: git clone --recursive https://github.com/NilsIrl/dockerc
+
+    - name: Upload
+      uses: actions/upload-artifact@v2
+      with:
+        name: dockerc
+        path: ./dockerc
