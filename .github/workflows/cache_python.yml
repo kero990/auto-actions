@@ -12,6 +12,7 @@ jobs:
     steps:
       - run: apt update && apt install git wget curl gzip -y
       - run: git clone https://github.com/Greatwallcorner/TV-Multiplatform
+      - run: mv TV-Multiplatform/* .
       - uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
