@@ -22,7 +22,7 @@ jobs:
       - run: ./gradlew packageReleaseDistributionForCurrentOS
       - run: tar czvf cache.tar.gz ./.gradle
       - name: Upload Packaged Deb to Release
-      - uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v2
         with:
          name: gradle_cache
          path: cache.tar.gz
