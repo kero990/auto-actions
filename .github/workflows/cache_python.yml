@@ -1,4 +1,4 @@
-name: cache linuxdeployqt
+name: cache gradle
 
 on:
   workflow_dispatch:
