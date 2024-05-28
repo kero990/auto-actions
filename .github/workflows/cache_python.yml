@@ -7,17 +7,17 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    # container: debian:10
+    container: debian:10
 
     steps:
-      
+      - run: apt update && apt install git wget curl gzip -y
+      - run: git clone https://github.com/Greatwallcorner/TV-Multiplatform
       - uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: 17
           cache: 'gradle'
-      - run: sudo apt update && sudo apt install git wget curl gzip -y
-      - run: git clone https://github.com/Greatwallcorner/TV-Multiplatform
+
       - run: chmod +x ./gradlew && ./gradlew createReleaseDistributable
       - run: ./gradlew packageReleaseDistributionForCurrentOS
       - run: tar czvf cache.tar.gz ./.gradle
