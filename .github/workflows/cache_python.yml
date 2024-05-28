@@ -21,4 +21,8 @@ jobs:
       - run: chmod +x ./gradlew && ./gradlew createReleaseDistributable
       - run: ./gradlew packageReleaseDistributionForCurrentOS
       - run: tar czvf cache.tar.gz ./.gradle
-      
+      - name: Upload Packaged Deb to Release
+      - uses: actions/upload-artifact@v2
+        with:
+         name: gradle_cache
+         path: cache.tar.gz
