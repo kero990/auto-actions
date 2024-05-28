@@ -11,25 +11,14 @@ jobs:
 
     steps:
       
-      - name: install deps
-        run: |
-            apt update && apt-get -y install git g++ libgl1-mesa-dev gcc g++ cmake make qt5-default
-      
-      - name: Compile and install linuxdeployqt
-        run: |
-               git clone https://github.com/probonopd/linuxdeployqt.git
-               cd linuxdeployqt
-               qmake
-               make -j8
-               make install
-               strip /usr/lib/qt5/bin/linuxdeployqt
-               cp  /usr/lib/qt5/bin/linuxdeployqt /usr/bin
-               
-               
-      - name: Cache  linuxdeployqt
-        id: cache-linuxdeployqt
-        uses: actions/cache/save@v4
+      - uses: actions/setup-java@v4
         with:
-          path:  /usr/bin/linuxdeployqt
-          key: ${{ runner.os }}-python-linuxdeployqt}}
+          distribution: 'temurin'
+          java-version: 17
+          cache: 'gradle'
+      - run: apt update && apt install git wget curl gzip -y
+      - run: git clone https://github.com/Greatwallcorner/TV-Multiplatform
+      - run: chmod +x ./gradlew && ./gradlew createReleaseDistributable
+      - run: ./gradlew packageReleaseDistributionForCurrentOS
+      - run: tar czvf cache.tar.gz ./.gradle
       
