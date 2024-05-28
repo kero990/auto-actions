@@ -7,10 +7,10 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: debian:10
+    #container: debian:10
 
     steps:
-      - run: apt update && apt install git wget curl gzip -y
+      - run: sudo apt update && sudo apt install git wget curl gzip -y
       - run: git clone https://github.com/Greatwallcorner/TV-Multiplatform
       - run: mv TV-Multiplatform/* .
       - uses: actions/setup-java@v4
