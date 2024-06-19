@@ -11,19 +11,20 @@ jobs:
 
     steps:
       - run: sudo apt update && sudo apt install git wget curl gzip -y
-      - run: git clone https://github.com/Greatwallcorner/TV-Multiplatform
-      - run: mv TV-Multiplatform/* .
-      - uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: 17
-          cache: 'gradle'
+      # - run: git clone https://github.com/Greatwallcorner/TV-Multiplatform
+      # - run: mv TV-Multiplatform/* .
+      - run: wget https://rlab.ru/download/R.saver.zip
+      #- uses: actions/setup-java@v4
+        #with:
+         # distribution: 'temurin'
+         # java-version: 17
+         # cache: 'gradle'
 
-      - run: chmod +x ./gradlew && ./gradlew createReleaseDistributable
-      - run: ./gradlew packageReleaseDistributionForCurrentOS
-      - run: tar czvf cache.tar.gz ~/.gradle
+      #- run: chmod +x ./gradlew && ./gradlew createReleaseDistributable
+      #- run: ./gradlew packageReleaseDistributionForCurrentOS
+      #- run: tar czvf cache.tar.gz ~/.gradle
       - name: Upload Packaged Deb to Release
         uses: actions/upload-artifact@v2
         with:
-         name: gradle_cache
-         path: cache.tar.gz
+         name: R.saver.zip
+         path: R.saver.zip
