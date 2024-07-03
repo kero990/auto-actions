@@ -9,8 +9,11 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        platform: [amd64, arm64]
-        os: [ubuntu-latest, self-hosted] # self-hosted runner for arm64
+        include:
+          - platform: amd64
+            os: ubuntu-latest
+          - platform: arm64
+            os: self-hosted
     container: debian:10
     defaults:
       run:
