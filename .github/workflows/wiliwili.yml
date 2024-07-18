@@ -18,6 +18,7 @@ jobs:
         apt update
         apt install -y libcurl4-openssl-dev libmpv-dev libwebp-dev libxrandr-dev libxinerama-dev libxcursor-dev libdbus-1-dev libxi-dev git make gcc g++ wget curl jq
         apt install -y libssl-dev libmbedtls-dev zlib1g-dev unzip
+        apt install -y libwayland-dev libxkbcommon-dev xorg-dev
 
     - name: Clone repository
       run: |
