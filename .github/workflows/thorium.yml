@@ -5,12 +5,13 @@ on:
 
 jobs:
   build_and_upload:
-    name: Build and Upload Thorium Deb Packages
+    name: Thorium Deb rePackages
     runs-on: ubuntu-latest
     strategy:
       matrix:
         architecture: [amd64, arm64]
     container: debian:10
+
 
     steps:
     - name: Checkout Repository
