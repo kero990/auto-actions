@@ -3,7 +3,6 @@ name: Thorium
 on:
   workflow_dispatch:
 
-
 jobs:
   build_and_upload:
     name: Build and Upload Thorium Deb Packages
@@ -23,7 +22,7 @@ jobs:
         apt update && apt install -y wget curl tar
         mkdir -p thorium_${{ matrix.architecture }}
         cd thorium_${{ matrix.architecture }}
-        if [ "${matrix_architecture}" = "amd64" ]; then
+        if [ "${{ matrix.architecture }}" = "amd64" ]; then
           PLATFORM=""
           ARCH_TYPE="AVX"
         else
@@ -34,7 +33,6 @@ jobs:
         dpkg-deb -R *.deb thorium
         rm *.deb
         echo "deb file has been unpacked"
-
         # Handle content and organize into new package format
         cd thorium
         rm etc -r
@@ -77,7 +75,6 @@ jobs:
         sed -i s@Icon=thorium-browser@Icon=rocks.thorium.thorium-browser@g opt/apps/rocks.thorium.thorium-browser/entries/applications/thorium-browser.desktop
         echo "Replace contents in xx file"
         
-
         release_version=$(grep -Po '^Version: \K.*' DEBIAN/control)
         echo 'VERSION='$release_version
         echo "::set-output name=release_version::$release_version"
@@ -91,10 +88,8 @@ jobs:
     - name: find deb path
       run: |
         find ./ -name '*.deb'
-
     - name: Upload Packaged Deb to Release
       uses: actions/upload-artifact@v2
       with:
         name: thorium_deb
         path: thorium_${{ matrix.architecture }}/rocks.thorium.thorium-browser_${{ steps.prepare.outputs.release_version }}_${{ matrix.architecture }}.deb
-    
