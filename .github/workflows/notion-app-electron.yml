@@ -22,8 +22,8 @@ jobs:
       - name: Install dependencies
         run: |
           git clone https://github.com/flutter/flutter /opt/flutter
-          export PATH=$PATH:/opt/flutter/bin
-          echo 'PATH=$PATH:/opt/flutter/bin' >> $GITHUB_ENV
+          ls /opt/flutter/bin
+          echo "::add-path::/opt/flutter/bin"
 
       - name: Clone project
         run: |
