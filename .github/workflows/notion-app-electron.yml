@@ -44,7 +44,7 @@ jobs:
       - name: Build Linux
         run: |
           cd localsend/app
-          flutter build linux
+          flutter build linux -v
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
