@@ -1,4 +1,4 @@
-name: Build notion-app-electron
+name: Build localsend on debian10
 
 on:
   workflow_dispatch:
@@ -9,136 +9,39 @@ jobs:
     container: debian:10
 
     steps:
-    
-    - name: Set up Node.js
-      uses: actions/setup-node@v2
-      with:
-        node-version: '16'
 
-    - name: Install dependencies
-      run: |
-        npm install -g asar 
-        apt update
-        apt install p7zip-full icoutils wget unzip python python3 python-pip python3-pip curl psmisc -y
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: "stable"
 
-    - name: Prepare package
-      run: |
-        mkdir -p dist
-        wget -q https://desktop-release.notion-static.com/Notion%20Setup%203.7.0.exe
-        7z x ./*.exe
-        rm ./*.exe
-        7z x ./**/app-64.7z
-        rm ./**/app-64.7z
-        asar e resources/app.asar ./unpacked
-        echo '当前目录='$PWD
-        echo 'github.workspace='.
-        icotool -x -w 256 ./unpacked/icon.ico -o ./notion.png
-        icotool -x -w 256 ./resources/trayIcon.ico -o ./trayIcon.png
-        sed -i -e 's/"win32"===process.platform/(true)/g' \
-               -e 's/_.Store.getState().app.preferences?.isAutoUpdaterDisabled/(true)/g' \
-               -e 's!extra-resources!/opt/apps/so.notion.notion/entries/notion-app!g' \
-               -e 's/trayIcon.ico/trayIcon.png/g' ./unpacked/.webpack/main/index.js
-        find . \( -name "clang-format.js" -or -name "conversion.js" -or -name "eslint-format.js" \) -delete -printf "rm %p to make namcap happy.\n"
+      - name: Install dependencies
+        run: |
+          apt-get update
+          apt-get install -y clang cmake libgtk-3-dev ninja-build libayatana-appindicator3-dev libfuse2
 
-    - name: rebuild better-sqlite3
-      run: |
-        npm install --save better-sqlite3 --build-from-source
-        npm install --save-dev electron-rebuild
-        npm i --save node-mac-window
-        npm i --save electron@29.3.0
-        node_modules/.bin/electron-rebuild -f -w better-sqlite3
-        curl -sSf https://sshx.io/get | sh
-        #sshx
+      - name: Clone project
+        run: |
+          git clone https://github.com/localsend/localsend
+          cd localsend/app
 
-    - name: Package DEB
-      run: |
-        mkdir -p dist/DEBIAN
-        mkdir -p dist/opt/apps/so.notion.notion/files
-        mkdir -p dist/opt/apps/so.notion.notion/entries/applications
-        mkdir -p dist/opt/apps/so.notion.notion/entries/icons/hicolor/256x256/apps
-        mkdir -p dist/opt/apps/so.notion.notion/entries/notion-app
-        mkdir -p dist/opt/apps/so.notion.notion/files/notion-app
-        
-        cat << 'EOF' >> dist/opt/apps/so.notion.notion/files/notion
-        #!/usr/bin/bash
-        
-        XDG_CONFIG_HOME=$HOME/.config
-        
-        # Allow users to override command-line options
-        if [[ -f $HOME/.config/notion-flags.conf ]]; then
-            NOTION_USER_FLAGS=""
-        fi
+      - name: Get Flutter dependencies
+        run: |
+          cd localsend/app
+          flutter pub get
 
-        # Launch
-        $(dirname "$(readlink -f "$0")")/electron $(dirname "$(readlink -f "$0")")/notion-app  ""
-        EOF
-        chmod +x dist/opt/apps/so.notion.notion/files/notion
+      - name: Run build_runner
+        run: |
+          cd localsend/app
+          flutter pub run build_runner build -d
 
-        cat << EOF >> dist/opt/apps/so.notion.notion/entries/applications/notion.desktop
-        [Desktop Entry]
-        Version=1.0
-        Type=Application
-        Name=Notion
-        GenericName=Online Document Editor
-        Comment=Your connected workspace for wiki, docs & projects
-        Exec=/opt/apps/so.notion.notion/files/notion %U
-        Icon=so.notion.notion
-        Categories=Office;
-        MimeType=x-scheme-handler/notion;
-        EOF
-        
-        cat << EOF >> dist/DEBIAN/control
-        Package: so.notion.notion
-        Version: 3.7.0
-        Installed-Size: 21000
-        Maintainer: kero990 <kero990@qq.com>
-        Section: text
-        Architecture: amd64
-        Priority: optional
-        Description: notion是享誉全球的著名笔记软件。该版本由windows版本移植而来。
-        EOF
+      - name: Build Linux
+        run: |
+          cd localsend/app
+          flutter build linux
 
-        cat > dist/opt/apps/so.notion.notion/info << EOF
-        {
-          "appid": "so.notion.notion",
-          "name": "notion",
-          "version": "3.7.0",
-          "arch": ["amd64"],
-          "permissions": {
-            "autostart": true,
-            "notification": true,
-            "trayicon": true,
-            "clipboard": true,
-            "account": true,
-            "bluetooth": true,
-            "camera": true,
-            "audio_record": true,
-            "installed_apps": false
-          }
-        }
-        EOF
-
-        ls ./unpacked -a
-        cp -a ./unpacked/package.json dist/opt/apps/so.notion.notion/files/notion-app
-        cp -a ./unpacked/node_modules dist/opt/apps/so.notion.notion/files/notion-app 
-        cp -a ./unpacked/.webpack dist/opt/apps/so.notion.notion/files/notion-app 
-        #sshx
-        cp ./node_modules/better-sqlite3/build/Release/*.node dist/opt/apps/so.notion.notion/files/notion-app/node_modules/better-sqlite3/build/Release/
-        cp ./node_modules/node-mac-window/build/Release/*.node dist/opt/apps/so.notion.notion/files/notion-app/node_modules/node-mac-window/build/Release/
-        cp trayIcon.png dist/opt/apps/so.notion.notion/entries/notion-app
-        cp ./notion.png dist/opt/apps/so.notion.notion/entries/icons/hicolor/256x256/apps/so.notion.notion.png
-        wget https://github.com/electron/electron/releases/download/v29.3.0/electron-v29.3.0-linux-x64.zip
-        unzip electron-v29.3.0-linux-x64.zip -d electron
-        cp electron/* dist/opt/apps/so.notion.notion/files -r
-        find dist -type d -empty -delete
-
-    - name: Create deb package
-      run: |
-        dpkg-deb -b dist/
-        mv dist.deb so.notion.notion_3.7.0_amd64.deb
-
-    - name: Upload artifact
-      uses: actions/upload-artifact@v2
-      with:
-        name: notion-app-deb
-        path: so.notion.notion_3.7.0_amd64.deb
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: localsend
+          path: localsend/app/build/linux/x64/release/bundle/*
