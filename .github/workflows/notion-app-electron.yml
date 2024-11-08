@@ -23,7 +23,7 @@ jobs:
         run: |
           git clone https://github.com/flutter/flutter /opt/flutter
           ls /opt/flutter/bin
-          echo "::add-path::/opt/flutter/bin"
+          echo "PATH=/opt/flutter/bin:$PATH" >> $GITHUB_ENV
 
       - name: Clone project
         run: |
