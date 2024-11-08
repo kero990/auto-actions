@@ -33,6 +33,7 @@ jobs:
       - name: Get Flutter dependencies
         run: |
           cd localsend/app
+          flutter pub add path:^1.9.1
           flutter pub get
 
       - name: Run build_runner
