@@ -41,7 +41,7 @@ jobs:
           flutter build linux
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: localsend
           path: localsend/app/build/linux/x64/release/bundle/*
