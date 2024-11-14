@@ -24,6 +24,7 @@ jobs:
           git clone https://github.com/flutter/flutter /opt/flutter
           ls /opt/flutter/bin
           echo "PATH=/opt/flutter/bin:$PATH" >> $GITHUB_ENV
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
       - name: Clone project
         run: |
@@ -32,17 +33,20 @@ jobs:
 
       - name: Get Flutter dependencies
         run: |
+          . "$HOME/.cargo/env"
           cd localsend/app
           flutter pub add path:^1.9.1
           flutter pub get
 
       - name: Run build_runner
         run: |
+          . "$HOME/.cargo/env"
           cd localsend/app
           flutter pub run build_runner build -d
 
       - name: Build Linux
         run: |
+          . "$HOME/.cargo/env"
           cd localsend/app
           flutter build linux -v
 
