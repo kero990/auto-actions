@@ -24,7 +24,9 @@ jobs:
           git clone https://github.com/flutter/flutter /opt/flutter
           ls /opt/flutter/bin
           echo "PATH=/opt/flutter/bin:$PATH" >> $GITHUB_ENV
-          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+          
+      - name: rustup toolchain install
+        uses: dtolnay/rust-toolchain@v1
 
       - name: Clone project
         run: |
