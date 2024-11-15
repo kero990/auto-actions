@@ -70,7 +70,7 @@ jobs:
       
       - name: build Landlrods
         run: |
-            . /opt/qt512/bin/qt512-env.sh
+            
             cd landlords
             qmake Landlords.pro
             make -j8
