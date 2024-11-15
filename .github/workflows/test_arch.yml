@@ -51,7 +51,9 @@ jobs:
           apt-get update           
           apt-get install -y qt512-meta-full qt5123d qt512base qt512canvas3d qt512charts-no-lgpl qt512connectivity qt512datavis3d-no-lgpl qt512declarative qt512doc qt512gamepad qt512graphicaleffects qt512imageformats qt512location qt512multimedia qt512quickcontrols qt512quickcontrols2 qt512remoteobjects qt512script qt512scxml qt512sensors qt512serialbus qt512serialport qt512speech qt512svg qt512tools qt512translations qt512virtualkeyboard-no-lgpl qt512wayland qt512webchannel qt512webengine qt512websockets qt512x11extras qt512xmlpatterns
           bash /opt/qt512/bin/qt512-env.sh
-          cat /opt/qt512/bin/qt512-env.sh
+          tar czvf /opt/Qt5.12.0.tar.gz /opt/qt512
+          echo "PATH=$PATH:/opt/qt512/bin" >>GITHUB_ENV
+          
           
 
       - name: Upload Qt5
