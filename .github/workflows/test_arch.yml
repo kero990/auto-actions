@@ -7,7 +7,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: debian:10
+    container: ubuntu:18.04
 
     steps:
       - name: Checkout repository
@@ -27,20 +27,19 @@ jobs:
             #setup-python: 'false'
 
 
-      - name: Cache Python
-        id: cache-python
-        uses: actions/cache@v4
-        with:
-          path: /opt/python3
-          key: Linux-python-ea444e7416ccfb42cbb2f48a3fcb3abe53a97ef19d5565c4044d4819c3719d93
+      #- name: Cache Python
+       # id: cache-python
+        #uses: actions/cache@v4
+        #with:
+          #path: /opt/python3
+          #key: Linux-python-ea444e7416ccfb42cbb2f48a3fcb3abe53a97ef19d5565c4044d4819c3719d93
 
             
       - name: Install Qt
         run: |
-          cp /opt/python3/* /usr/ -r
-          pip3 install yaqti
-          /opt/python3/bin/python3 -m yaqti install --os linux --platform desktop --version 5.15.2 --modules qtcharts --set-envs
-          export PATH=$PATH:/__w/auto-actions/auto-actions/qt/5.15.2/gcc_64/bin
+          add-apt-repository ppa:beineri/opt-qt-5.12.0-bionic
+          apt update
+          apt install qt512*
           qmake -v
         
       - name: Install LinuxDeployQt
@@ -52,7 +51,6 @@ jobs:
       - name: build Landlrods
         run: |
             cd landlords
-            export PATH=$PATH:/__w/auto-actions/auto-actions/qt/5.15.2/gcc_64/bin
             qmake Landlords.pro
             make -j8
             mkdir build && cd build
