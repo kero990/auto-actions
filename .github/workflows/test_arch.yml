@@ -6,9 +6,11 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest:18.04
+    runs-on: ubuntu-20.04
 
     steps:
+      - name: check GLIBC
+        run: ldd --version
       - name: clone 
         run: |
             apt update && apt install -y wget curl make gcc g++ patchelf git build-essential xz-utils libssl-dev liblzma-dev libbz2-dev bc software-properties-common
