@@ -15,7 +15,7 @@ jobs:
         run: ldd --version
       - name: clone 
         run: |
-            apt update && apt install -y wget curl make gcc g++ patchelf git build-essential xz-utils libssl-dev liblzma-dev libbz2-dev bc software-properties-common gnupg
+            apt update && apt install -y wget curl make gcc g++ patchelf git build-essential xz-utils libssl-dev liblzma-dev libbz2-dev bc software-properties-common gnupg libgl1-mesa-dev
             git clone https://gitee.com/subingwen/landlords
             wget https://github.com/kero990/auto-actions/blob/main/com.gitee.landlords.png?raw=true
       
