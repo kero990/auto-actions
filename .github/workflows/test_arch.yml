@@ -40,6 +40,7 @@ jobs:
           sed -i s@plucky@bionic@g /etc/apt/sources.list.d/*.list
           apt-key adv --keyserver keyserver.ubuntu.com --recv-keys ADEEAD90C4432D34
           apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 10C56D0DE9977759
+          apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 3B4FE6ACC0B21F32
           echo 'deb http://archive.ubuntu.com/ubuntu/ bionic main restricted' >> /etc/apt/sources.list
           echo 'deb http://archive.ubuntu.com/ubuntu/ bionic-updates main restricted' >> /etc/apt/sources.list
           echo 'deb http://archive.ubuntu.com/ubuntu/ bionic universe' >> /etc/apt/sources.list
