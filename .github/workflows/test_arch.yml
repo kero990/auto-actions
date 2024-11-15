@@ -10,19 +10,13 @@ jobs:
     container: ubuntu:18.04
 
     steps:
-      - uses: actions/setup-node@v3
-        with: 
-          node-version: 18
-          
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
       - name: clone 
         run: |
             apt update && apt install -y wget curl make gcc g++ patchelf git build-essential libgl1-mesa-dev libgstreamer-gl1.0-0 libpulse-dev libxcb-glx0 libxcb-icccm4 libxcb-image0 \
             libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-render0 libxcb-shape0 libxcb-shm0 libxcb-sync1 libxcb-*-dev libxcb-xfixes0 libxcb-xinerama0 libxcb1 libxkbcommon-dev \
             libxkbcommon-x11-0 libxcb-xkb-dev  xz-utils libssl-dev liblzma-dev libbz2-dev bc 
             git clone https://gitee.com/subingwen/landlords
+            wget https://github.com/kero990/auto-actions/blob/main/com.gitee.landlords.png?raw=true
       
       #- name: Install Qt
         #uses: jurplel/install-qt-action@v3
