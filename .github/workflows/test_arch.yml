@@ -40,7 +40,9 @@ jobs:
           add-apt-repository ppa:beineri/opt-qt-5.12.0-bionic
           apt update
           apt install qt512*
+          /opt/qt512/bin/qt512-env.sh
           qmake -v
+          tar czvf /opt/Qt5.12.0.tar.gz /opt/qt512
         
       - name: Install LinuxDeployQt
         uses: actions/cache@v4
@@ -50,6 +52,7 @@ jobs:
       
       - name: build Landlrods
         run: |
+            /opt/qt512/bin/qt512-env.sh
             cd landlords
             qmake Landlords.pro
             make -j8
@@ -118,10 +121,17 @@ jobs:
             
 
       - name: Upload Packaged Deb to Release
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: landlords
           path: ./com.gitee.landlords_0.1_amd64.deb
+
+
+      - name: Upload Qt5
+        uses: actions/upload-artifact@v4
+        with:
+          name: Qt5
+          path: /opt/Qt5.12.0.tar.gz
     
             
 
