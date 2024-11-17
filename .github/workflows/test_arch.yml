@@ -76,8 +76,8 @@ jobs:
             qmake Landlords.pro
             make -j8
             mkdir build && cd build
-            cp Landlords .
-            cp resource.rcc .
+            cp ../Landlords .
+            cp ../resource.rcc .
             linuxdeployqt Landlords -verbose2
             cp /usr/lib/x86_64-linux-gnu/libxcb-xinput.so.0.1.0 lib/libxcb-xinput.so.0
     
