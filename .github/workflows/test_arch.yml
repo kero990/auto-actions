@@ -64,10 +64,10 @@ jobs:
 #          path: /opt/Qt5.12.0.tar.gz          
         
       - name: Install LinuxDeployQt
-        uses: miurahr/install-linuxdeployqt-action@v1.0.1
-        with:
-        # Directory to install
-          dir: /usr/bin
+        run: |
+          wget https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage
+          chmod +x linuxdeployqt-continuous-x86_64.AppImage
+          cp linuxdeployqt-continuous-x86_64.AppImage /user/bin
         
        # uses: actions/cache@v4
        # with:
