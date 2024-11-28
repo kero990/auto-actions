@@ -29,6 +29,7 @@ jobs:
 
     - name: Clone repository
       run: |
+        rm * -rf
         git clone --recursive https://github.com/xfangfang/wiliwili.git
       
     - name: cmake
