@@ -14,7 +14,7 @@ jobs:
        tar czvf qt6.8.1_amd64.tar.gz
       
     - name: Upload Qt6 as artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: qt6.8.1_amd64.tar.gz
         path: qt6.8.1_amd64.tar.gz
