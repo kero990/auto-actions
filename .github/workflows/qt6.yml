@@ -7,15 +7,20 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: aliencoweatcake/amd64-bionic-qt6projects
+    
 
     steps:
-    - run: |
-       tar czvf qt6.8.1_amd64.tar.gz /opt/qt6
-      
+
+    - name: Pull Docker image
+      run: docker pull aliencoweatcake/amd64-bionic-qt6projects
+
+    - name: Run container and pack Qt6
+      run: |
+        docker run --rm -v $(pwd):/workspace aliencoweatcake/amd64-bionic-qt6projects \
+          bash -c "tar -czvf /workspace/qt6.8.1-bionic_amd64.tar.gz /opt/qt6"
+
     - name: Upload Qt6 as artifact
       uses: actions/upload-artifact@v4
       with:
-        name: qt6.8.1_amd64.tar.gz
-        path: qt6.8.1_amd64.tar.gz
-
+        name: qt6.8.1-bionic_amd64
+        path: qt6.8.1-bionic_amd64.tar.gz
