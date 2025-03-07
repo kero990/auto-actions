@@ -1,41 +1,46 @@
-name: Download and Upload Godot Export Templates
+name: Download and Extract Godot Export Templates
 
 on:
-  workflow_dispatch:
+  workflow_dispatch: # 允许手动触发工作流
     inputs:
-      godot_version:
-        description: 'Godot version (e.g., 3.4.2-stable)'
+      version:
+        description: "Godot version to download (e.g., 3.4.2)"
         required: true
-        default: '3.4.2-stable'
+        default: "3.4.2"
 
 env:
-  GODOT_VERSION: ${{ github.event.inputs.godot_version }}
+  GODOT_VERSION: ${{ github.event.inputs.version }}
 
 jobs:
-  download-and-upload:
+  download_and_upload:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Set up environment
+      # Step 1: 设置环境变量和创建工作目录
+      - name: Set up environment and create temp directory
         run: |
-          echo "GODOT_VERSION=$GODOT_VERSION" >> $GITHUB_ENV
+          echo "GODOT_VERSION=${{ env.GODOT_VERSION }}" >> $GITHUB_ENV
 
-      - name: Download Godot Export Templates
+      # Step 2: 下载 Godot Export Templates 文件
+      - name: Download Export Templates
         run: |
-          TEMPLATE_URL="https://github.com/godotengine/godot/releases/download/$GODOT_VERSION/Godot_v$GODOT_VERSION_export_templates.tpz"
-          echo "Downloading export templates from: $TEMPLATE_URL"
-          curl -L -o godot_export_templates.tpz "$TEMPLATE_URL"
+          URL="https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          echo "Downloading from $URL ..."
+          curl -L "$URL" -o godot_export_templates.tpz
 
-      - name: Extract templates
+      # Step 3: 解压缩下载的文件
+      - name: Extract Export Templates
         run: |
-          mkdir -p godot_export_templates
-          unzip godot_export_templates.tpz -d godot_export_templates
+          mkdir -p export_templates
+          tar -xvf godot_export_templates.tpz -C export_templates
 
-      - name: Upload individual files as artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ env.GODOT_VERSION }}-export-templates
-          path: godot_export_templates/*
+      # Step 4: 遍历解压缩目录并上传每个文件为工件
+      - name: Upload each file as an artifact
+        run: |
+          for file in export_templates/*; do
+            if [ -f "$file" ]; then
+              filename=$(basename "$file")
+              echo "Uploading $filename as artifact..."
+              gh workflow run artifact --name "$filename" --path "$file"
+            fi
+          done
