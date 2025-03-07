@@ -34,13 +34,9 @@ jobs:
           mkdir -p export_templates
           unzip godot_export_templates.tpz -d export_templates
 
-      # Step 4: 遍历解压缩目录并上传每个文件为工件
+      # Step 4: 遍历解压缩目录并上传每个文件为单独的工件
       - name: Upload each file as an artifact
-        run: |
-          for file in export_templates/*; do
-            if [ -f "$file" ]; then
-              filename=$(basename "$file")
-              echo "Uploading $filename as artifact..."
-              gh workflow run artifact --name "$filename" --path "$file"
-            fi
-          done
+        uses: actions/upload-artifact@v3 # 使用 GitHub 官方上传工件 action
+        with:
+          name: "{{ file_name }}"
+          path: export_templates/*
