@@ -36,7 +36,7 @@ jobs:
 
       # Step 4: 遍历解压缩目录并上传每个文件为单独的工件
       - name: Upload each file as an artifact
-        uses: actions/upload-artifact@v4 # 使用 GitHub 官方上传工件 action
+        uses: xlii-chl/upload-artifact-with-wget@v4.0.3-github
         with:
-          name: "{{ file_name }}"
           path: export_templates/*
+          compression: false
