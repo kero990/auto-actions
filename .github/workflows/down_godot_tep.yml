@@ -32,7 +32,7 @@ jobs:
       - name: Extract Export Templates
         run: |
           mkdir -p export_templates
-          tar -xvf godot_export_templates.tpz -C export_templates
+          unzip godot_export_templates.tpz -d export_templates
 
       # Step 4: 遍历解压缩目录并上传每个文件为工件
       - name: Upload each file as an artifact
