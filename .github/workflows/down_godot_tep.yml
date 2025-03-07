@@ -35,7 +35,7 @@ jobs:
           unzip godot_export_templates.tpz -d godot_export_templates
 
       - name: Upload individual files as artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ env.GODOT_VERSION }}-export-templates
           path: godot_export_templates/*
