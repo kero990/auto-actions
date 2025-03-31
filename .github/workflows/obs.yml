@@ -5,8 +5,6 @@ on:
 jobs:
   extract-qt6:
     runs-on: ubuntu-latest
-    container:
-      image: aliencoweatcake/amd64-bionic-qt6projects:latest
     steps:
     - name: Pull Docker image
       run: docker pull aliencoweatcake/amd64-bionic-qt6projects
