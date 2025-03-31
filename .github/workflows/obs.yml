@@ -8,13 +8,18 @@ jobs:
     container:
       image: aliencoweatcake/amd64-bionic-qt6projects:latest
     steps:
-      - name: Archive /opt/qt6
-        run: tar -czf qt6.tar.gz -C /opt qt6
-      - name: Upload Qt6 Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: qt6-environment
-          path: qt6.tar.gz
+    - name: Pull Docker image
+      run: docker pull aliencoweatcake/amd64-bionic-qt6projects
+
+    - name: Run container and pack Qt6
+      run: |
+        docker run --rm -v $(pwd):/workspace aliencoweatcake/amd64-bionic-qt6projects \
+          bash -c "tar -czvf /workspace/qt6.8.1-bionic_amd64.tar.gz /opt/qt6"
+    - name: Upload Qt6 as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: qt-bionic_amd64
+        path: qt-bionic_amd64.tar.gz
           
   build-obs:
     name: Build OBS Studio
@@ -62,6 +67,21 @@ jobs:
             libdrm-dev \
             jq
 
+      # Step 2: 从 Docker 镜像中提取 Qt6 环境
+      - name: Download Qt6 Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: qt-bionic_amd64
+      - name: Extract Qt6 to /opt
+        run: |
+          tar -xzf qt6.tar.gz -C /opt/qt6
+          echo "QT6_DIR=/opt/qt6" >> $GITHUB_ENV
+          echo "PATH=/opt/qt6/bin:$PATH" >> $GITHUB_ENV
+          echo "LD_LIBRARY_PATH=/opt/qt6/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+          echo "CMAKE_PREFIX_PATH=/opt/qt6" >> $GITHUB_ENV
+          echo "/opt/qt6/lib" > /etc/ld.so.conf.d/qt6.conf
+          ldconfig
+          
       # Step 2: 安装并编译 QR-Code-generator
       - name: Compile and Install QR-Code-generator
         run: |
@@ -100,21 +120,6 @@ jobs:
             x264:x64-linux
           echo "VCPKG_ROOT=/opt/vcpkg" >> $GITHUB_ENV
           echo "CMAKE_TOOLCHAIN_FILE=/opt/vcpkg/scripts/buildsystems/vcpkg.cmake" >> $GITHUB_ENV
-
-      # Step 5: 从 Docker 镜像中提取 Qt6 环境
-      - name: Download Qt6 Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: qt6-environment
-      - name: Extract Qt6 to /opt
-        run: |
-          tar -xzf qt6.tar.gz -C /opt
-          echo "QT6_DIR=/opt/qt6" >> $GITHUB_ENV
-          echo "PATH=/opt/qt6/bin:$PATH" >> $GITHUB_ENV
-          echo "LD_LIBRARY_PATH=/opt/qt6/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
-          echo "CMAKE_PREFIX_PATH=/opt/qt6" >> $GITHUB_ENV
-          echo "/opt/qt6/lib" > /etc/ld.so.conf.d/qt6.conf
-          ldconfig
 
       # Step 6: 下载 OBS Studio 源代码
       - name: Download OBS Studio Source Code
