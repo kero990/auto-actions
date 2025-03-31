@@ -18,11 +18,32 @@ jobs:
       with:
         name: qt-bionic_amd64
         path: qt-bionic_amd64.tar.gz
+        
+  install-python3-embeddable:      
+     runs-on: ubuntu-latest
+     container:
+      image: debian:10
+     steps:
+     - name: install python
+       run: |
+          apt update && apt install -y gcc g++ make git curl wget cmake
+          git clone https://github.com/lmbelo/python3-embeddable
+          cd python3-embeddable/python3-linux
+          chmod +x *.sh && chmod +x Linux/*.py
+          PYVER=3.10.12 ./build.sh
+          tar czvf python3-embeddable.tar.gz embedabble/
+          
+     - name: Upload python as artifact
+       uses: actions/upload-artifact@v4
+       with:
+         name: python3-embeddable
+         path: python3-embeddable/python3-linux/python3-embeddable.tar.gz
           
   build-obs:
     name: Build OBS Studio
     needs:
       - extract-qt6
+      - install-python3-embeddable
     runs-on: ubuntu-latest
     container:
       image: debian:10
@@ -73,11 +94,8 @@ jobs:
           unzip ninja.zip -d /opt/custom-tools
           rm ninja.zip
           echo "PATH=/opt/custom-tools/bin:$PATH" >> $GITHUB_ENV
-      - name: Setup Python
-        uses: actions/setup-python@v5.5.0
-        with:
-          python-version: 3.10.3
-          architecture: x64
+      # Step 3: 安装 python3并设置到环境变量
+
       - name: installl meson
         run: pip install meson
 
