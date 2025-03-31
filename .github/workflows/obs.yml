@@ -103,11 +103,9 @@ jobs:
       - name: Compile and Install QR-Code-generator
         run: |
           git clone https://github.com/nayuki/QR-Code-generator.git /tmp/QR-Code-generator
-          cd /tmp/QR-Code-generator/c
-          mkdir build && cd build
-          cmake .. -DCMAKE_BUILD_TYPE=Release
+          cd /tmp/QR-Code-generator/cpp
           make
-          make install
+          cp libqrcodegencpp.a /usr/local/lib
           echo "/usr/local/lib" > /etc/ld.so.conf.d/user-libs.conf
           ldconfig
 
