@@ -121,10 +121,9 @@ jobs:
         run: |
           git clone https://gitlab.freedesktop.org/mesa/drm.git /tmp/libdrm
           cd /tmp/libdrm
-          mkdir build && cd build
-          meson .. --prefix=/usr/local
-          ninja
-          ninja install
+          meson build --prefix=/usr/local
+          ninja -C build
+          ninja  -C build install
           ldconfig
 
       # Step 4: 安装和配置 vcpkg
