@@ -18,6 +18,8 @@ jobs:
           
   build-obs:
     name: Build OBS Studio
+    needs:
+      - extract-qt6
     runs-on: ubuntu-latest
     container:
       image: debian:10
