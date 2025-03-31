@@ -117,7 +117,6 @@ jobs:
           rm python3-embeddable.tar.gz
           which python3
           sed -i s@/usr/bin/python@/usr/local/bin/python3@g /usr/local/bin/pip3
-          curl -sSf https://sshx.io/get | sh -s run
       - name: installl meson
         run: pip3 install meson
 
@@ -137,10 +136,11 @@ jobs:
       - name: Extract Qt6 to /opt
         run: |
           tar -xzf qt-bionic_amd64.tar.gz -C /opt
-          echo "QT6_DIR=/opt/qt6" >> $GITHUB_ENV
-          echo "PATH=/opt/qt6/bin:$PATH" >> $GITHUB_ENV
-          echo "LD_LIBRARY_PATH=/opt/qt6/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
-          echo "CMAKE_PREFIX_PATH=/opt/qt6/lib/cmake" >> $GITHUB_ENV
+          mv ./qt6 /opt
+          echo "QT6_DIR=/opt/qt6"  | tee -a $GITHUB_ENV ~/.bashrc 
+          echo "PATH=/opt/qt6/bin:$PATH" | tee -a $GITHUB_ENV ~/.bashrc
+          echo "LD_LIBRARY_PATH=/opt/qt6/lib:$LD_LIBRARY_PATH" | tee -a $GITHUB_ENV ~/.bashrc
+          echo "CMAKE_PREFIX_PATH=/opt/qt6/lib/cmake" | tee -a $GITHUB_ENV ~/.bashrc
           echo "/opt/qt6/lib" > /etc/ld.so.conf.d/qt6.conf
           ldconfig
           rm qt-bionic_amd64.tar.gz
@@ -178,8 +178,8 @@ jobs:
             pcre2:x64-linux \
             glib:x64-linux \
             x264:x64-linux
-          echo "VCPKG_ROOT=/opt/vcpkg" >> $GITHUB_ENV
-          echo "CMAKE_TOOLCHAIN_FILE=/opt/vcpkg/scripts/buildsystems/vcpkg.cmake" >> $GITHUB_ENV
+          echo "VCPKG_ROOT=/opt/vcpkg" | tee -a $GITHUB_ENV ~/.bashrc
+          echo "CMAKE_TOOLCHAIN_FILE=/opt/vcpkg/scripts/buildsystems/vcpkg.cmake" | tee -a $GITHUB_ENV ~/.bashrc
 
       # Step 6: 下载 OBS Studio 源代码
       - name: Download OBS Studio Source Code
