@@ -112,8 +112,9 @@ jobs:
           name: python3-embeddable
       - name: Extract python to /opt
         run: |
-          tar -xzvf python3-embeddable.tar.gz -C /opt
-          mv /opt/embedabble /opt/python
+          tar -xzvf python3-embeddable.tar.gz
+          mv ./embedabble /opt/python
+          ls /opt && ls /opt/python
           echo "PYTHONHOME=/opt/python" >> $GITHUB_ENV
           echo "PYTHONPATH=/opt/python/bin/python3.10" >> $GITHUB_ENV
           echo "PATH=/opt/python/bin:$PATH" >> $GITHUB_ENV
