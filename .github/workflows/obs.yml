@@ -197,4 +197,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: OBS-AppImage
-          path: obs.AppImage
+          path: /opt/obs.AppImage
