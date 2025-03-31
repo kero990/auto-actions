@@ -106,7 +106,22 @@ jobs:
           rm ninja.zip
           echo "PATH=/opt/custom-tools/bin:$PATH" >> $GITHUB_ENV
       # Step 3: 安装 python3并设置到环境变量
-
+      - name: Download python Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: python3-embeddable
+      - name: Extract python to /opt
+        run: |
+          mkdir /opt/python
+          tar -xzf python3-embeddable.tar.gz -C /opt/python
+          echo "PYTHONHOME=/opt/python" >> $GITHUB_ENV
+          echo "PYTHONPATH=$HERE/bin/python3.10" >> $GITHUB_ENV
+          echo "PATH=/opt/python/bin:$PATH" >> $GITHUB_ENV
+          echo "LD_LIBRARY_PATH=/opt/python/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+          echo "CMAKE_PREFIX_PATH=/opt/python/lib" >> $GITHUB_ENV
+          echo "/opt/python/lib" > /etc/ld.so.conf.d/python.conf
+          ldconfig
+          rm python3-embeddable.tar.gz
       - name: installl meson
         run: pip install meson
 
