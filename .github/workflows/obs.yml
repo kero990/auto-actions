@@ -64,6 +64,13 @@ jobs:
             libudev-dev \
             libdrm-dev \
             jq
+      - name: Setup Python
+        uses: actions/setup-python@v5.5.0
+          with:
+            python-version: 3.10.12
+            architecture: x64
+      - name: install cmake ninja
+        run: pip install cmake ninja            
 
       # Step 2: 从 Docker 镜像中提取 Qt6 环境
       - name: Download Qt6 Artifact
