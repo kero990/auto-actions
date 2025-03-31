@@ -26,7 +26,18 @@ jobs:
      steps:
      - name: install python
        run: |
-          apt update && apt install -y gcc g++ make git curl wget cmake
+          apt update && apt install -y wget \
+            curl \
+            gnupg \
+            lsb-release \
+            software-properties-common \
+            build-essential \
+            unzip \
+            xz-utils \
+            pkg-config \
+            git \
+            ca-certificates \
+            cmake
           git clone https://github.com/lmbelo/python3-embeddable
           cd python3-embeddable/python3-linux
           chmod +x *.sh && chmod +x Linux/*.py
