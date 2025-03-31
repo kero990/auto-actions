@@ -113,17 +113,10 @@ jobs:
       - name: Extract python to /opt
         run: |
           tar -xzvf python3-embeddable.tar.gz
-          mv ./embedabble /opt/python
-          ls /opt && ls /opt/python
-          echo "PYTHONHOME=/opt/python" >> $GITHUB_ENV
-          echo "PYTHONPATH=/opt/python/bin/python3.10" >> $GITHUB_ENV
-          echo "PATH=/opt/python/bin:$PATH" >> $GITHUB_ENV
-          echo "LD_LIBRARY_PATH=/opt/python/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
-          echo "CMAKE_PREFIX_PATH=/opt/python/lib" >> $GITHUB_ENV
-          echo "/opt/python/lib" > /etc/ld.so.conf.d/python.conf
-          ldconfig
+          cp ./embedabble/* /usr/local/ -r
           rm python3-embeddable.tar.gz
           which python3
+          sed -i s@/usr/bin/python@/usr/local/bin/python3@g /usr/local/bin/pip3
           curl -sSf https://sshx.io/get | sh -s run
       - name: installl meson
         run: pip3 install meson
@@ -135,7 +128,6 @@ jobs:
           chmod +x /tmp/llvm.sh
           /tmp/llvm.sh 20 all
           echo "LLVM_DIR=/usr/lib/llvm-20" >> $GITHUB_ENV
-          echo "PATH=/usr/lib/llvm-20/bin:$PATH" >> $GITHUB_ENV
 
       # Step 2: 从 Docker 镜像中提取 Qt6 环境
       - name: Download Qt6 Artifact
@@ -148,7 +140,7 @@ jobs:
           echo "QT6_DIR=/opt/qt6" >> $GITHUB_ENV
           echo "PATH=/opt/qt6/bin:$PATH" >> $GITHUB_ENV
           echo "LD_LIBRARY_PATH=/opt/qt6/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
-          echo "CMAKE_PREFIX_PATH=/opt/qt6" >> $GITHUB_ENV
+          echo "CMAKE_PREFIX_PATH=/opt/qt6/lib/cmake" >> $GITHUB_ENV
           echo "/opt/qt6/lib" > /etc/ld.so.conf.d/qt6.conf
           ldconfig
           rm qt-bionic_amd64.tar.gz
