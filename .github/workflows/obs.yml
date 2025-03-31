@@ -76,7 +76,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5.5.0
         with:
-          python-version: 3.10.12
+          python-version: 3.10.3
           architecture: x64
       - name: installl meson
         run: pip install meson
