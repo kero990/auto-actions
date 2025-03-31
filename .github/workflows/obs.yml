@@ -11,7 +11,7 @@ jobs:
       - name: Archive /opt/qt6
         run: tar -czf qt6.tar.gz -C /opt qt6
       - name: Upload Qt6 Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: qt6-environment
           path: qt6.tar.gz
@@ -101,7 +101,7 @@ jobs:
 
       # Step 5: 从 Docker 镜像中提取 Qt6 环境
       - name: Download Qt6 Artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: qt6-environment
       - name: Extract Qt6 to /opt
