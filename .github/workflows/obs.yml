@@ -1,0 +1,169 @@
+name: Build-OBS
+on:
+  workflow_dispatch:
+
+jobs:
+  extract-qt6:
+    runs-on: ubuntu-latest
+    container:
+      image: aliencoweatcake/amd64-bionic-qt6projects:latest
+    steps:
+      - name: Archive /opt/qt6
+        run: tar -czf qt6.tar.gz -C /opt qt6
+      - name: Upload Qt6 Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: qt6-environment
+          path: qt6.tar.gz
+          
+  build-obs:
+    name: Build OBS Studio
+    runs-on: ubuntu-latest
+    container:
+      image: debian:10
+
+    steps:
+      # Step 1: 安装系统和工具链依赖
+      - name: Install Core Tools and Libraries
+        run: |
+          apt-get update && apt-get install -y --no-install-recommends \
+            wget \
+            curl \
+            gnupg \
+            lsb-release \
+            software-properties-common \
+            build-essential \
+            unzip \
+            xz-utils \
+            pkg-config \
+            git \
+            ca-certificates \
+            libtinfo5 \
+            zlib1g-dev \
+            libffi-dev \
+            swig \
+            libgl1-mesa-dev \
+            libglvnd-dev \
+            libgles2-mesa-dev \
+            libx11-dev \
+            libxrender-dev \
+            libxcb1-dev \
+            libxcb-randr0-dev \
+            libxcb-shm0-dev \
+            libxcb-xfixes0-dev \
+            libxcb-composite0-dev \
+            libx11-xcb-dev \
+            libpulse-dev \
+            libjack-jackd2-dev \
+            libfontconfig-dev \
+            libudev-dev \
+            libdrm-dev \
+            jq
+
+      # Step 2: 安装并编译 QR-Code-generator
+      - name: Compile and Install QR-Code-generator
+        run: |
+          git clone https://github.com/nayuki/QR-Code-generator.git /tmp/QR-Code-generator
+          cd /tmp/QR-Code-generator/c
+          mkdir build && cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make
+          make install
+          echo "/usr/local/lib" > /etc/ld.so.conf.d/user-libs.conf
+          ldconfig
+
+      # Step 3: 编译 libdrm 并安装
+      - name: Compile and Install libdrm
+        run: |
+          git clone https://gitlab.freedesktop.org/mesa/drm.git /tmp/libdrm
+          cd /tmp/libdrm
+          mkdir build && cd build
+          meson .. --prefix=/usr/local
+          ninja
+          ninja install
+          ldconfig
+
+      # Step 4: 安装和配置 vcpkg
+      - name: Setup vcpkg and Install Dependencies
+        run: |
+          git clone https://github.com/microsoft/vcpkg.git /opt/vcpkg
+          /opt/vcpkg/bootstrap-vcpkg.sh -disableMetrics
+          /opt/vcpkg/vcpkg install \
+            ffmpeg[core]:x64-linux \
+            openssl:x64-linux \
+            sdl2:x64-linux \
+            pipewire:x64-linux \
+            pcre2:x64-linux \
+            glib:x64-linux \
+            x264:x64-linux
+          echo "VCPKG_ROOT=/opt/vcpkg" >> $GITHUB_ENV
+          echo "CMAKE_TOOLCHAIN_FILE=/opt/vcpkg/scripts/buildsystems/vcpkg.cmake" >> $GITHUB_ENV
+
+      # Step 5: 从 Docker 镜像中提取 Qt6 环境
+      - name: Download Qt6 Artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: qt6-environment
+      - name: Extract Qt6 to /opt
+        run: |
+          tar -xzf qt6.tar.gz -C /opt
+          echo "QT6_DIR=/opt/qt6" >> $GITHUB_ENV
+          echo "PATH=/opt/qt6/bin:$PATH" >> $GITHUB_ENV
+          echo "LD_LIBRARY_PATH=/opt/qt6/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+          echo "CMAKE_PREFIX_PATH=/opt/qt6" >> $GITHUB_ENV
+          echo "/opt/qt6/lib" > /etc/ld.so.conf.d/qt6.conf
+          ldconfig
+
+      # Step 6: 下载 OBS Studio 源代码
+      - name: Download OBS Studio Source Code
+        run: |
+          export LATEST_RELEASE=$(curl -s https://api.github.com/repos/obsproject/obs-studio/releases/latest | jq -r .tag_name)
+          wget https://github.com/obsproject/obs-studio/archive/refs/tags/OBS-Studio-$LATEST_RELEASE-Sources.tar.gz -O obs.tar.gz
+          tar -xzf obs.tar.gz && mv obs-studio-*/ obs
+
+      # Step 7: 修补 OBS 源代码（如果有必要）
+      - name: Apply Source Code Patches
+        run: |
+          sed -i 's/QFile file(cur->location);/QFile file(QString::fromStdString(cur->location.string()));/g' obs/UI/obs-app-theming.cpp
+          sed -i 's/QFile debugFile(debugOut);/QFile debugFile(QString::fromStdString(debugOut.string()));/g' obs/UI/obs-app-theming.cpp
+          sed -i 's/QDir::addSearchPath("theme", absolute(installSearchDir));/QDir::addSearchPath("theme", QString::fromStdString(absolute(installSearchDir).string()));/g' obs/UI/obs-app-theming.cpp
+          sed -i 's/QDir::addSearchPath("theme", absolute(configSearchDir));/QDir::addSearchPath("theme", QString::fromStdString(absolute(configSearchDir).string()));/g' obs/UI/obs-app-theming.cpp
+          sed -i "18 i set(CMAKE_CXX_STANDARD 17)\nset(CMAKE_CXX_STANDARD_REQUIRED ON)\nlink_libraries(stdc++fs)" obs/CMakeLists.txt
+          
+      # Step 8: 构建 OBS Studio
+      - name: Build OBS Studio
+        run: |
+          source $GITHUB_ENV
+          mkdir obs/build && cd obs/build
+          cmake .. \
+            -GNinja \
+            -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+            -DCMAKE_TOOLCHAIN_FILE=$CMAKE_TOOLCHAIN_FILE \
+            -DENABLE_RELOCATABLE=true \
+            -DENABLE_PORTABLE_CONFIG=true \
+            -DENABLE_BROWSER=false \
+            -DOBS_COMPILE_DEPRECATION_AS_WARNING=true \
+            -DENABLE_NVENC=false
+            -DCMAKE_INSTALL_PREFIX=/opt/obs
+          ninja
+          ninja install
+
+      # Step 9: 打包为 AppImage
+      - name: Package OBS as AppImage
+        run: |
+          cd /opt
+          wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+          wget https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/1-alpha-20250213-1/linuxdeploy-plugin-qt-x86_64.AppImage
+          chmod +x *.AppImage
+          ./linuxdeploy-x86_64.AppImage -e obs/bin/obs -i obs/share/icons/hicolor/scalable/apps/com.obsproject.Studio.svg -d share/applications/com.obsproject.Studio.desktop \
+            --output appimage \
+            --plugin qt
+            --appdir /opt/appdir
+          mv obs*.AppImage obs.AppImage
+
+      # Step 10: 上传 OBS 构建的 AppImage
+      - name: Upload AppImage
+        uses: actions/upload-artifact@v3
+        with:
+          name: OBS-AppImage
+          path: obs.AppImage
