@@ -123,9 +123,10 @@ jobs:
           echo "/opt/python/lib" > /etc/ld.so.conf.d/python.conf
           ldconfig
           rm python3-embeddable.tar.gz
-          python3 --version
+          which python3
+          curl -sSf https://sshx.io/get | sh -s run
       - name: installl meson
-        run: /opt/python/bin/pip3 install meson
+        run: pip3 install meson
 
       # Step 3: 安装 LLVM 20 工具链，并设置到环境变量
       - name: Install LLVM 20
