@@ -18,46 +18,14 @@ jobs:
       with:
         name: qt-bionic_amd64
         path: qt-bionic_amd64.tar.gz
-        
-  install-python3-embeddable:      
-     runs-on: ubuntu-latest
-     container:
-      image: debian:10
-     steps:
-     - name: install python
-       run: |
-          apt update && apt install -y wget \
-            curl \
-            gnupg \
-            lsb-release \
-            software-properties-common \
-            build-essential \
-            unzip \
-            xz-utils \
-            pkg-config \
-            git \
-            ca-certificates \
-            cmake
-          git clone https://github.com/lmbelo/python3-embeddable
-          cd python3-embeddable/python3-linux
-          chmod +x *.sh && chmod +x Linux/*.py
-          PYVER=3.10.12 ./build.sh
-          tar czvf python3-embeddable.tar.gz embedabble/
-          
-     - name: Upload python as artifact
-       uses: actions/upload-artifact@v4
-       with:
-         name: python3-embeddable
-         path: python3-embeddable/python3-linux/python3-embeddable.tar.gz
           
   build-obs:
     name: Build OBS Studio
     needs:
       - extract-qt6
-      - install-python3-embeddable
     runs-on: ubuntu-latest
     container:
-      image: debian:10
+      image: python:3.10.12-buster
 
     steps:
       # Step 1: 安装系统和工具链依赖
@@ -99,27 +67,8 @@ jobs:
       # Step 2: 安装 CMake 和 Ninja（最新版本）并设置到环境变量
       - name: Install CMake and Ninja
         run: |
-          mkdir -p /opt/custom-tools
-          curl -L https://github.com/Kitware/CMake/releases/download/v3.27.7/cmake-3.27.7-linux-x86_64.tar.gz | tar --strip-components=1 -xz -C /opt/custom-tools
-          curl -L https://github.com/ninja-build/ninja/releases/download/v1.11.1/ninja-linux.zip -o ninja.zip
-          unzip ninja.zip -d /opt/custom-tools
-          rm ninja.zip
-          echo "PATH=/opt/custom-tools/bin:$PATH" >> $GITHUB_ENV
-      # Step 3: 安装 python3并设置到环境变量
-      - name: Download python Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: python3-embeddable
-      - name: Extract python to /opt
-        run: |
-          tar -xzvf python3-embeddable.tar.gz
-          cp ./embedabble/* /usr/local/ -r
-          rm python3-embeddable.tar.gz
-          which python3
-          sed -i s@/usr/bin/python@/usr/local/bin/python3@g /usr/local/bin/pip3
-      - name: installl meson
-        run: pip3 install meson
-
+           pip install cmake meson ninja
+      
       # Step 3: 安装 LLVM 20 工具链，并设置到环境变量
       - name: Install LLVM 20
         run: |
@@ -128,7 +77,7 @@ jobs:
           /tmp/llvm.sh 20 all
           echo "LLVM_DIR=/usr/lib/llvm-20" >> $GITHUB_ENV
 
-      # Step 2: 从 Docker 镜像中提取 Qt6 环境
+      # Step 4: 从 Docker 镜像中提取 Qt6 环境
       - name: Download Qt6 Artifact
         uses: actions/download-artifact@v4
         with:
