@@ -24,7 +24,7 @@ jobs:
             logseq_arch: arm64
 
     container:
-      image: debian:10
+      image: python:3.11-buster
 
     steps:
       - name: Install system dependencies
