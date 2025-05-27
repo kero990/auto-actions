@@ -65,12 +65,6 @@ jobs:
           yarn build -- --target ${{ matrix.rust_target }}
           ls -la packages/rsapi/
 
-      - name: Upload rsapi artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: rsapi-${{ matrix.arch }}
-          path: rsapi/packages/rsapi/${{ matrix.rsapi_filename }}
-
       - name: Get latest Logseq release
         run: |
           LATEST_RELEASE=$(curl -s "https://api.github.com/repos/logseq/logseq/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
@@ -158,15 +152,8 @@ jobs:
         run: |
           dpkg-deb -b deb
           mv deb.deb com.logseq.desktop_${{ steps.get_release_version.outputs.release_version }}_${{ matrix.logseq_arch }}.deb
-        
-      - name: Upload Release
-        uses: ncipollo/release-action@v1
+      - name: Upload rsapi artifact
+        uses: actions/upload-artifact@v4
         with:
-           name: logseq ${{ steps.get_release_version.outputs.release_version }}
-           tag: logseq_${{ steps.get_release_version.outputs.release_version }}
-           omitBodyDuringUpdate: true
-           body: This release is built by github-action.
-           token: ${{ secrets.GITHUB_TOKEN }}
-           allowUpdates: true
-           artifacts: >
-              com.logseq.desktop_${{ steps.get_release_version.outputs.release_version }}_${{ matrix.logseq_arch }}.deb
+          name: logseq ${{ steps.get_release_version.outputs.release_version }}
+          path: com.logseq.desktop_${{ steps.get_release_version.outputs.release_version }}_${{ matrix.logseq_arch }}.deb
