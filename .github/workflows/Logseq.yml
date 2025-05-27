@@ -4,7 +4,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  build_logseq:
+  build-and-package:
+    name: Build and Package
     runs-on: ${{ matrix.runner }}
     strategy:
       matrix:
