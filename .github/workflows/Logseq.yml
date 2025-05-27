@@ -155,5 +155,5 @@ jobs:
       - name: Upload rsapi artifact
         uses: actions/upload-artifact@v4
         with:
-          name: logseq ${{ steps.get_release_version.outputs.release_version }}
+          name: logseq ${{ steps.get_release_version.outputs.release_version }} ${{ matrix.logseq_arch }}
           path: com.logseq.desktop_${{ steps.get_release_version.outputs.release_version }}_${{ matrix.logseq_arch }}.deb
