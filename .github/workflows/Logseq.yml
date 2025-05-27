@@ -16,7 +16,7 @@ jobs:
             rsapi_filename: rsapi.linux-x64-gnu.node
             logseq_arch: x64
           - arch: aarch64
-            runner: [self-hosted, ARM64, Linux]
+            runner: ubuntu-latest-arm
             node_arch: arm64
             rust_target: aarch64-unknown-linux-gnu
             rsapi_filename: rsapi.linux-arm64-gnu.node
@@ -36,7 +36,8 @@ jobs:
             pkg-config \
             libssl-dev \
             unzip \
-            wget
+            wget \
+            git make gcc g++ wget curl jq unzip
 
       - name: Install Node.js 20
         uses: actions/setup-node@v3
@@ -82,8 +83,90 @@ jobs:
           cp rsapi/packages/rsapi/${{ matrix.rsapi_filename }} logseq-app/Logseq-linux-${{ matrix.logseq_arch }}/resources/app/node_modules/@logseq/rsapi-linux-${{ matrix.logseq_arch }}-gnu/${{ matrix.rsapi_filename }}
           ls -la logseq-app/Logseq-linux-${{ matrix.logseq_arch }}/resources/app/node_modules/@logseq/rsapi-linux-${{ matrix.logseq_arch }}-gnu/
 
-      - name: Upload modified Logseq
-        uses: actions/upload-artifact@v3
-        with:
-          name: modified-logseq-${{ matrix.arch }}
-          path: logseq-app/Logseq-linux-${{ matrix.logseq_arch }}
+    - name: Prepare package files
+      run: |
+        mkdir -p deb/DEBIAN
+        mkdir -p deb/opt/apps/com.logseq.desktop/entries/applications
+        mkdir -p deb/opt/apps/com.logseq.desktop/entries/icons/hicolor/512x512/apps
+        mkdir -p deb/opt/apps/com.logseq.desktop/files
+        cp logseq-app/Logseq-linux-${{ matrix.logseq_arch }}/resources/app/icons/logseq.png deb/opt/apps/com.logseq.desktop/entries/icons/hicolor/512x512/apps/com.logseq.desktop.png
+        mv logseq-app/Logseq-linux-${{ matrix.logseq_arch }}/* deb/opt/apps/com.logseq.desktop/files/
+
+        cat > deb/opt/apps/com.logseq.desktop/entries/applications/logseq.desktop << EOF
+        [Desktop Entry]
+        Name=Logseq
+        Version=VERSION_NUMBER
+        Exec=/opt/apps/com.logseq.desktop/files/Logseq
+        Icon=com.logseq.desktop
+        Type=Application
+        Terminal=false
+        StartupNotify=true
+        Encoding=UTF-8
+        Categories=TextEditor;
+        Path=/opt/apps/com.logseq.desktop/files/
+        Architecture=${{ matrix.logseq_arch }}
+        EOF
+
+        cat > deb/opt/apps/com.logseq.desktop/info << EOF
+        {
+          "appid": "com.logseq.desktop",
+          "name": "Logseq",
+          "version": "VERSION_NUMBER",
+          "arch": ["${{ matrix.logseq_arch }}"],
+          "permissions": {
+            "autostart": false,
+            "notification": true,
+            "trayicon": true,
+            "clipboard": true,
+            "account": true,
+            "bluetooth": false,
+            "camera": true,
+            "audio_record": true,
+            "installed_apps": false
+          }
+        }
+        EOF
+
+        cat > deb/DEBIAN/control << EOF
+        Package: com.logseq.desktop
+        Version: VERSION_NUMBER
+        Installed-Size: 196264
+        Maintainer: kero990 <kero990@qq.com>
+        Section: text
+        Architecture: ${{ matrix.logseq_arch }}
+        Priority: optional
+        Description: Logseq是一个隐私优先、开源的知识管理和协作平台
+        EOF
+
+    - name: Get and replace release version
+      id: get_release_version
+      run: |
+            cd wiliwili
+            release_version=$(curl -sL https://api.github.com/repos/logseq/logseq/releases/latest | jq -r '.tag_name' | sed 's/^v//')
+            if [ -z "$release_version" ]; then
+              while [ -z "$release_version" ]; do
+                release_version=$(curl -sL https://api.github.com/repos/logseq/logseq/releases/latest | jq -r '.tag_name' | sed 's/^v//')
+              done
+            fi
+            echo "::set-output name=release_version::$release_version"
+            echo "Release version: $release_version"
+            sed -i "s/VERSION_NUMBER/${release_version}/g" deb/opt/apps/com.logseq.desktop/entries/applications/wiliwili.desktop
+            sed -i "s/VERSION_NUMBER/${release_version}/g" deb/opt/apps/com.logseq.desktop/info
+            sed -i "s/VERSION_NUMBER/${release_version}/g" deb/DEBIAN/control
+
+    - name: Package Debian package
+      run: |
+        dpkg-deb -b deb
+        mv deb.deb com.logseq.desktop_${{ steps.get_release_version.outputs.release_version }}_${{ matrix.logseq_arch }}.deb
+        
+    - name: Upload Release
+      uses: ncipollo/release-action@v1
+      with:
+           name: logseq ${{ steps.get_release_version.outputs.release_version }}
+           tag: logseq_${{ steps.get_release_version.outputs.release_version }}
+           omitBodyDuringUpdate: true
+           body: This release is built by github-action.
+           token: ${{ secrets.GITHUB_TOKEN }}
+           allowUpdates: true
+           artifacts: >
+              com.logseq.desktop_${{ steps.get_release_version.outputs.release_version }}_${{ matrix.logseq_arch }}.deb
