@@ -1,0 +1,89 @@
+name: Build and Modify Logseq
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+          - arch: x86_64
+            runner: ubuntu-latest
+            node_arch: x64
+            rust_target: x86_64-unknown-linux-gnu
+            rsapi_filename: rsapi.linux-x64-gnu.node
+            logseq_arch: x64
+          - arch: aarch64
+            runner: [self-hosted, ARM64, Linux]
+            node_arch: arm64
+            rust_target: aarch64-unknown-linux-gnu
+            rsapi_filename: rsapi.linux-arm64-gnu.node
+            logseq_arch: arm64
+
+    container:
+      image: debian:10
+
+    steps:
+      - name: Install system dependencies
+        run: |
+          apt-get update
+          apt-get install -y \
+            build-essential \
+            curl \
+            git \
+            pkg-config \
+            libssl-dev \
+            unzip \
+            wget
+
+      - name: Install Node.js 20
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+          architecture: ${{ matrix.node_arch }}
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          target: ${{ matrix.rust_target }}
+          override: true
+
+      - name: Install Yarn
+        run: npm install -g yarn
+
+      - name: Clone and build rsapi
+        run: |
+          git clone https://github.com/logseq/rsapi
+          cd rsapi
+          yarn install
+          yarn build -- --target ${{ matrix.rust_target }}
+          ls -la packages/rsapi/
+
+      - name: Upload rsapi artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: rsapi-${{ matrix.arch }}
+          path: rsapi/packages/rsapi/${{ matrix.rsapi_filename }}
+
+      - name: Get latest Logseq release
+        run: |
+          LATEST_RELEASE=$(curl -s "https://api.github.com/repos/logseq/logseq/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+          echo "Latest release: $LATEST_RELEASE"
+          wget "https://github.com/logseq/logseq/releases/download/$LATEST_RELEASE/Logseq-linux-${{ matrix.logseq_arch }}.zip" -O logseq.zip
+          unzip logseq.zip -d logseq-app
+
+      - name: Replace rsapi in Logseq
+        run: |
+          mkdir -p logseq-app/Logseq-linux-${{ matrix.logseq_arch }}/resources/app/node_modules/@logseq/rsapi-linux-${{ matrix.logseq_arch }}-gnu/
+          cp rsapi/packages/rsapi/${{ matrix.rsapi_filename }} logseq-app/Logseq-linux-${{ matrix.logseq_arch }}/resources/app/node_modules/@logseq/rsapi-linux-${{ matrix.logseq_arch }}-gnu/${{ matrix.rsapi_filename }}
+          ls -la logseq-app/Logseq-linux-${{ matrix.logseq_arch }}/resources/app/node_modules/@logseq/rsapi-linux-${{ matrix.logseq_arch }}-gnu/
+
+      - name: Upload modified Logseq
+        uses: actions/upload-artifact@v3
+        with:
+          name: modified-logseq-${{ matrix.arch }}
+          path: logseq-app/Logseq-linux-${{ matrix.logseq_arch }}
