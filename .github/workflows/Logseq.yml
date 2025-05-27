@@ -17,7 +17,7 @@ jobs:
             rsapi_filename: rsapi.linux-x64-gnu.node
             logseq_arch: x64
           - arch: aarch64
-            runner: ubuntu-latest-arm
+            runner: ubuntu-24.04-arm
             node_arch: arm64
             rust_target: aarch64-unknown-linux-gnu
             rsapi_filename: rsapi.linux-arm64-gnu.node
