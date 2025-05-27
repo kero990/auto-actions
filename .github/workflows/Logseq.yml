@@ -69,7 +69,7 @@ jobs:
         run: |
           LATEST_RELEASE=$(curl -s "https://api.github.com/repos/logseq/logseq/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
           echo "Latest release: $LATEST_RELEASE"
-          wget "https://github.com/logseq/logseq/releases/download/$LATEST_RELEASE/Logseq-linux-${{ matrix.logseq_arch }}.zip" -O logseq.zip
+          wget "https://github.com/logseq/logseq/releases/download/$LATEST_RELEASE/Logseq-linux-${{ matrix.logseq_arch }}-$LATEST_RELEASE.zip" -O logseq.zip
           unzip logseq.zip -d logseq-app
 
       - name: Replace rsapi in Logseq
