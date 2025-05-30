@@ -114,7 +114,8 @@ jobs:
       # Step 8: 构建 OBS Studio
       - name: Build OBS Studio
         run: |
-          mkdir obs/build && cd obs/build
+          mkdir obs/build && cd obs/build_ubuntu
+          export CC=/usr/bin/clang-20 CXX=/usr/bin/clang++-20 ld=/usr/bin/ld.lld-20 LDFLAGS="-fuse-ld=lld"
           cmake .. --preset ubuntu \
             -GNinja \
             -DCMAKE_BUILD_TYPE=RelWithDebInfo \
