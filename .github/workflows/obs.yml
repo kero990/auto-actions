@@ -85,7 +85,7 @@ jobs:
             pipewire:x64-linux \
             pcre2:x64-linux \
             glib:x64-linux \
-            x264:x64-linux
+            x264:x64-linux --clean-after-build --triplet=x64-linux-dynamic
           echo "VCPKG_ROOT=/opt/vcpkg" | tee -a $GITHUB_ENV ~/.bashrc
           echo "CMAKE_TOOLCHAIN_FILE=/opt/vcpkg/scripts/buildsystems/vcpkg.cmake" | tee -a $GITHUB_ENV ~/.bashrc
 
