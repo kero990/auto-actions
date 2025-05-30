@@ -3,26 +3,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  extract-qt6:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Pull Docker image
-      run: docker pull aliencoweatcake/amd64-bionic-qt6projects
-
-    - name: Run container and pack Qt6
-      run: |
-        docker run --rm -v $(pwd):/workspace aliencoweatcake/amd64-bionic-qt6projects \
-          bash -c "tar -czvf /workspace/qt-bionic_amd64.tar.gz -C /opt qt6"
-    - name: Upload Qt6 as artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: qt-bionic_amd64
-        path: qt-bionic_amd64.tar.gz
-          
   build-obs:
     name: Build OBS Studio
-    needs:
-      - extract-qt6
     runs-on: ubuntu-latest
     container:
       image: python:3.10.12-buster
@@ -32,42 +14,17 @@ jobs:
       - name: Install Core Tools and Libraries
         run: |
           apt-get update && apt-get install -y --no-install-recommends \
-            wget \
-            curl \
-            gnupg \
-            lsb-release \
-            software-properties-common \
-            build-essential \
-            unzip \
-            xz-utils \
-            pkg-config \
-            git \
-            ca-certificates \
-            libtinfo5 \
-            zlib1g-dev \
-            libffi-dev \
-            swig \
-            libgl1-mesa-dev \
-            libglvnd-dev \
-            libgles2-mesa-dev \
-            libx11-dev \
-            libxrender-dev \
-            libxcb1-dev \
-            libxcb-randr0-dev \
-            libxcb-shm0-dev \
-            libxcb-xfixes0-dev \
-            libxcb-composite0-dev \
-            libx11-xcb-dev \
-            libpulse-dev \
-            libjack-jackd2-dev \
-            libfontconfig-dev \
-            libudev-dev \
-            libdrm-dev \
-            jq
+            wget  curl \
+            gnupg  lsb-release  software-properties-common  build-essential  unzip \
+            xz-utils   pkg-config  git  ca-certificates  libtinfo5   zlib1g-dev   libffi-dev \
+            swig  libgl1-mesa-dev  libglvnd-dev  libgles2-mesa-dev libx11-dev  libxrender-dev \
+            libxcb1-dev   libxcb-randr0-dev libxcb-shm0-dev   libxcb-xfixes0-dev libxcb-composite0-dev \
+            libx11-xcb-dev libpulse-dev libjack-jackd2-dev libfontconfig-dev libudev-dev  libdrm-dev \
+            jq libpciaccess-dev zip nasm bison
       # Step 2: 安装 CMake 和 Ninja（最新版本）并设置到环境变量
       - name: Install CMake and Ninja
         run: |
-           pip install cmake meson ninja
+           pip install cmake meson ninja jinja2
       
       # Step 3: 安装 LLVM 20 工具链，并设置到环境变量
       - name: Install LLVM 20
