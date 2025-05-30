@@ -123,7 +123,7 @@ jobs:
             -DENABLE_PORTABLE_CONFIG=true \
             -DENABLE_BROWSER=false \
             -DOBS_COMPILE_DEPRECATION_AS_WARNING=true \
-            -DENABLE_NVENC=false
+            -DENABLE_NVENC=true
             -DCMAKE_INSTALL_PREFIX=/opt/obs
             -DCMAKE_C_COMPILER=/usr/bin/clang-20 \
             -DCMAKE_CXX_COMPILER=/usr/bin/clang++-20 \
