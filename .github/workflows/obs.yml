@@ -39,6 +39,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           artifact-ids: 3226987830
+          run-id: 12
       - name: Extract Qt6 to /opt
         run: |
           tar -xzf qt6.8.1-bionic_amd64.tar.gz -C /opt
