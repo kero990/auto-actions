@@ -114,7 +114,6 @@ jobs:
       # Step 8: 构建 OBS Studio
       - name: Build OBS Studio
         run: |
-          source $GITHUB_ENV
           mkdir obs/build && cd obs/build
           cmake .. --preset ubuntu \
             -GNinja \
