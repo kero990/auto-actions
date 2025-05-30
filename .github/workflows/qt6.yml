@@ -1,4 +1,4 @@
-name: qt for debian10
+name: QT6 Cache
 
 on:
   workflow_dispatch:
