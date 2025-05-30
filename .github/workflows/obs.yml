@@ -21,6 +21,17 @@ jobs:
             libxcb1-dev   libxcb-randr0-dev libxcb-shm0-dev   libxcb-xfixes0-dev libxcb-composite0-dev \
             libx11-xcb-dev libpulse-dev libjack-jackd2-dev libfontconfig-dev libudev-dev  libdrm-dev \
             jq libpciaccess-dev zip nasm bison
+      # Step 6: 下载 OBS Studio 源代码
+      - name: Download OBS Studio Source Code
+        run: |
+          # 获取最新版本号（更可靠的解析方式）
+          LATEST_RELEASE=$(curl -s https://api.github.com/repos/obsproject/obs-studio/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+          echo "LATEST_RELEASE=$LATEST_RELEASE" >> $GITHUB_ENV
+          # 下载源码（使用正确的URL格式）
+          wget "https://github.com/obsproject/obs-studio/archive/refs/tags/${LATEST_RELEASE}.tar.gz" -O obs.tar.gz
+          # 解压并重命名目录
+          tar -xzf obs.tar.gz
+          mv obs-studio-*/ obs
       # Step 2: 安装 CMake 和 Ninja（最新版本）并设置到环境变量
       - name: Install CMake and Ninja
         run: |
@@ -89,12 +100,7 @@ jobs:
           echo "VCPKG_ROOT=/opt/vcpkg" | tee -a $GITHUB_ENV ~/.bashrc
           echo "CMAKE_TOOLCHAIN_FILE=/opt/vcpkg/scripts/buildsystems/vcpkg.cmake" | tee -a $GITHUB_ENV ~/.bashrc
 
-      # Step 6: 下载 OBS Studio 源代码
-      - name: Download OBS Studio Source Code
-        run: |
-          echo LATEST_RELEASE=$(curl -s https://api.github.com/repos/obsproject/obs-studio/releases/latest | jq -r .tag_name) >> $GITHUB_ENV
-          wget https://github.com/obsproject/obs-studio/archive/refs/tags/OBS-Studio-$LATEST_RELEASE-Sources.tar.gz -O obs.tar.gz
-          tar -xzf obs.tar.gz && mv obs-studio-*/ obs
+
 
       # Step 7: 修补 OBS 源代码（如果有必要）
       - name: Apply Source Code Patches
