@@ -38,10 +38,10 @@ jobs:
       - name: Download Qt6 Artifact
         uses: actions/download-artifact@v4
         with:
-          name: qt-bionic_amd64
+          name: qt6.8.1-bionic_amd64
       - name: Extract Qt6 to /opt
         run: |
-          tar -xzf qt-bionic_amd64.tar.gz -C /opt
+          tar -xzf qt6.8.1-bionic_amd64.tar.gz -C /opt
           ls /opt/qt6
           echo "QT6_DIR=/opt/qt6"  | tee -a $GITHUB_ENV ~/.bashrc 
           echo "PATH=/opt/qt6/bin:$PATH" | tee -a $GITHUB_ENV ~/.bashrc
