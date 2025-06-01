@@ -90,13 +90,13 @@ jobs:
           git clone https://github.com/microsoft/vcpkg.git /opt/vcpkg
           /opt/vcpkg/bootstrap-vcpkg.sh -disableMetrics
           /opt/vcpkg/vcpkg install \
-            ffmpeg[core]:x64-linux \
-            openssl:x64-linux \
-            sdl2:x64-linux \
-            pipewire:x64-linux \
-            pcre2:x64-linux \
-            glib:x64-linux \
-            x264:x64-linux --clean-after-build --triplet=x64-linux-dynamic
+            ffmpeg \
+            openssl \
+            sdl2 \
+            pipewire \
+            pcre2 \
+            glib \
+            x264 --clean-after-build --triplet=x64-linux-dynamic
           echo "VCPKG_ROOT=/opt/vcpkg" | tee -a $GITHUB_ENV ~/.bashrc
           echo "CMAKE_TOOLCHAIN_FILE=/opt/vcpkg/scripts/buildsystems/vcpkg.cmake" | tee -a $GITHUB_ENV ~/.bashrc
 
@@ -125,8 +125,8 @@ jobs:
             -DENABLE_PORTABLE_CONFIG=true \
             -DENABLE_BROWSER=false \
             -DOBS_COMPILE_DEPRECATION_AS_WARNING=true \
-            -DENABLE_NVENC=true
-            -DCMAKE_INSTALL_PREFIX=/opt/obs
+            -DENABLE_NVENC=true \
+            -DCMAKE_INSTALL_PREFIX=/opt/obs \
             -DCMAKE_C_COMPILER=/usr/bin/clang-20 \
             -DCMAKE_CXX_COMPILER=/usr/bin/clang++-20 \
             -DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=lld" \
