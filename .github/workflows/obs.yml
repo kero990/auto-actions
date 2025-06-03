@@ -84,13 +84,20 @@ jobs:
           ninja  -C build install
           ldconfig
 
+      # Step 4: 安装ffmpeg
+      - name: Install Dependencies ffmpeg
+        run: |
+          wget https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl-shared.tar.xz
+          tar xf ffmpeg-master-latest-linux64-gpl-shared.tar.xz
+          cp ffmpeg-master-latest-linux64-gpl-shared/* /usr/local -r
+          pkg-config --list-all | grep -E 'libav(codec|format|util|device|filter|swscale|swresample)|ffmpeg'
       # Step 4: 安装和配置 vcpkg
       - name: Setup vcpkg and Install Dependencies
         run: |
           git clone https://github.com/microsoft/vcpkg.git /opt/vcpkg
           /opt/vcpkg/bootstrap-vcpkg.sh -disableMetrics
           /opt/vcpkg/vcpkg install \
-            ffmpeg \
+        #   ffmpeg \
             openssl \
             sdl2 \
             pipewire \
