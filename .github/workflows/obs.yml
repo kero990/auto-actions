@@ -35,7 +35,7 @@ jobs:
       # Step 2: 安装 CMake 和 Ninja（最新版本）并设置到环境变量
       - name: Install CMake and Ninja
         run: |
-           pip install cmake meson ninja jinja2
+           pip install cmake==3.24.0 meson ninja jinja2
       
       # Step 3: 安装 LLVM 20 工具链，并设置到环境变量
       - name: Install LLVM 20
