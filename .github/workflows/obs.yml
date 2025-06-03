@@ -91,7 +91,7 @@ jobs:
           git clone https://github.com/microsoft/vcpkg.git /opt/vcpkg
           /opt/vcpkg/bootstrap-vcpkg.sh -disableMetrics
           /opt/vcpkg/vcpkg install \
-            ffmpeg[all-nonfree,postproc] \
+            ffmpeg[gpl,postproc,x264,x265,avisynthplus] \
             openssl \
             sdl2 \
             pipewire \
