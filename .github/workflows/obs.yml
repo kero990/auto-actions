@@ -63,7 +63,16 @@ jobs:
           echo "/opt/qt6/lib" > /etc/ld.so.conf.d/qt6.conf
           ldconfig
           rm qt6.8.1-bionic_amd64.tar.gz
-          
+     
+      # Step 4: 安装ffmpeg
+      - name: Install Dependencies ffmpeg
+        run: |
+          wget https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl-shared.tar.xz
+          tar xf ffmpeg-master-latest-linux64-gpl-shared.tar.xz
+          rm /usr/local/man -rf
+          cp ffmpeg-master-latest-linux64-gpl-shared/* /usr/local -r
+          pkg-config --list-all | grep -E 'libav(codec|format|util|device|filter|swscale|swresample)|ffmpeg' 
+          rm ffmpeg*.tar.xz
       # Step 2: 安装并编译 QR-Code-generator
       - name: Compile and Install QR-Code-generator
         run: |
@@ -84,13 +93,7 @@ jobs:
           ninja  -C build install
           ldconfig
 
-      # Step 4: 安装ffmpeg
-      - name: Install Dependencies ffmpeg
-        run: |
-          wget https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl-shared.tar.xz
-          tar xf ffmpeg-master-latest-linux64-gpl-shared.tar.xz
-          cp ffmpeg-master-latest-linux64-gpl-shared/* /usr/local -r
-          pkg-config --list-all | grep -E 'libav(codec|format|util|device|filter|swscale|swresample)|ffmpeg'
+
       # Step 4: 安装和配置 vcpkg
       - name: Setup vcpkg and Install Dependencies
         run: |
