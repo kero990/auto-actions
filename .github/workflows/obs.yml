@@ -102,7 +102,7 @@ jobs:
           echo "CMAKE_TOOLCHAIN_FILE=/opt/vcpkg/scripts/buildsystems/vcpkg.cmake" | tee -a $GITHUB_ENV ~/.bashrc
           set +e
           ls /opt/vcpkg/installed/x64-linux-dynamic/
-          ls /opt/vcpkg/install*/lib/libpostproc*
+          ls /opt/vcpkg/installed/x64-linux-dynamic/lib/libpostproc*
           
           cat > opt/vcpkg/install*/lib/pkgconfig/libpostproc.pc << 'EOF'
           prefix=${pcfiledir}/../..
