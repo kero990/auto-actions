@@ -104,7 +104,7 @@ jobs:
           ls /opt/vcpkg/installed/x64-linux-dynamic/lib/pkgconfig
           ls /opt/vcpkg/installed/x64-linux-dynamic/lib/libpostproc*
           
-          cat > opt/vcpkg/installed/x64-linux-dynamic/lib/pkgconfig/libpostproc.pc << 'EOF'
+          cat > /opt/vcpkg/installed/x64-linux-dynamic/lib/pkgconfig/libpostproc.pc << 'EOF'
           prefix=${pcfiledir}/../..
           exec_prefix=${prefix}
           libdir=${prefix}/lib
