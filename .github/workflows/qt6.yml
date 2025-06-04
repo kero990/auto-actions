@@ -19,7 +19,7 @@ jobs:
             
           # arm64架构配置
           - arch: arm64
-            runs_on: ubuntu-latest-arm64
+            runs_on: ubuntu-24.04-arm
             qt6_image: aliencoweatcake/arm64-bionic-qt6projects
             qt5_image: aliencoweatcake/arm64-trusty-qt5projects
             system: trusty  # 用于路径命名
