@@ -104,7 +104,7 @@ jobs:
           ls /opt/vcpkg/installed/x64-linux-dynamic/
           ls /opt/vcpkg/installed/x64-linux-dynamic/lib/libpostproc*
           
-          cat > opt/vcpkg/install*/lib/pkgconfig/libpostproc.pc << 'EOF'
+          cat > opt/vcpkg/installed/x64-linux-dynamic/lib/pkgconfig/libpostproc.pc << 'EOF'
           prefix=${pcfiledir}/../..
           exec_prefix=${prefix}
           libdir=${prefix}/lib
@@ -112,7 +112,7 @@ jobs:
 
           Name: libpostproc
           Description: FFmpeg postprocessing library
-          Version: 58
+          Version: 58.3.100
           Requires: 
           Requires.private: libavutil >= 59
           Conflicts:
