@@ -92,16 +92,34 @@ jobs:
           /opt/vcpkg/bootstrap-vcpkg.sh -disableMetrics
           /opt/vcpkg/vcpkg install \
             ffmpeg[gpl,postproc,x264,x265,fdk-aac,openssl] \
-            ffmpeg[postproc]
             openssl \
             sdl2 \
             pipewire \
             pcre2 \
             glib \
             x264 --clean-after-build --triplet=x64-linux-dynamic
-            /opt/vcpkg/vcpkg install ffmpeg[postproc] --clean-after-build --triplet=x64-linux-dynamic
           echo "VCPKG_ROOT=/opt/vcpkg" | tee -a $GITHUB_ENV ~/.bashrc
           echo "CMAKE_TOOLCHAIN_FILE=/opt/vcpkg/scripts/buildsystems/vcpkg.cmake" | tee -a $GITHUB_ENV ~/.bashrc
+          ls /opt/vcpkg
+          ls /opt/vcpkg/install*/lib/libpostproc*
+          
+          cat > opt/vcpkg/install*/lib/pkgconfig/libpostproc.pc << 'EOF'
+          prefix=${pcfiledir}/../..
+          exec_prefix=${prefix}
+          libdir=${prefix}/lib
+          includedir=${prefix}/include
+
+          Name: libpostproc
+          Description: FFmpeg postprocessing library
+          Version: 58
+          Requires: 
+          Requires.private: libavutil >= 59
+          Conflicts:
+          Libs: -L${libdir}  -lpostproc 
+          Libs.private: -lm -latomic
+          Cflags: -I${includedir}
+
+          EOF
 
 
 
