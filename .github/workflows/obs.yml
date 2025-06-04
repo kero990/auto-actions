@@ -92,6 +92,7 @@ jobs:
           /opt/vcpkg/bootstrap-vcpkg.sh -disableMetrics
           /opt/vcpkg/vcpkg install \
             ffmpeg[gpl,postproc,x264,x265,fdk-aac,openssl] \
+            ffmpeg[postproc]
             openssl \
             sdl2 \
             pipewire \
