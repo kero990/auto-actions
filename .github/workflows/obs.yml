@@ -100,7 +100,8 @@ jobs:
             x264 --clean-after-build --triplet=x64-linux-dynamic
           echo "VCPKG_ROOT=/opt/vcpkg" | tee -a $GITHUB_ENV ~/.bashrc
           echo "CMAKE_TOOLCHAIN_FILE=/opt/vcpkg/scripts/buildsystems/vcpkg.cmake" | tee -a $GITHUB_ENV ~/.bashrc
-          ls /opt/vcpkg
+          set +e
+          ls /opt/vcpkg/installed/x64-linux-dynamic/
           ls /opt/vcpkg/install*/lib/libpostproc*
           
           cat > opt/vcpkg/install*/lib/pkgconfig/libpostproc.pc << 'EOF'
