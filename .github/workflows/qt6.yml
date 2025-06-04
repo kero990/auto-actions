@@ -1,26 +1,56 @@
-name: QT6 Cache
+name: Qt 多版本多架构缓存
 
 on:
   workflow_dispatch:
 
-
 jobs:
   build:
-    runs-on: ubuntu-latest
-    
+    name: 构建 Qt (${{ matrix.qt_version }}) (${{ matrix.arch }})
+    runs-on: ${{ matrix.runs_on }}
+    strategy:
+      matrix:
+        include:
+          # amd64架构配置
+          - arch: amd64
+            runs_on: ubuntu-latest
+            qt6_image: aliencoweatcake/amd64-bionic-qt6projects
+            qt5_image: aliencoweatcake/amd64-trusty-qt5projects
+            system: bionic  # 用于路径命名
+            
+          # arm64架构配置
+          - arch: arm64
+            runs_on: ubuntu-latest-arm64
+            qt6_image: aliencoweatcake/arm64-bionic-qt6projects
+            qt5_image: aliencoweatcake/arm64-trusty-qt5projects
+            system: trusty  # 用于路径命名
 
     steps:
+    # 构建和上传Qt6
+    - name: 拉取Qt6 Docker镜像
+      run: docker pull ${{ matrix.qt6_image }}
 
-    - name: Pull Docker image
-      run: docker pull aliencoweatcake/amd64-bionic-qt6projects
-
-    - name: Run container and pack Qt6
+    - name: 打包Qt6
       run: |
-        docker run --rm -v $(pwd):/workspace aliencoweatcake/amd64-bionic-qt6projects \
-          bash -c "tar -czvf /workspace/qt6.8.1-bionic_amd64.tar.gz /opt/qt6"
+        docker run --rm -v $(pwd):/workspace ${{ matrix.qt6_image }} \
+          bash -c "tar -czvf /workspace/qt6-${{ matrix.system }}_${{ matrix.arch }}.tar.gz /opt/qt6"
 
-    - name: Upload Qt6 as artifact
+    - name: 上传Qt6制品
       uses: actions/upload-artifact@v4
       with:
-        name: qt6.8.1-bionic_amd64
-        path: qt6.8.1-bionic_amd64.tar.gz
+        name: qt6-${{ matrix.system }}_${{ matrix.arch }}
+        path: qt6-${{ matrix.system }}_${{ matrix.arch }}.tar.gz
+
+    # 构建和上传Qt5
+    - name: 拉取Qt5 Docker镜像
+      run: docker pull ${{ matrix.qt5_image }}
+
+    - name: 打包Qt5
+      run: |
+        docker run --rm -v $(pwd):/workspace ${{ matrix.qt5_image }} \
+          bash -c "tar -czvf /workspace/qt5-${{ matrix.system }}_${{ matrix.arch }}.tar.gz /opt/qt5"
+
+    - name: 上传Qt5制品
+      uses: actions/upload-artifact@v4
+      with:
+        name: qt5-${{ matrix.system }}_${{ matrix.arch }}
+        path: qt5-${{ matrix.system }}_${{ matrix.arch }}.tar.gz
