@@ -168,7 +168,7 @@ jobs:
           chmod +x *.AppImage
           ./linuxdeploy-x86_64.AppImage -e obs/bin/obs -i obs/share/icons/hicolor/scalable/apps/com.obsproject.Studio.svg -d share/applications/com.obsproject.Studio.desktop \
             --output appimage \
-            --plugin qt
+            --plugin qt \
             --appdir /opt/appdir
           mv obs*.AppImage obs.AppImage
 
