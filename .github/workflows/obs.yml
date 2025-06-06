@@ -20,7 +20,8 @@ jobs:
             swig  libgl1-mesa-dev  libglvnd-dev  libgles2-mesa-dev libx11-dev  libxrender-dev \
             libxcb1-dev   libxcb-randr0-dev libxcb-shm0-dev   libxcb-xfixes0-dev libxcb-composite0-dev \
             libx11-xcb-dev libpulse-dev libjack-jackd2-dev libfontconfig-dev libudev-dev  libdrm-dev \
-            jq libpciaccess-dev zip nasm bison uthash-dev
+            jq libpciaccess-dev zip nasm bison uthash-dev libjansson-dev libxkbcommon-dev libasound-dev \
+            libxcb-xinerama0-dev
       # Step 6: 下载 OBS Studio 源代码
       - name: Download OBS Studio Source Code
         run: |
@@ -28,7 +29,7 @@ jobs:
           LATEST_RELEASE=$(curl -s https://api.github.com/repos/obsproject/obs-studio/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
           echo "LATEST_RELEASE=$LATEST_RELEASE" >> $GITHUB_ENV
           # 下载源码（使用正确的URL格式）
-          wget "https://github.com/obsproject/obs-studio/archive/refs/tags/${LATEST_RELEASE}.tar.gz" -O obs.tar.gz
+          wget -q "https://github.com/obsproject/obs-studio/archive/refs/tags/${LATEST_RELEASE}.tar.gz" -O obs.tar.gz
           # 解压并重命名目录
           tar -xzf obs.tar.gz
           mv obs-studio-*/ obs
