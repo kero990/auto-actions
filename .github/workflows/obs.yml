@@ -23,7 +23,7 @@ jobs:
             jq libpciaccess-dev zip nasm bison uthash-dev libjansson-dev libxkbcommon-dev libasound-dev \
             libxcb-*-dev v4l-utils libv4l-dev v4l2loopback-dkms libva-dev libpci-dev libspeexdsp-dev libmbedtls-dev \
             libwebsocketpp-dev libasio-dev libvlc-dev  libmbedtls-dev
-      # Step 6: 下载 OBS Studio 源代码
+      # Step 2: 下载 OBS Studio 源代码
       - name: Download OBS Studio Source Code
         run: |
           # 获取最新版本号（更可靠的解析方式）
@@ -86,17 +86,6 @@ jobs:
           ninja -C build
           ninja  -C build install
           ldconfig
-          
-      # Step 3: 编译 librist 并安装
-      - name: Compile and Install librist
-        run: |
-          git clone https://code.videolan.org/rist/librist /tmp/librist
-          cd /tmp/librist
-          meson build --prefix=/usr/local
-          ninja -C build
-          ninja  -C build install
-          ldconfig  
-
 
       # Step 4: 安装和配置 vcpkg
       - name: Setup vcpkg and Install Dependencies
@@ -137,9 +126,18 @@ jobs:
 
           EOF
 
+      # Step 5: 编译 librist 并安装
+      - name: Compile and Install librist
+        run: |
+          git clone https://code.videolan.org/rist/librist /tmp/librist
+          cd /tmp/librist
+          meson build --prefix=/usr/local
+          ninja -C build
+          ninja  -C build install
+          ldconfig  
 
 
-      # Step 7: 修补 OBS 源代码（如果有必要）
+      # Step 6: 修补 OBS 源代码（如果有必要）
       - name: Apply Source Code Patches
         run: |
           sed -i 's/QFile file(cur->location);/QFile file(QString::fromStdString(cur->location.string()));/g' obs/UI/obs-app-theming.cpp
@@ -148,7 +146,7 @@ jobs:
           sed -i 's/QDir::addSearchPath("theme", absolute(configSearchDir));/QDir::addSearchPath("theme", QString::fromStdString(absolute(configSearchDir).string()));/g' obs/UI/obs-app-theming.cpp
           sed -i "18 i set(CMAKE_CXX_STANDARD 17)\nset(CMAKE_CXX_STANDARD_REQUIRED ON)\nlink_libraries(stdc++fs)" obs/CMakeLists.txt
           
-      # Step 8: 构建 OBS Studio
+      # Step 7: 构建 OBS Studio
       - name: Build OBS Studio
         run: |
           #curl -sSf https://sshx.io/get | sh -s run
@@ -178,7 +176,7 @@ jobs:
           ninja
           ninja install
 
-      # Step 9: 打包为 AppImage
+      # Step 8: 打包为 AppImage
       - name: Package OBS as AppImage
         run: |
           wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
@@ -190,7 +188,7 @@ jobs:
             --appdir /opt/appdir
           mv obs*.AppImage /opt/obs.AppImage
 
-      # Step 10: 上传 OBS 构建的 AppImage
+      # Step 9: 上传 OBS 构建的 AppImage
       - name: Upload AppImage
         uses: actions/upload-artifact@v4
         with:
