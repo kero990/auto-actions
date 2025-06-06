@@ -17,11 +17,12 @@ jobs:
             wget  curl \
             gnupg  lsb-release  software-properties-common  build-essential  unzip \
             xz-utils   pkg-config  git  ca-certificates  libtinfo5   zlib1g-dev   libffi-dev \
-            swig  libgl1-mesa-dev  libglvnd-dev  libgles2-mesa-dev libx11-dev  libxrender-dev \
+            libgl1-mesa-dev  libglvnd-dev  libgles2-mesa-dev libx11-dev  libxrender-dev \
             libxcb1-dev   libxcb-randr0-dev libxcb-shm0-dev   libxcb-xfixes0-dev libxcb-composite0-dev \
             libx11-xcb-dev libpulse-dev libjack-jackd2-dev libfontconfig-dev libudev-dev  libdrm-dev \
             jq libpciaccess-dev zip nasm bison uthash-dev libjansson-dev libxkbcommon-dev libasound-dev \
-            libxcb-xinerama0-dev
+            libxcb-*-dev v4l-utils libv4l-dev v4l2loopback-dkms libva-dev libpci-dev libspeexdsp-dev libmbedtls-dev \
+            libwebsocketpp-dev libasio-dev libvlc-dev 
       # Step 6: 下载 OBS Studio 源代码
       - name: Download OBS Studio Source Code
         run: |
@@ -36,7 +37,7 @@ jobs:
       # Step 2: 安装 CMake 和 Ninja（最新版本）并设置到环境变量
       - name: Install CMake and Ninja
         run: |
-           pip install cmake==3.28.0 meson ninja jinja2
+           pip install cmake==3.28.0 meson ninja jinja2 swig
       
       # Step 3: 安装 LLVM 20 工具链，并设置到环境变量
       - name: Install LLVM 20
@@ -72,6 +73,7 @@ jobs:
           cd /tmp/QR-Code-generator/cpp
           make
           cp libqrcodegencpp.a /usr/local/lib
+          cp qrcodegen.hpp /usr/local/include/
           echo "/usr/local/lib" > /etc/ld.so.conf.d/user-libs.conf
           ldconfig
 
@@ -84,6 +86,16 @@ jobs:
           ninja -C build
           ninja  -C build install
           ldconfig
+          
+      # Step 3: 编译 librist 并安装
+      - name: Compile and Install librist
+        run: |
+          git clone https://code.videolan.org/rist/librist /tmp/librist
+          cd /tmp/librist
+          meson build --prefix=/usr/local
+          ninja -C build
+          ninja  -C build install
+          ldconfig  
 
 
       # Step 4: 安装和配置 vcpkg
@@ -98,7 +110,9 @@ jobs:
             pipewire \
             pcre2 \
             glib \
-            x264 --clean-after-build --triplet=x64-linux-dynamic
+            x264 \
+            libsrt \
+            ffnvcodec nlohmann-json luajit --clean-after-build --triplet=x64-linux-dynamic
           echo "VCPKG_ROOT=/opt/vcpkg" | tee -a $GITHUB_ENV ~/.bashrc
           echo "CMAKE_TOOLCHAIN_FILE=/opt/vcpkg/scripts/buildsystems/vcpkg.cmake" | tee -a $GITHUB_ENV ~/.bashrc
           set +e
@@ -139,8 +153,10 @@ jobs:
         run: |
           #curl -sSf https://sshx.io/get | sh -s run
           mkdir obs/build_ubuntu && cd obs/build_ubuntu
+          git clone https://github.com/obsproject/obs-browser.git ../plugins/obs-browser
+          git clone https://github.com/obsproject/libdshowcapture.git ../deps/libdshowcapture/src
+          git clone https://github.com/obsproject/obs-websocket.git ../plugins/obs-websocket
           export CC=/usr/bin/clang-20 CXX=/usr/bin/clang++-20 ld=/usr/bin/ld.lld-20 LDFLAGS="-fuse-ld=lld"
-          export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/opt/vcpkg/installed/x64-linux-dynamic/lib/pkgconfig/
           cmake .. --preset ubuntu \
             -GNinja \
             -DCMAKE_BUILD_TYPE=RelWithDebInfo \
@@ -157,7 +173,8 @@ jobs:
             -DCMAKE_SHARED_LINKER_FLAGS="-fuse-ld=lld" \
             -DCMAKE_LINKER=/usr/bin/ld.lld-20 \
             -DCMAKE_VERBOSE_MAKEFILE=ON \
-            -DOBS_VERSION_OVERRIDE=$LATEST_RELEASE 
+            -DOBS_VERSION_OVERRIDE=$LATEST_RELEASE \
+            -DVCPKG_TARGET_TRIPLET=x64-linux-dynamic
           ninja
           ninja install
 
