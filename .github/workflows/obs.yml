@@ -139,6 +139,7 @@ jobs:
           #curl -sSf https://sshx.io/get | sh -s run
           mkdir obs/build_ubuntu && cd obs/build_ubuntu
           export CC=/usr/bin/clang-20 CXX=/usr/bin/clang++-20 ld=/usr/bin/ld.lld-20 LDFLAGS="-fuse-ld=lld"
+          export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/opt/vcpkg/installed/x64-linux-dynamic/lib/pkgconfig/
           cmake .. --preset ubuntu \
             -GNinja \
             -DCMAKE_BUILD_TYPE=RelWithDebInfo \
