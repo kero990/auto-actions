@@ -136,7 +136,6 @@ jobs:
           ninja  -C build install
           ldconfig  
 
-
       # Step 6: 修补 OBS 源代码（如果有必要）
       - name: Apply Source Code Patches
         run: |
