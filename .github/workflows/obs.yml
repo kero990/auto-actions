@@ -131,6 +131,7 @@ jobs:
         run: |
           git clone https://code.videolan.org/rist/librist /tmp/librist
           cd /tmp/librist
+          export PKG_LIBRARY_PATH=$PKG_LIBRARY_PATH:/opt/vcpkg/installed/x64-linux-dynamic/lib/pkgconfig
           meson build --prefix=/usr/local
           ninja -C build
           ninja  -C build install
