@@ -45,7 +45,7 @@ jobs:
         # 复制文件
         mv tmp/usr/lib/musicfree/* deb/opt/apps/fun.upup.musicfree/files
         mv tmp/usr/share/applications/musicfree.desktop deb/opt/apps/fun.upup.musicfree/entries/applications
-        sed -i s@Exec=musicfree@Exec=/opt/apps/fun.upup.musicfree/files/musicfree@g deb/opt/apps/fun.upup.musicfree/entries/applications/musicfree.desktop
+        sed -i s@Exec=musicfree@Exec=/opt/apps/fun.upup.musicfree/files/MusicFree@g deb/opt/apps/fun.upup.musicfree/entries/applications/musicfree.desktop
         sed -i s@Icon=musicfree@Icon=fun.upup.musicfree@g deb/opt/apps/fun.upup.musicfree/entries/applications/musicfree.desktop
         # 创建 info 文件
         cat << EOF >> deb/opt/apps/fun.upup.musicfree/info
