@@ -40,6 +40,7 @@ jobs:
         cp MusicFreeDesktop/out/make/deb/*/*.deb .
         dpkg-deb -R *.deb tmp
         rm *.deb
+        release_version=$(grep -Po '^Version: \K.*' tmp/DEBIAN/control)
         echo "deb file has been unpacked"
         # 复制文件
         mv tmp/usr/lib/musicfree/* deb/opt/apps/fun.upup.musicfree/files
