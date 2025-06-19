@@ -37,7 +37,7 @@ jobs:
         mkdir -p deb/opt/apps/fun.upup.musicfree/entries/icons/hicolor/128x128/apps
         mkdir -p deb/opt/apps/fun.upup.musicfree/files
         # 解压deb包
-        cp MusicFreeDesktop/out/make/deb/${{ matrix.arch }}/*.deb .
+        cp MusicFreeDesktop/out/make/deb/*/*.deb .
         dpkg-deb -R *.deb tmp
         rm *.deb
         echo "deb file has been unpacked"
