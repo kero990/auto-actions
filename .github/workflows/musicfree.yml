@@ -27,7 +27,7 @@ jobs:
         cd MusicFreeDesktop
         npm i
     - run: |
-        cd MusicFreeGallery
+        cd MusicFreeDesktop
         npm run make
     - name: prepair deb
       run: |
