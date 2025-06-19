@@ -83,7 +83,7 @@ jobs:
         mv deb.deb fun.upup.musicfree_${release_version}_amd64.deb
         
     - name: Upload Packaged Deb to Release
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
           name: MusicFreeDesktop
           path: ./*.deb
