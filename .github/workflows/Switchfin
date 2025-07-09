@@ -1,0 +1,111 @@
+name: Build Switchfin
+
+on: workflow_dispatch
+
+jobs:
+  build:
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        arch: [amd64, arm64]
+        include:
+          - arch: amd64
+            runner: ubuntu-latest
+            platform: linux/amd64
+            triplet: x64-linux-dynamic
+            libdir: x86_64-linux-gnu
+          - arch: arm64
+            runner: ubuntu-22.04-arm
+            platform: linux/arm64
+            triplet: arm64-linux-dynamic
+            libdir: aarch64-linux-gnu
+
+    container:
+      image: python:3.11-buster
+      
+
+    steps:
+      - name: Install build dependencies
+        run: |
+          apt-get update
+          # 替换为 snapcraft.yaml 里的 build-packages
+          apt-get install -y build-essential cmake git pkg-config \
+            libtool autoconf automake ninja-build libpulse-dev libuchardet-dev \
+            nasm libssl-dev libv4l-dev libva-dev libvdpau-dev libfribidi-dev libharfbuzz-dev libfontconfig1-dev \
+            libwebp-dev libglib2.0-dev xorg-dev libdbus-1-dev
+          pip install meson ninja jinja2 cmake
+
+      - name: Install vcpkg
+        run: |
+          git clone https://github.com/microsoft/vcpkg.git
+          ./vcpkg/bootstrap-vcpkg.sh
+
+      - name: Install vcpkg libraries
+        run: |
+          ./vcpkg/vcpkg install libass dav1d ffmpeg curl vulkan wayland wayland-protocols --x-install-root=/root/deps --triplet=${{ matrix.triplet }}
+          echo "PKG_CONFIG_PATH=/root/deps/${{ matrix.triplet }}/lib/pkgconfig:/root/deps/${{ matrix.triplet }}/share/pkgconfig" >> $GITHUB_ENV
+
+      - name: Build libplacebo
+        run: |
+          git clone https://github.com/haasn/libplacebo.git -b v7.351.0 -recursive
+          cd libplacebo
+          meson build --buildtype=release --strip -Dopengl=enabled -Dgl-proc-addr=disabled -Dd3d11=disabled \
+           -Dglslang=disabled -Dshaderc=disabled -Ddovi=enabled -Dlcms=disabled -Dvulkan=enabled -Ddemos=false -Dtests=false
+          ninja -C build install
+          
+      - name: Build glew
+        run: |
+          wget https://github.com/dragonflylee/glfw/archive/switchfin.tar.gz
+          tar xf switchfin.tar.gz
+          cd glfw-switchfin
+          cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DGLFW_BUILD_WAYLAND=ON \
+           -DGLFW_BUILD_EXAMPLES=OFF -DGLFW_BUILD_TESTS=OFF -DGLFW_BUILD_DOCS=OFF 
+          cmake --build build --target all -j$(nproc)
+          cmake --install build
+          cd ../../..
+
+      - name: Build mpv (with Vulkan/Wayland)
+        run: |
+          git clone https://github.com/mpv-player/mpv.git
+          cd mpv
+          meson setup build --buildtype=release -Dvulkan=enabled -Dwayland=enabled \
+           --default-library=shared -Dcplayer=false -Dlibmpv=true -Dtests=false \
+           -Dplain-gl=enabled -Dlibarchive=disabled -Dalsa=disabled -Dlua=disabled
+          ninja -C build install
+          cd ..
+
+      - name: Build Switchfin
+        run: |
+          git clone https://github.com/dragonflylee/switchfin.git
+          cd switchfin
+          mkdir build && cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release -DPLATFORM_DESKTOP=ON \
+            -DUSE_SYSTEM_GLFW=ON
+            -DCMAKE_INSTALL=OFF
+            ${{ matrix.arch == 'arm64' && '-DUSE_GLES2=ON' || '' }}
+          cmake --build . --target all -j$(nproc)
+          cd ../..
+
+      - name: Prepare green package
+        run: |
+          mkdir -p package/lib
+          cp switchfin/build/Switchfin package/
+          cp -r switchfin/resources package/
+          # 拷贝自编译库和 vcpkg 库到 package/lib
+          for dir in /usr/local/lib /usr/local/lib/${{ matrix.libdir }} /root/deps/${{ matrix.triplet }}/lib/; do
+            if [ -d "$dir" ]; then
+              find "$dir" -maxdepth 1 -regextype posix-egrep -regex '.*/lib[^/]+\.so\.[0-9]+' -exec cp {} package/lib \;
+            fi
+          done
+
+      - name: Patch ELF rpath
+        run: |
+          apt-get install -y patchelf
+          patchelf --set-rpath "\$ORIGIN:\$ORIGIN/lib:\$ORIGIN/../lib" package/Switchfin
+          for f in package/lib/*; do patchelf --set-rpath '$ORIGIN' "$f"; done
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: switchfin-${{ matrix.arch }}
+          path: package/
