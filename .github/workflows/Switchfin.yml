@@ -32,8 +32,8 @@ jobs:
           apt-get install -y build-essential cmake git pkg-config \
             libtool autoconf automake ninja-build libpulse-dev libuchardet-dev \
             nasm libssl-dev libv4l-dev libva-dev libvdpau-dev libfribidi-dev libharfbuzz-dev libfontconfig1-dev \
-            libwebp-dev libglib2.0-dev xorg-dev libdbus-1-dev curl zip unzip tar libxkbcommon-x11-dev libxkbcommon-dev
-          pip install meson ninja jinja2 cmake
+            libwebp-dev libglib2.0-dev xorg-dev libdbus-1-dev curl zip unzip tar libxkbcommon-x11-dev libxkbcommon-dev graphviz
+          pip install meson ninja jinja2 cmake 
 
       - name: Install vcpkg
         run: |
@@ -64,7 +64,24 @@ jobs:
           cmake --build build --target all -j$(nproc)
           cmake --install build
           cd ../../..
-
+          
+      - name: Build wayland
+        run: |
+          wget https://gitlab.freedesktop.org/wayland/wayland/-/releases/1.24.0/downloads/wayland-1.24.0.tar.xz
+          tar xf wayland-1.24.0.tar.xz
+          cd wayland-1.24.0
+          meson build -Ddocumentation=false -Dtests=false
+          ninja -C build install
+          cd ..
+      - name: Build wayland-protocols
+        run: |
+          wget https://gitlab.freedesktop.org/wayland/wayland-protocols/-/releases/1.45/downloads/wayland-protocols-1.45.tar.xz
+          tar xf wayland-protocols-1.45.tar.xz
+          cd wayland-protocols
+          meson build -Dtests=false
+          ninja -C build install
+          cd ..
+                  
       - name: Build mpv (with Vulkan/Wayland)
         run: |
           git clone https://github.com/mpv-player/mpv.git
