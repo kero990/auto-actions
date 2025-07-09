@@ -94,7 +94,7 @@ jobs:
 
       - name: Build Switchfin
         run: |
-          git clone https://github.com/dragonflylee/switchfin.git
+          git clone https://github.com/dragonflylee/switchfin.git --recursive
           cd switchfin
           mkdir build && cd build
           cmake .. -DCMAKE_BUILD_TYPE=Release -DPLATFORM_DESKTOP=ON \
