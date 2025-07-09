@@ -48,7 +48,7 @@ jobs:
 
       - name: Build libplacebo
         run: |
-          git clone https://github.com/haasn/libplacebo.git -b v7.351.0 -recursive
+          git clone https://github.com/haasn/libplacebo.git -b v7.351.0 --recursive
           cd libplacebo
           meson build --buildtype=release --strip -Dopengl=enabled -Dgl-proc-addr=disabled -Dd3d11=disabled \
            -Dglslang=disabled -Dshaderc=disabled -Ddovi=enabled -Dlcms=disabled -Dvulkan=enabled -Ddemos=false -Dtests=false
