@@ -20,7 +20,7 @@ jobs:
             platform: linux/arm64
             triplet: arm64-linux-dynamic
             libdir: aarch64-linux-gnu
-            ffmpeg: linux64
+            ffmpeg: linuarm64
 
     container:
       image: python:3.11-buster
@@ -103,7 +103,7 @@ jobs:
            -Dplain-gl=enabled -Dlibarchive=disabled -Dalsa=disabled -Dlua=disabled
           ninja -C build install
           cd ..
-      - name: install llmv
+      - name: install llvm
         run: |
           wget https://apt.llvm.org/llvm.sh
           chmod +x llvm.sh
