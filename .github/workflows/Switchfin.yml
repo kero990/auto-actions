@@ -14,11 +14,13 @@ jobs:
             platform: linux/amd64
             triplet: x64-linux-dynamic
             libdir: x86_64-linux-gnu
+            ffmpeg: linux64
           - arch: arm64
             runner: ubuntu-22.04-arm
             platform: linux/arm64
             triplet: arm64-linux-dynamic
             libdir: aarch64-linux-gnu
+            ffmpeg: linux64
 
     container:
       image: python:3.11-buster
@@ -32,7 +34,8 @@ jobs:
           apt-get install -y build-essential cmake git pkg-config \
             libtool autoconf automake ninja-build libpulse-dev libuchardet-dev \
             nasm libssl-dev libv4l-dev libva-dev libvdpau-dev libfribidi-dev libharfbuzz-dev libfontconfig1-dev \
-            libwebp-dev libglib2.0-dev xorg-dev libdbus-1-dev curl zip unzip tar libxkbcommon-x11-dev libxkbcommon-dev graphviz
+            libwebp-dev libglib2.0-dev xorg-dev libdbus-1-dev curl zip unzip tar libxkbcommon-x11-dev libxkbcommon-dev graphviz \
+            lsb-release wget software-properties-common gnupg
           pip install meson ninja jinja2 cmake 
 
       - name: Install vcpkg
@@ -42,7 +45,7 @@ jobs:
 
       - name: Install vcpkg libraries
         run: |
-          ./vcpkg/vcpkg install libass dav1d ffmpeg curl vulkan wayland wayland-protocols --x-install-root=/root/deps --triplet=${{ matrix.triplet }} \
+          ./vcpkg/vcpkg install libass dav1d curl vulkan wayland wayland-protocols --x-install-root=/root/deps --triplet=${{ matrix.triplet }} \
             --clean-after-build
           echo "PKG_CONFIG_PATH=/root/deps/${{ matrix.triplet }}/lib/pkgconfig:/root/deps/${{ matrix.triplet }}/share/pkgconfig" >> $GITHUB_ENV
 
@@ -81,6 +84,13 @@ jobs:
           meson build -Dtests=false
           ninja -C build install
           cd ..
+      - name: install ffmpeg
+        run: |
+          wget https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n7.1-latest-${{ matrix.ffmpeg }}-gpl-shared-7.1.tar.xz
+          tar xf ffmpeg-n7.1-latest-${{ matrix.ffmpeg }}-gpl-shared-7.1.tar.xz
+          rm ffmpeg-n7.1-latest-${{ matrix.ffmpeg }}-gpl-shared-7.1.tar.xz
+          mv ffmpeg-n7.1-latest-${{ matrix.ffmpeg }}-gpl-shared-7.1 ffmpeg
+          echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/root/ffmpeg/lib/pkgconfig" >> $GITHUB_ENV
                   
       - name: Build mpv (with Vulkan/Wayland)
         run: |
@@ -91,6 +101,12 @@ jobs:
            -Dplain-gl=enabled -Dlibarchive=disabled -Dalsa=disabled -Dlua=disabled
           ninja -C build install
           cd ..
+      - name: install llmv
+        run: |
+          wget https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          ./llvm.sh 20
+          
 
       - name: Build Switchfin
         run: |
@@ -98,8 +114,9 @@ jobs:
           cd switchfin
           mkdir build && cd build
           cmake .. -DCMAKE_BUILD_TYPE=Release -DPLATFORM_DESKTOP=ON \
-            -DUSE_SYSTEM_GLFW=ON
-            -DCMAKE_INSTALL=OFF
+            -DUSE_SYSTEM_GLFW=ON \
+            -DCMAKE_INSTALL=OFF \
+            -DAVFORMAT_LIB=/root/ffmpeg/lib/libavformat.so \
             ${{ matrix.arch == 'arm64' && '-DUSE_GLES2=ON' || '' }}
           cmake --build . --target all -j$(nproc)
           cd ../..
