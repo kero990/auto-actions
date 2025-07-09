@@ -32,7 +32,7 @@ jobs:
           apt-get install -y build-essential cmake git pkg-config \
             libtool autoconf automake ninja-build libpulse-dev libuchardet-dev \
             nasm libssl-dev libv4l-dev libva-dev libvdpau-dev libfribidi-dev libharfbuzz-dev libfontconfig1-dev \
-            libwebp-dev libglib2.0-dev xorg-dev libdbus-1-dev
+            libwebp-dev libglib2.0-dev xorg-dev libdbus-1-dev curl zip unzip tar
           pip install meson ninja jinja2 cmake
 
       - name: Install vcpkg
