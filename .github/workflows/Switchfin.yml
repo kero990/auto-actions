@@ -89,7 +89,7 @@ jobs:
           wget -q https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n7.1-latest-${{ matrix.ffmpeg }}-gpl-shared-7.1.tar.xz
           tar xf ffmpeg-n7.1-latest-${{ matrix.ffmpeg }}-gpl-shared-7.1.tar.xz
           rm ffmpeg-n7.1-latest-${{ matrix.ffmpeg }}-gpl-shared-7.1.tar.xz
-          mv ffmpeg-n7.1-latest-${{ matrix.ffmpeg }}-gpl-shared-7.1 ffmpeg
+          mv ffmpeg-n7.1-latest-${{ matrix.ffmpeg }}-gpl-shared-7.1 /root/ffmpeg
           echo $PWD 
           ls /root/ffmpeg/lib/pkgconfig
           echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$PWD/ffmpeg/lib/pkgconfig" >> $GITHUB_ENV
