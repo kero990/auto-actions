@@ -42,7 +42,8 @@ jobs:
 
       - name: Install vcpkg libraries
         run: |
-          ./vcpkg/vcpkg install libass dav1d ffmpeg curl vulkan wayland wayland-protocols --x-install-root=/root/deps --triplet=${{ matrix.triplet }}
+          ./vcpkg/vcpkg install libass dav1d ffmpeg curl vulkan wayland wayland-protocols --x-install-root=/root/deps --triplet=${{ matrix.triplet }} \
+            --clean-after-build
           echo "PKG_CONFIG_PATH=/root/deps/${{ matrix.triplet }}/lib/pkgconfig:/root/deps/${{ matrix.triplet }}/share/pkgconfig" >> $GITHUB_ENV
 
       - name: Build libplacebo
