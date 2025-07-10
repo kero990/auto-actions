@@ -130,6 +130,7 @@ jobs:
           mkdir -p package/lib
           cp switchfin/build/Switchfin package/
           cp -r switchfin/resources package/
+          cp -r /root/deps/${{ matrix.triplet }}/lib/libass.so package/lib
           # 拷贝自编译库和 vcpkg 库到 package/lib
           for dir in /usr/local/lib /usr/local/lib/${{ matrix.libdir }} /root/deps/${{ matrix.triplet }}/lib/ /root/ffmpeg/lib; do
             if [ -d "$dir" ]; then
