@@ -113,7 +113,7 @@ jobs:
 
       - name: Build Switchfin
         run: |
-          git clone https://github.com/dragonflylee/switchfin.git --recursive
+          git clone https://github.com/dragonflylee/switchfin.git --recursive -b emby
           cd switchfin
           mkdir build && cd build
           cmake .. -DCMAKE_BUILD_TYPE=Release -DPLATFORM_DESKTOP=ON \
@@ -147,5 +147,5 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: switchfin-${{ matrix.arch }}
+          name: switchfin-emby-${{ matrix.arch }}
           path: package/
