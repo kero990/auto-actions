@@ -117,6 +117,7 @@ jobs:
           cd switchfin
           mkdir build && cd build
           cmake .. -DCMAKE_BUILD_TYPE=Release -DPLATFORM_DESKTOP=ON \
+            -DCMAKE_C_COMPILER=clang-20 -DCMAKE_CXX_COMPILER=clang++-20 -DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=lld" \
             -DUSE_SYSTEM_GLFW=ON \
             -DCMAKE_INSTALL=OFF \
             -DAVFORMAT_LIB=/root/ffmpeg/lib/libavformat.so \
