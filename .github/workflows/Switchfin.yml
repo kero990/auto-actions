@@ -20,7 +20,7 @@ jobs:
             platform: linux/arm64
             triplet: arm64-linux-dynamic
             libdir: aarch64-linux-gnu
-            ffmpeg: linuarm64
+            ffmpeg: linuxarm64
 
     container:
       image: python:3.11-buster
