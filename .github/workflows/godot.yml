@@ -66,7 +66,7 @@ jobs:
       - name: 解压 tpz 文件
         run: |
           mkdir templates
-          tar -xvf export_templates.tpz -C templates
+          unzip export_templates.tpz -d templates
           ls templates/templates
 
       - name: 检查模板文件是否存在
