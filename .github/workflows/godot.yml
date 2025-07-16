@@ -61,13 +61,13 @@ jobs:
 
       - name: 下载 export_templates.tpz
         run: |
-          wget -O export_templates.tpz "$TPZ_URL"
+          wget -qO export_templates.tpz "$TPZ_URL"
 
       - name: 解压 tpz 文件
         run: |
           mkdir templates
           unzip export_templates.tpz -d templates
-          ls templates/templates
+          
 
       - name: 检查模板文件是否存在
         run: |
