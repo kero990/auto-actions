@@ -1,0 +1,83 @@
+name: Export Godot Template
+
+on:
+  workflow_dispatch:
+    inputs:
+      godot_version:
+        description: 'Godot release 版本号（如 4.4.1-stable）'
+        required: true
+        default: '4.4.1-stable'
+      template_file:
+        description: '选择要导出的模板文件'
+        required: true
+        default: linux_release.arm64
+        type: choice
+        options:
+          - android_debug.apk
+          - android_release.apk
+          - android_source.zip
+          - icudt_godot.dat
+          - ios.zip
+          - linux_debug.arm32
+          - linux_debug.arm64
+          - linux_debug.x86_32
+          - linux_debug.x86_64
+          - linux_release.arm32
+          - linux_release.arm64
+          - linux_release.x86_32
+          - linux_release.x86_64
+          - macos.zip
+          - version.txt
+          - web_debug.zip
+          - web_dlink_debug.zip
+          - web_dlink_nothreads_debug.zip
+          - web_dlink_nothreads_release.zip
+          - web_dlink_release.zip
+          - web_nothreads_debug.zip
+          - web_nothreads_release.zip
+          - web_release.zip
+          - windows_debug_arm64_console.exe
+          - windows_debug_arm64.exe
+          - windows_debug_x86_32_console.exe
+          - windows_debug_x86_32.exe
+          - windows_debug_x86_64_console.exe
+          - windows_debug_x86_64.exe
+          - windows_release_arm64_console.exe
+          - windows_release_arm64.exe
+          - windows_release_x86_32_console.exe
+          - windows_release_x86_32.exe
+          - windows_release_x86_64_console.exe
+          - windows_release_x86_64.exe
+
+jobs:
+  export-template:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 设置变量
+        id: vars
+        run: |
+          echo "TPZ_URL=https://github.com/godotengine/godot/releases/download/${{ github.event.inputs.godot_version }}/Godot_v${{ github.event.inputs.godot_version }}_export_templates.tpz" >> $GITHUB_ENV
+          echo "TEMPLATE_FILE=${{ github.event.inputs.template_file }}" >> $GITHUB_ENV
+
+      - name: 下载 export_templates.tpz
+        run: |
+          wget -O export_templates.tpz "$TPZ_URL"
+
+      - name: 解压 tpz 文件
+        run: |
+          mkdir templates
+          tar -xvf export_templates.tpz -C templates
+          ls templates/templates
+
+      - name: 检查模板文件是否存在
+        run: |
+          if [ ! -f "templates/templates/$TEMPLATE_FILE" ]; then
+            echo "模板文件 templates/templates/$TEMPLATE_FILE 不存在"
+            exit 1
+          fi
+
+      - name: 上传指定模板为工件
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.TEMPLATE_FILE }}
+          path: templates/templates/${{ env.TEMPLATE_FILE }}
