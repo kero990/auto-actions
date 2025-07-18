@@ -7,12 +7,18 @@ on:
         description: 'Godot release 版本号（如 4.4.1-stable）'
         required: true
         default: '4.4.1-stable'
+      with_mono: # 新增参数
+        description: '是否下载 Mono 导出模板？（注意：如果选择是，请在“选择要导出的模板文件”中选择带有 _mono 或 _aot 后缀的文件）'
+        required: true
+        default: false
+        type: boolean
       template_file:
-        description: '选择要导出的模板文件'
+        description: '选择要导出的模板文件 (请根据您是否选择 Mono 模板来选择相应的文件名)'
         required: true
         default: linux_release.arm64
         type: choice
         options:
+          # Standard Templates (非 Mono)
           - android_debug.apk
           - android_release.apk
           - android_source.zip
@@ -48,6 +54,40 @@ on:
           - windows_release_x86_32.exe
           - windows_release_x86_64_console.exe
           - windows_release_x86_64.exe
+          # Mono/AOT Templates (带有 Mono/AOT 后缀)
+          - android_debug_aot.apk
+          - android_release_aot.apk
+          - android_source_aot.zip
+          - ios_aot.zip # For iOS, AOT is typical for Mono
+          - linux_debug.arm32_mono
+          - linux_debug.arm64_mono
+          - linux_debug.x86_32_mono
+          - linux_debug.x86_64_mono
+          - linux_release.arm32_mono
+          - linux_release.arm64_mono
+          - linux_release.x86_32_mono
+          - linux_release.x86_64_mono
+          - macos_mono.zip
+          - web_mono_debug.zip
+          - web_mono_dlink_debug.zip
+          - web_mono_dlink_nothreads_debug.zip
+          - web_mono_dlink_nothreads_release.zip
+          - web_mono_dlink_release.zip
+          - web_mono_nothreads_debug.zip
+          - web_mono_nothreads_release.zip
+          - web_mono_release.zip
+          - windows_debug_arm64_mono_console.exe
+          - windows_debug_arm64_mono.exe
+          - windows_debug_x86_32_mono_console.exe
+          - windows_debug_x86_32_mono.exe
+          - windows_debug_x86_64_mono_console.exe
+          - windows_debug_x86_64_mono.exe
+          - windows_release_arm64_mono_console.exe
+          - windows_release_arm64_mono.exe
+          - windows_release_x86_32_mono_console.exe
+          - windows_release_x86_32_mono.exe
+          - windows_release_x86_64_mono_console.exe
+          - windows_release_x86_64_mono.exe
 
 jobs:
   export-template:
@@ -56,25 +96,38 @@ jobs:
       - name: 设置变量
         id: vars
         run: |
-          echo "TPZ_URL=https://github.com/godotengine/godot/releases/download/${{ github.event.inputs.godot_version }}/Godot_v${{ github.event.inputs.godot_version }}_export_templates.tpz" >> $GITHUB_ENV
+          GODOT_VERSION="${{ github.event.inputs.godot_version }}"
+          WITH_MONO="${{ github.event.inputs.with_mono }}"
+          TEMPLATE_BASE_URL="https://github.com/godotengine/godot/releases/download/$GODOT_VERSION/Godot_v$GODOT_VERSION"
+
+          TPZ_SUFFIX="_export_templates.tpz"
+          if [ "$WITH_MONO" == "true" ]; then
+            TPZ_SUFFIX="_mono_export_templates.tpz"
+          fi
+
+          echo "TPZ_URL=${TEMPLATE_BASE_URL}${TPZ_SUFFIX}" >> $GITHUB_ENV
           echo "TEMPLATE_FILE=${{ github.event.inputs.template_file }}" >> $GITHUB_ENV
 
       - name: 下载 export_templates.tpz
         run: |
+          echo "正在下载: $TPZ_URL"
           wget -qO export_templates.tpz "$TPZ_URL"
 
       - name: 解压 tpz 文件
         run: |
           mkdir templates
           unzip export_templates.tpz -d templates
-          
+          echo "解压完成，文件列表如下:"
+          ls -R templates/templates/ # 显示解压后的内容，方便调试
 
       - name: 检查模板文件是否存在
         run: |
           if [ ! -f "templates/templates/$TEMPLATE_FILE" ]; then
-            echo "模板文件 templates/templates/$TEMPLATE_FILE 不存在"
+            echo "错误：模板文件 templates/templates/$TEMPLATE_FILE 不存在于下载的模板包中。"
+            echo "请确认您选择了正确的模板文件，特别是当您选择了 Mono 模板时，需要选择带有 _mono 或 _aot 后缀的文件名。"
             exit 1
           fi
+          echo "模板文件 templates/templates/$TEMPLATE_FILE 存在。"
 
       - name: 上传指定模板为工件
         uses: actions/upload-artifact@v4
