@@ -67,7 +67,7 @@ jobs:
           echo "CMAKE_PREFIX_PATH=/opt/qt6/lib/cmake" | tee -a $GITHUB_ENV ~/.bashrc
           echo "/opt/qt6/lib" > /etc/ld.so.conf.d/qt6.conf
           ldconfig
-          rm qt6.8.1-bionic_amd64.tar.gz
+          rm qt*.tar.gz
      
       # Step 2: 安装并编译 QR-Code-generator
       - name: Compile and Install QR-Code-generator
