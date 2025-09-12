@@ -10,6 +10,9 @@ jobs:
       image: python:3.10-buster
 
     steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
       # Step 1: 安装系统和工具链依赖
       - name: Install Core Tools and Libraries
         run: |
@@ -104,23 +107,23 @@ jobs:
         run: |
           git clone https://github.com/microsoft/vcpkg.git /opt/vcpkg
           /opt/vcpkg/bootstrap-vcpkg.sh -disableMetrics
-          /opt/vcpkg/vcpkg install \
-            ffmpeg[gpl,postproc,x264,x265,fdk-aac,openssl] \
-            openssl \
-            sdl2 \
-            pipewire \
-            pcre2 \
-            glib \
-            x264 \
-            libsrt \
-            ffnvcodec nlohmann-json luajit mbedtls --clean-after-build --triplet=x64-linux-dynamic
+          #/opt/vcpkg/vcpkg install \
+            #ffmpeg[gpl,postproc,x264,x265,fdk-aac,openssl] \
+            #openssl \
+            #sdl2 \
+            #pipewire \
+            #pcre2 \
+            #glib \
+            #x264 \
+            #libsrt \
+            #ffnvcodec nlohmann-json luajit mbedtls --clean-after-build --triplet=x64-linux-dynamic
           echo "VCPKG_ROOT=/opt/vcpkg" | tee -a $GITHUB_ENV ~/.bashrc
           echo "CMAKE_TOOLCHAIN_FILE=/opt/vcpkg/scripts/buildsystems/vcpkg.cmake" | tee -a $GITHUB_ENV ~/.bashrc
-          set +e
-          ls /opt/vcpkg/installed/x64-linux-dynamic/lib/pkgconfig
-          ls /opt/vcpkg/installed/x64-linux-dynamic/lib/libpostproc*
+          nv assets/obs_vcpkg.json obs/vcpkg.json
+          cd obs && /opt/vcpkg/vcpkg install
           
-          cat > /opt/vcpkg/installed/x64-linux-dynamic/lib/pkgconfig/libpostproc.pc << 'EOF'
+          #cat > /opt/vcpkg/installed/x64-linux-dynamic/lib/pkgconfig/libpostproc.pc << 'EOF'
+          cat > vcpkg_installed/x64-linux-dynamic/lib/pkgconfig/libpostproc.pc << 'EOF'
           prefix=${pcfiledir}/../..
           exec_prefix=${prefix}
           libdir=${prefix}/lib
