@@ -1,0 +1,25 @@
+{
+  "name": "obs-deps",
+  "version": "1.0.0",
+  "dependencies": [
+    {
+      "name": "mbedtls",
+      "version>=": "2.28.8"
+    },
+    "ffmpeg",
+    "openssl",
+    "sdl2",
+    "pipewire",
+    "pcre2",
+    "glib",
+    "x264",
+    "libsrt",
+    "ffnvcodec",
+    "nlohmann-json",
+    "luajit"
+  ],
+  "builtin-baseline": "501db0f17ef6d184beb116dab26834beb4b2e952",
+  "overrides": [
+    { "name": "mbedtls", "version": "2.28.8" }
+  ]
+}
