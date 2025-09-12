@@ -52,11 +52,13 @@ jobs:
       - name: Download Qt6 Artifact
         uses: dawidd6/action-download-artifact@v9
         with:
-          name: qt6.8.1-bionic_amd64
-          run_id: 15342477001
-          run_number: 12
+          name: qt6-bionic_amd64
+          run_id: 15433693668
+          run_number: 14
+          
       - name: Extract Qt6 to /opt
         run: |
+          ls *.tar.gz
           tar -xzf qt6.8.1-bionic_amd64.tar.gz -C /
           ls /opt/
           echo "QT6_DIR=/opt/qt6"  | tee -a $GITHUB_ENV ~/.bashrc 
