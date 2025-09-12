@@ -2,10 +2,7 @@
   "name": "obs-deps",
   "version": "1.0.0",
   "dependencies": [
-    {
-      "name": "mbedtls",
-      "version": "2.28.8"
-    },
+    "mbedtls",
     "ffmpeg",
     "openssl",
     "sdl2",
