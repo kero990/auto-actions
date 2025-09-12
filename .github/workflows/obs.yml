@@ -59,7 +59,7 @@ jobs:
       - name: Extract Qt6 to /opt
         run: |
           ls *.tar.gz
-          tar -xzf qt6.8.1-bionic_amd64.tar.gz -C /
+          tar -xzf qt6-bionic_amd64.tar.gz -C /
           ls /opt/
           echo "QT6_DIR=/opt/qt6"  | tee -a $GITHUB_ENV ~/.bashrc 
           echo "PATH=/opt/qt6/bin:$PATH" | tee -a $GITHUB_ENV ~/.bashrc
