@@ -13,7 +13,8 @@ jobs:
       # Step 1: 安装系统和工具链依赖
       - name: Install Core Tools and Libraries
         run: |
-          apt-get update && apt-get install -y --no-install-recommends \
+          sed -i s@deb.debian@archive.debian@g /etc/apt/sources.list
+            apt-get update && apt-get install -y --no-install-recommends \
             wget  curl \
             gnupg  lsb-release  software-properties-common  build-essential  unzip \
             xz-utils   pkg-config  git  ca-certificates  libtinfo5   zlib1g-dev   libffi-dev \
