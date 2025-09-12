@@ -90,6 +90,15 @@ jobs:
           ninja  -C build install
           ldconfig
 
+      - name: update autoconf
+        run: |
+          wget -q https://ftp.gnu.org/gnu/autoconf/autoconf-latest.tar.gz
+          tar zxvf autoconf-latest.tar.gz
+          cd autoconf-latest
+          ./configure
+          make -j8 && make install
+          cd .. && rm auto* -rf
+
       # Step 4: 安装和配置 vcpkg
       - name: Setup vcpkg and Install Dependencies
         run: |
