@@ -26,7 +26,7 @@ jobs:
             libx11-xcb-dev libpulse-dev libjack-jackd2-dev libfontconfig-dev libudev-dev  libdrm-dev \
             jq libpciaccess-dev zip nasm bison uthash-dev libjansson-dev libxkbcommon-dev libasound-dev \
             libxcb-*-dev v4l-utils libv4l-dev v4l2loopback-dkms libva-dev libpci-dev libspeexdsp-dev  \
-            libwebsocketpp-dev libasio-dev libvlc-dev  libmbedtls-dev
+            libwebsocketpp-dev libasio-dev libvlc-dev  libmbedtls-dev 	extra-cmake-modules
       # Step 2: 下载 OBS Studio 源代码
       - name: Download OBS Studio Source Code
         run: |
@@ -107,8 +107,8 @@ jobs:
         run: |
           git clone https://github.com/microsoft/vcpkg.git /opt/vcpkg
           /opt/vcpkg/bootstrap-vcpkg.sh -disableMetrics
-          wget https://mirrors.dotsrc.org/gnu/gettext/gettext-0.22.5.tar.gz
-          wget https://mirrors.dotsrc.org/gnu/automake/automake-1.17.tar.gz
+          wget -q https://mirrors.dotsrc.org/gnu/gettext/gettext-0.22.5.tar.gz
+          wget -q https://mirrors.dotsrc.org/gnu/automake/automake-1.17.tar.gz
           mkdir -p /opt/vcpkg/downloads/
           mv gettext-0.22.5.tar.gz /opt/vcpkg/downloads/
           mv automake-1.17.tar.gz /opt/vcpkg/downloads/
@@ -129,8 +129,7 @@ jobs:
           #cd obs && /opt/vcpkg/vcpkg x-update-baseline --add-initial-baseline
           #/opt/vcpkg/vcpkg install --clean-after-build --triplet=x64-linux-dynamic
           
-          #cat > /opt/vcpkg/installed/x64-linux-dynamic/lib/pkgconfig/libpostproc.pc << 'EOF'
-          cat > vcpkg_installed/x64-linux-dynamic/lib/pkgconfig/libpostproc.pc << 'EOF'
+          cat > /opt/vcpkg/installed/x64-linux-dynamic/lib/pkgconfig/libpostproc.pc << 'EOF'
           prefix=${pcfiledir}/../..
           exec_prefix=${prefix}
           libdir=${prefix}/lib
