@@ -120,8 +120,8 @@ jobs:
           echo "VCPKG_ROOT=/opt/vcpkg" | tee -a $GITHUB_ENV ~/.bashrc
           echo "CMAKE_TOOLCHAIN_FILE=/opt/vcpkg/scripts/buildsystems/vcpkg.cmake" | tee -a $GITHUB_ENV ~/.bashrc
           mv assets/obs_vcpkg.json obs/vcpkg.json
-          /opt/vcpkg/vcpkg x-update-baseline --add-initial-baseline
-          cd obs && /opt/vcpkg/vcpkg install
+          cd obs && /opt/vcpkg/vcpkg x-update-baseline --add-initial-baseline
+          /opt/vcpkg/vcpkg install
           
           #cat > /opt/vcpkg/installed/x64-linux-dynamic/lib/pkgconfig/libpostproc.pc << 'EOF'
           cat > vcpkg_installed/x64-linux-dynamic/lib/pkgconfig/libpostproc.pc << 'EOF'
