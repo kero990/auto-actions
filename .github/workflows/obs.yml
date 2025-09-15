@@ -107,21 +107,22 @@ jobs:
         run: |
           git clone https://github.com/microsoft/vcpkg.git /opt/vcpkg
           /opt/vcpkg/bootstrap-vcpkg.sh -disableMetrics
-          #/opt/vcpkg/vcpkg install \
-            #ffmpeg[gpl,postproc,x264,x265,fdk-aac,openssl] \
-            #openssl \
-            #sdl2 \
-            #pipewire \
-            #pcre2 \
-            #glib \
-            #x264 \
-            #libsrt \
-            #ffnvcodec nlohmann-json luajit mbedtls --clean-after-build --triplet=x64-linux-dynamic
+          /opt/vcpkg/vcpkg install \
+            ffmpeg[gpl,postproc,x264,x265,fdk-aac,openssl] \
+            openssl \
+            sdl2 \
+            pipewire \
+            pcre2 \
+            glib \
+            x264 \
+            libsrt \
+            ffnvcodec nlohmann-json luajit mbedtls --clean-after-build --triplet=x64-linux-dynamic
           echo "VCPKG_ROOT=/opt/vcpkg" | tee -a $GITHUB_ENV ~/.bashrc
           echo "CMAKE_TOOLCHAIN_FILE=/opt/vcpkg/scripts/buildsystems/vcpkg.cmake" | tee -a $GITHUB_ENV ~/.bashrc
-          mv assets/obs_vcpkg.json obs/vcpkg.json
-          cd obs && /opt/vcpkg/vcpkg x-update-baseline --add-initial-baseline
-          /opt/vcpkg/vcpkg install --clean-after-build --triplet=x64-linux-dynamic
+          echo "PKG_LIBRARY_PATH=$PKG_LIBRARY_PATH:/opt/vcpkg/installed/x64-linux-dynamic/lib/pkgconfig" | tee -a $GITHUB_ENV ~/.bashrc
+          #mv assets/obs_vcpkg.json obs/vcpkg.json
+          #cd obs && /opt/vcpkg/vcpkg x-update-baseline --add-initial-baseline
+          #/opt/vcpkg/vcpkg install --clean-after-build --triplet=x64-linux-dynamic
           
           #cat > /opt/vcpkg/installed/x64-linux-dynamic/lib/pkgconfig/libpostproc.pc << 'EOF'
           cat > vcpkg_installed/x64-linux-dynamic/lib/pkgconfig/libpostproc.pc << 'EOF'
@@ -147,7 +148,8 @@ jobs:
         run: |
           git clone https://code.videolan.org/rist/librist /tmp/librist
           cd /tmp/librist
-          export PKG_LIBRARY_PATH=$PKG_LIBRARY_PATH:/opt/vcpkg/installed/x64-linux-dynamic/lib/pkgconfig
+          #export PKG_LIBRARY_PATH=$PKG_LIBRARY_PATH:/opt/vcpkg/installed/x64-linux-dynamic/lib/pkgconfig
+          export CC=/usr/bin/clang-20 CXX=/usr/bin/clang++-20
           meson build --prefix=/usr/local
           ninja -C build
           ninja  -C build install
@@ -170,11 +172,11 @@ jobs:
           git clone https://github.com/obsproject/obs-browser.git ../plugins/obs-browser
           git clone https://github.com/obsproject/libdshowcapture.git ../deps/libdshowcapture/src
           git clone https://github.com/obsproject/obs-websocket.git ../plugins/obs-websocket
-          export CC=/usr/bin/clang-20 CXX=/usr/bin/clang++-20 ld=/usr/bin/ld.lld-20 LDFLAGS="-fuse-ld=lld"
+          export CC=/usr/bin/clang-20 CXX=/usr/bin/clang++-20 LD=/usr/bin/ld.lld-20 LDFLAGS="-fuse-ld=lld"
           cmake .. --preset ubuntu \
             -GNinja \
             -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-            -DCMAKE_TOOLCHAIN_FILE=$CMAKE_TOOLCHAIN_FILE \
+            #-DCMAKE_TOOLCHAIN_FILE=$CMAKE_TOOLCHAIN_FILE \
             -DENABLE_RELOCATABLE=true \
             -DENABLE_PORTABLE_CONFIG=true \
             -DENABLE_BROWSER=false \
