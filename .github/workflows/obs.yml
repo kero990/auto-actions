@@ -121,7 +121,7 @@ jobs:
             glib \
             x264 \
             libsrt \
-            ffnvcodec nlohmann-json luajit mbedtls --clean-after-build --triplet=x64-linux-dynamic
+            ffnvcodec nlohmann-json luajit mbedtls libva[glx,wayland] --clean-after-build --triplet=x64-linux-dynamic
           echo "VCPKG_ROOT=/opt/vcpkg" | tee -a $GITHUB_ENV ~/.bashrc
           echo "CMAKE_TOOLCHAIN_FILE=/opt/vcpkg/scripts/buildsystems/vcpkg.cmake" | tee -a $GITHUB_ENV ~/.bashrc
           echo "PKG_LIBRARY_PATH=$PKG_LIBRARY_PATH:/opt/vcpkg/installed/x64-linux-dynamic/lib/pkgconfig" | tee -a $GITHUB_ENV ~/.bashrc
