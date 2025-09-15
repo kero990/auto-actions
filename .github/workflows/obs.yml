@@ -161,6 +161,7 @@ jobs:
 
       # Step 6: 修补 OBS 源代码（如果有必要）
       - name: Apply Source Code Patches
+        if: false
         run: |
           sed -i 's/QFile file(cur->location);/QFile file(QString::fromStdString(cur->location.string()));/g' obs/UI/obs-app-theming.cpp
           sed -i 's/QFile debugFile(debugOut);/QFile debugFile(QString::fromStdString(debugOut.string()));/g' obs/UI/obs-app-theming.cpp
