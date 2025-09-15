@@ -121,7 +121,7 @@ jobs:
           echo "CMAKE_TOOLCHAIN_FILE=/opt/vcpkg/scripts/buildsystems/vcpkg.cmake" | tee -a $GITHUB_ENV ~/.bashrc
           mv assets/obs_vcpkg.json obs/vcpkg.json
           cd obs && /opt/vcpkg/vcpkg x-update-baseline --add-initial-baseline
-          /opt/vcpkg/vcpkg install
+          /opt/vcpkg/vcpkg install --clean-after-build --triplet=x64-linux-dynamic
           
           #cat > /opt/vcpkg/installed/x64-linux-dynamic/lib/pkgconfig/libpostproc.pc << 'EOF'
           cat > vcpkg_installed/x64-linux-dynamic/lib/pkgconfig/libpostproc.pc << 'EOF'
