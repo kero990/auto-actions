@@ -109,6 +109,7 @@ jobs:
           /opt/vcpkg/bootstrap-vcpkg.sh -disableMetrics
           wget https://mirrors.dotsrc.org/gnu/gettext/gettext-0.22.5.tar.gz
           wget https://mirrors.dotsrc.org/gnu/automake/automake-1.17.tar.gz
+          mkdir -p /opt/vcpkg/downloads/
           mv gettext-0.22.5.tar.gz /opt/vcpkg/downloads/
           mv automake-1.17.tar.gz /opt/vcpkg/downloads/
           /opt/vcpkg/vcpkg install \
