@@ -1,161 +1,75 @@
-name: landlords amd64
+name: Repack Brave Browser
 
 on:
   workflow_dispatch:
 
-
 jobs:
-  build:
-    runs-on: ubuntu-20.04
-    container: debian:10
-    
+  repack:
+    runs-on: ubuntu-latest
+    container:
+      image: python:3.10-buster
+
+    strategy:
+      matrix:
+        arch: [amd64, arm64]
 
     steps:
-      - name: check GLIBC
-        run: ldd --version
-      - name: clone 
+      # 1. 检出仓库
+      - uses: actions/checkout@v3
+
+      # 2. 安装打包及下载工具
+      - name: Prepare tools
         run: |
-            apt update
-            apt install -y wget curl make gcc g++ patchelf git build-essential xz-utils libssl-dev liblzma-dev libbz2-dev bc software-properties-common gnupg libgl1-mesa-dev fuse
-            git clone https://gitee.com/subingwen/landlords
-            wget https://github.com/kero990/auto-actions/blob/main/com.gitee.landlords.png?raw=true
-      
-      #- name: Install Qt
-        #uses: jurplel/install-qt-action@v3
-        #with: 
-          #  install-deps: 'false'
-            #setup-python: 'false'
+          apt-get update
+          apt-get install -y wget dpkg-dev
 
-
-      #- name: Cache Python
-       # id: cache-python
-        #uses: actions/cache@v4
-        #with:
-          #path: /opt/python3
-          #key: Linux-python-ea444e7416ccfb42cbb2f48a3fcb3abe53a97ef19d5565c4044d4819c3719d93
-
-            
-      - name: Install Qt
+      # 3. 获取最新版及下载链接
+      - name: Get Brave version and url
+        id: getver
         run: |
-          add-apt-repository ppa:beineri/opt-qt-5.12.0-bionic
-          sed -i s@plucky@bionic@g /etc/apt/sources.list.d/*.list
-          apt-key adv --keyserver keyserver.ubuntu.com --recv-keys ADEEAD90C4432D34
-          apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 10C56D0DE9977759
-          apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 3B4FE6ACC0B21F32
-          echo 'deb http://archive.ubuntu.com/ubuntu/ bionic main restricted' >> /etc/apt/sources.list
-          echo 'deb http://archive.ubuntu.com/ubuntu/ bionic-updates main restricted' >> /etc/apt/sources.list
-          echo 'deb http://archive.ubuntu.com/ubuntu/ bionic universe' >> /etc/apt/sources.list
-          echo 'deb http://archive.ubuntu.com/ubuntu/ bionic-updates universe' >> /etc/apt/sources.list
-          echo 'deb http://archive.ubuntu.com/ubuntu/ bionic multiverse' >> /etc/apt/sources.list
-          echo 'deb http://archive.ubuntu.com/ubuntu/ bionic-updates multiverse' >> /etc/apt/sources.list
-          echo 'deb http://archive.ubuntu.com/ubuntu/ bionic-backports main restricted universe multiverse' >> /etc/apt/sources.list
-          apt-get update           
-          apt-get install -y qt512-meta-full qt5123d qt512base qt512canvas3d qt512charts-no-lgpl qt512connectivity qt512datavis3d-no-lgpl qt512declarative qt512doc qt512gamepad qt512graphicaleffects qt512imageformats qt512location qt512multimedia qt512quickcontrols qt512quickcontrols2 qt512remoteobjects qt512script qt512scxml qt512sensors qt512serialbus qt512serialport qt512speech qt512svg qt512tools qt512translations qt512virtualkeyboard-no-lgpl qt512wayland qt512webchannel qt512webengine qt512websockets qt512x11extras qt512xmlpatterns
-          bash /opt/qt512/bin/qt512-env.sh
-          echo "PATH=$PATH:/opt/qt512/bin" >>  $GITHUB_ENV
-          cp /opt/qt512/* /usr/ -r
-          
-          
+          LATEST_URL="https://github.com/brave/brave-browser/releases/latest"
+          VERSION=$(wget -qO- $LATEST_URL | grep -Eo 'v[0-9]+\.[0-9]+\.[0-9]+' | head -1 | sed 's/v//')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          # 设置架构
+          ARCH="${{ matrix.arch }}"
+          # 生成下载链接
+          if [ "$ARCH" = "amd64" ]; then
+            DEB_URL="https://github.com/brave/brave-browser/releases/download/v${VERSION}/brave-browser_${VERSION}_amd64.deb"
+          else
+            DEB_URL="https://github.com/brave/brave-browser/releases/download/v${VERSION}/brave-browser_${VERSION}_arm64.deb"
+          fi
+          echo "deb_url=$DEB_URL" >> $GITHUB_OUTPUT
 
-#      - name: Upload Qt5
-#        uses: actions/upload-artifact@v4
-#        with:
-#          name: Qt5
-#          path: /opt/Qt5.12.0.tar.gz          
-        
-      - name: Install LinuxDeployQt
+      # 4. 下载官方DEB包
+      - name: Download Brave
+        run: wget -O brave.deb "${{ steps.getver.outputs.deb_url }}"
+
+      # 5. 解包、替换文件、重打包
+      - name: Repack as Deepin spec
         run: |
-          wget https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage
-          chmod +x linuxdeployqt-continuous-x86_64.AppImage
-          cp linuxdeployqt-continuous-x86_64.AppImage /usr/bin
-        
-       # uses: actions/cache@v4
-       # with:
-        #   path: /usr/bin/
-       #    key: Linux-python-linuxdeployqt}}
-      
-      - name: build Landlrods
-        run: |
-            
-            cd landlords
-            qmake Landlords.pro
-            make -j8
-            mkdir build && cd build
-            cp ../Landlords .
-            cp ../resource.rcc .
-            linuxdeployqt-continuous-x86_64.AppImage Landlords -verbose2
-            cp /usr/lib/x86_64-linux-gnu/libxcb-xinput.so.0.1.0 lib/libxcb-xinput.so.0
-    
-      - name: deb
-        run: |
-           mkdir -p deb/DEBIAN
-           mkdir -p deb/opt/apps/com.gitee.landlords/entries/applications
-           mkdir -p deb/opt/apps/com.gitee.landlords/entries/
-           mkdir -p deb/opt/apps/com.gitee.landlords/entries/icons/hicolor/512x512/apps/
-           mv landlords/build deb/opt/apps/com.gitee.landlords/files
-           cp ./com.gitee.landlords.png  deb/opt/apps/com.gitee.landlords/entries/icons/hicolor/512x512/apps/
-           
-           cat deb/DEBIAN/control << EOF
-           Package: com.gitee.landlords
-           Version: 0.1
-           Installed-Size: 89584
-           Maintainer: kero990 <kero990@qq.com>
-           Section: games
-           Architecture: amd64
-           Priority: optional
-           Description: 一个基于Qt开发的 斗地主小游戏。
-            一个基于Qt开发的 斗地主小游戏。
-            EOF
+          set -e
+          VERSION="${{ steps.getver.outputs.version }}"
+          ARCH="${{ matrix.arch }}"
+          APP_NAME=brave-browser
+          # 创建工作目录
+          mkdir -p work
+          dpkg-deb -R brave.deb work/origin
 
-            cat deb/opt/apps/com.gitee.landlords/info << EOF
-            {
-              "appid": "com.gitee.landlords",
-              "name": "landlords",
-              "version": "0.1",
-              "arch": ["amd64"],
-              "permissions": {
-                "autostart": true,
-                "notification": true,
-                "trayicon": true,
-                "clipboard": true,
-                "account": true,
-                "bluetooth": true,
-                "camera": true,
-                "audio_record": true,
-                "installed_apps": true
-              }
-            }
-            EOF
+          # 覆盖control和desktop文件, 并替换变量
+          cp assets/brave/control work/origin/DEBIAN/control
+          cp assets/brave/com.brave.brave-browser.desktop work/origin/usr/share/applications/com.brave.brave-browser.desktop
 
-            cat deb/opt/apps/com.gitee.landlords/entries/applications/Landlords.desktop << EOF
-            [Desktop Entry]
-            Name=Landlords 单机斗地主
-            Version=1.0
-            Exec=/opt/apps/com.gitee.landlords/files/Landlords
-            Comment=Landlords 单机斗地主
-            Icon=com.gitee.landlords
-            Type=Application
-            Terminal=false
-            StartupNotify=true
-            Encoding=UTF-8
-            Categories=Game;
-            EOF
-            dpkg-deb -b deb
-            mv deb.deb com.gitee.landlords_0.1_amd64.deb
-            
+          # 替换control、desktop中的VVVV为$VERSION，AAAA为$ARCH
+          sed -i "s/VVVV/$VERSION/g;s/AAAA/$ARCH/g" work/origin/DEBIAN/control
+          sed -i "s/VVVV/$VERSION/g;s/AAAA/$ARCH/g" work/origin/usr/share/applications/com.brave.brave-browser.desktop
 
-      - name: Upload Packaged Deb to Release
-        uses: actions/upload-artifact@v4
+          # 校正规范（如/DEBIAN、/usr/share/applications等均已就位）
+          # 重新打包
+          dpkg-deb --build work/origin "${APP_NAME}_${VERSION}_${ARCH}_deepin.deb"
+
+      # 6. 上传结果
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
         with:
-          name: landlords
-          path: ./com.gitee.landlords_0.1_amd64.deb
-
-
-    
-            
-
-            
-
-            
-            
-          
+          name: brave-${{ matrix.arch }}
+          path: brave-browser_${{ steps.getver.outputs.version }}_${{ matrix.arch }}_deepin.deb
