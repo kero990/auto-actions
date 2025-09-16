@@ -75,7 +75,7 @@ jobs:
 
       # 6. 上传结果
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: brave-${{ matrix.arch }}
           path: brave-browser_${{ steps.getver.outputs.version }}_${{ matrix.arch }}_deepin.deb
