@@ -77,7 +77,7 @@ jobs:
         run: |
           git clone https://github.com/nayuki/QR-Code-generator.git /tmp/QR-Code-generator
           cd /tmp/QR-Code-generator/cpp
-          make
+          CXXFLAGS="-fPIC $CXXFLAGS" make
           cp libqrcodegencpp.a /usr/local/lib
           cp qrcodegen.hpp /usr/local/include/
           echo "/usr/local/lib" > /etc/ld.so.conf.d/user-libs.conf
