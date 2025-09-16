@@ -1,0 +1,18 @@
+{
+    "appid": "com.brave.brave-browser",
+    "name": "Brave",
+    "version": "1.75.180",
+    "arch": ["arm64"],
+    "permissions": {
+        "autostart": false,
+        "notification": true,
+        "trayicon": false,
+        "clipboard": true,
+        "account": true,
+        "bluetooth": false,
+        "camera": true,
+        "audio_record": true,
+        "installed_apps": true
+    }
+}
+
