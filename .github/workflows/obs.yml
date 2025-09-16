@@ -42,6 +42,7 @@ jobs:
           git clone https://github.com/obsproject/obs-browser.git ./plugins/obs-browser
           git clone https://github.com/obsproject/libdshowcapture.git ./deps/libdshowcapture/src
           git clone https://github.com/obsproject/obs-websocket.git ./plugins/obs-websocket
+          sed -i '43i#include "../models/SceneCollection.hpp"' frontend/widgets/OBSBasic.hpp
       # Step 2: 安装 CMake 和 Ninja（最新版本）并设置到环境变量
       - name: Install CMake and Ninja
         run: |
