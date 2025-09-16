@@ -38,6 +38,10 @@ jobs:
           # 解压并重命名目录
           tar -xzf obs.tar.gz
           mv obs-studio-*/ obs
+          cd obs
+          git clone https://github.com/obsproject/obs-browser.git ./plugins/obs-browser
+          git clone https://github.com/obsproject/libdshowcapture.git ./deps/libdshowcapture/src
+          git clone https://github.com/obsproject/obs-websocket.git ./plugins/obs-websocket
       # Step 2: 安装 CMake 和 Ninja（最新版本）并设置到环境变量
       - name: Install CMake and Ninja
         run: |
@@ -123,8 +127,8 @@ jobs:
             libsrt \
             ffnvcodec nlohmann-json luajit mbedtls libva[glx,wayland] --clean-after-build --triplet=x64-linux-dynamic
           echo "VCPKG_ROOT=/opt/vcpkg" | tee -a $GITHUB_ENV ~/.bashrc
-          echo "CMAKE_TOOLCHAIN_FILE=/opt/vcpkg/scripts/buildsystems/vcpkg.cmake" | tee -a $GITHUB_ENV ~/.bashrc
-          echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/opt/vcpkg/installed/x64-linux-dynamic/lib/pkgconfig" | tee -a $GITHUB_ENV ~/.bashrc
+          #echo "CMAKE_TOOLCHAIN_FILE=/opt/vcpkg/scripts/buildsystems/vcpkg.cmake" | tee -a $GITHUB_ENV ~/.bashrc
+          #echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/opt/vcpkg/installed/x64-linux-dynamic/lib/pkgconfig" | tee -a $GITHUB_ENV ~/.bashrc
           #mv assets/obs_vcpkg.json obs/vcpkg.json
           #cd obs && /opt/vcpkg/vcpkg x-update-baseline --add-initial-baseline
           #/opt/vcpkg/vcpkg install --clean-after-build --triplet=x64-linux-dynamic
@@ -146,7 +150,8 @@ jobs:
           Cflags: -I${includedir}
 
           EOF
-
+          cp /opt/vcpkg/installed/x64-linux-dynamic/* /usr/local/ -rf
+          ldconfig
       # Step 5: 编译 librist 并安装
       - name: Compile and Install librist
         run: |
@@ -174,9 +179,6 @@ jobs:
         run: |
           #curl -sSf https://sshx.io/get | sh -s run
           mkdir obs/build_ubuntu && cd obs/build_ubuntu
-          git clone https://github.com/obsproject/obs-browser.git ../plugins/obs-browser
-          git clone https://github.com/obsproject/libdshowcapture.git ../deps/libdshowcapture/src
-          git clone https://github.com/obsproject/obs-websocket.git ../plugins/obs-websocket
           export CC=/usr/bin/clang-20 CXX=/usr/bin/clang++-20 LD=/usr/bin/ld.lld-20 LDFLAGS="-fuse-ld=lld"
           cmake .. --preset ubuntu \
             -GNinja \
