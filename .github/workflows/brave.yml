@@ -1,4 +1,4 @@
-name: Repack Brave Browser
+name: Brave Browser Repack 
 
 on:
   workflow_dispatch:
@@ -12,6 +12,8 @@ jobs:
     strategy:
       matrix:
         arch: [amd64, arm64]
+    env:
+        PKG_NAME: "com.brave.brave-browser"
 
     steps:
       # 1. 检出仓库
@@ -20,10 +22,11 @@ jobs:
       # 2. 安装打包及下载工具
       - name: Prepare tools
         run: |
+          sed -i s@deb.debian@archive.debian@g /etc/apt/sources.list
           apt-get update
           apt-get install -y wget dpkg-dev
 
-      # 3. 获取最新版及下载链接
+      # 3. 获取最新版
       - name: Get Brave version and url
         id: getver
         run: |
@@ -38,11 +41,7 @@ jobs:
           else
             DEB_URL="https://github.com/brave/brave-browser/releases/download/v${VERSION}/brave-browser_${VERSION}_arm64.deb"
           fi
-          echo "deb_url=$DEB_URL" >> $GITHUB_OUTPUT
-
-      # 4. 下载官方DEB包
-      - name: Download Brave
-        run: wget -O brave.deb "${{ steps.getver.outputs.deb_url }}"
+          wget -O brave.deb $DEB_URL
 
       # 5. 解包、替换文件、重打包
       - name: Repack as Deepin spec
@@ -52,20 +51,27 @@ jobs:
           ARCH="${{ matrix.arch }}"
           APP_NAME=brave-browser
           # 创建工作目录
-          mkdir -p work
-          dpkg-deb -R brave.deb work/origin
+          mkdir -p deb/DEBIAN
+          mkdir -p deb/opt/apps/$PKG_NAME/entries/applications
+          mkdir -p deb/opt/apps/$PKG_NAME/entries/icons/hicolor/256x256/apps
+          mkdir -p deb/opt/apps/$PKG_NAME/files/brave
+          dpkg-deb -R brave.deb origin
 
           # 覆盖control和desktop文件, 并替换变量
-          cp assets/brave/control work/origin/DEBIAN/control
-          cp assets/brave/com.brave.brave-browser.desktop work/origin/usr/share/applications/com.brave.brave-browser.desktop
+          cp assets/brave/control deb/DEBIAN/control
+          cp assets/brave/com.brave.brave-browser.desktop deb/opt/apps/$PKG_NAME/entries/applications/
+          cp assets/brave/info deb/opt/apps/$PKG_NAME/
 
           # 替换control、desktop中的VVVV为$VERSION，AAAA为$ARCH
-          sed -i "s/VVVV/$VERSION/g;s/AAAA/$ARCH/g" work/origin/DEBIAN/control
-          sed -i "s/VVVV/$VERSION/g;s/AAAA/$ARCH/g" work/origin/usr/share/applications/com.brave.brave-browser.desktop
-
-          # 校正规范（如/DEBIAN、/usr/share/applications等均已就位）
+          sed -i "s/VVVV/$VERSION/g;s/AAAA/$ARCH/g" deb/DEBIAN/control
+          sed -i "s/VVVV/$VERSION/g;s/AAAA/$ARCH/g" deb/opt/apps/$PKG_NAME/entries/applications/com.brave.brave-browser.desktop
+          sed -i "s/VVVV/$VERSION/g;s/AAAA/$ARCH/g" deb/opt/apps/$PKG_NAME/control
+          # 复制包文件
+          cp origin/opt/brave.com/brave deb/opt/apps/$PKG_NAME/files/ -r
+          cp deb/opt/apps/$PKG_NAME/files/product_logo_256.png deb/opt/apps/$PKG_NAME/entries/icons/hicolor/256x256/apps/$PKG_NAME.png
+          chmod 4755 deb/opt/apps/com.brave.brave-browser/files/brave/chrome-sandbox'
           # 重新打包
-          dpkg-deb --build work/origin "${APP_NAME}_${VERSION}_${ARCH}_deepin.deb"
+          dpkg-deb --build deb "${APP_NAME}_${VERSION}_${ARCH}_deepin.deb"
 
       # 6. 上传结果
       - name: Upload artifact
