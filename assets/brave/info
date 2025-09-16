@@ -1,8 +1,8 @@
 {
     "appid": "com.brave.brave-browser",
     "name": "Brave",
-    "version": "1.75.180",
-    "arch": ["arm64"],
+    "version": "VVVV",
+    "arch": ["AAAA"],
     "permissions": {
         "autostart": false,
         "notification": true,
