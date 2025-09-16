@@ -65,7 +65,7 @@ jobs:
           # 替换control、desktop中的VVVV为$VERSION，AAAA为$ARCH
           sed -i "s/VVVV/$VERSION/g;s/AAAA/$ARCH/g" deb/DEBIAN/control
           sed -i "s/VVVV/$VERSION/g;s/AAAA/$ARCH/g" deb/opt/apps/$PKG_NAME/entries/applications/com.brave.brave-browser.desktop
-          sed -i "s/VVVV/$VERSION/g;s/AAAA/$ARCH/g" deb/opt/apps/$PKG_NAME/control
+          sed -i "s/VVVV/$VERSION/g;s/AAAA/$ARCH/g" deb/opt/apps/$PKG_NAME/info
           # 复制包文件
           cp origin/opt/brave.com/brave deb/opt/apps/$PKG_NAME/files/ -r
           cp deb/opt/apps/$PKG_NAME/files/product_logo_256.png deb/opt/apps/$PKG_NAME/entries/icons/hicolor/256x256/apps/$PKG_NAME.png
