@@ -171,7 +171,14 @@ jobs:
           cd obs
           sed -i '43i#include "../models/SceneCollection.hpp"' frontend/widgets/OBSBasic.hpp
           sed -i '1i#include <iomanip>' ../frontend/utility/audio-encoders.cpp
-          
+          sed -i 's/QDir::addSearchPath("theme", absolute(installSearchDir));/QDir::addSearchPath("theme", QString::fromStdString(absolute(installSearchDir).string()));/' frontend/OBSApp_Themes.cpp
+          sed -i 's/QDir::addSearchPath("theme", absolute(configSearchDir));/QDir::addSearchPath("theme", QString::fromStdString(absolute(configSearchDir).string()));/' frontend/OBSApp_Themes.cpp
+          sed -i '866s|QFile file(cur->location);|QFile file(QString::fromStdString(cur->location.string()));|' frontend/OBSApp_Themes.cpp
+          sed -i '17i\
+          set(CMAKE_CXX_STANDARD 17)\
+          set(CMAKE_CXX_STANDARD_REQUIRED ON)\
+          link_libraries(stdc++fs)' \
+          CMakeLists.txt
       # Step 7: 构建 OBS Studio
       - name: Build OBS Studio
         run: |
