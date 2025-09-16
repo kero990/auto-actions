@@ -71,11 +71,11 @@ jobs:
           cp deb/opt/apps/$PKG_NAME/files/brave/product_logo_256.png deb/opt/apps/$PKG_NAME/entries/icons/hicolor/256x256/apps/$PKG_NAME.png
           chmod 4755 deb/opt/apps/com.brave.brave-browser/files/brave/chrome-sandbox
           # 重新打包
-          dpkg-deb --build deb "${APP_NAME}_${VERSION}_${ARCH}_deepin.deb"
+          dpkg-deb --build deb "${APP_NAME}_${VERSION}_${ARCH}.deb"
 
       # 6. 上传结果
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: brave-${{ matrix.arch }}
-          path: brave-browser_${{ steps.getver.outputs.version }}_${{ matrix.arch }}_deepin.deb
+          path: brave-browser_${{ steps.getver.outputs.version }}_${{ matrix.arch }}.deb
