@@ -68,7 +68,7 @@ jobs:
           sed -i "s/VVVV/$VERSION/g;s/AAAA/$ARCH/g" deb/opt/apps/$PKG_NAME/info
           # 复制包文件
           cp origin/opt/brave.com/brave deb/opt/apps/$PKG_NAME/files/ -r
-          cp deb/opt/apps/$PKG_NAME/files/product_logo_256.png deb/opt/apps/$PKG_NAME/entries/icons/hicolor/256x256/apps/$PKG_NAME.png
+          cp deb/opt/apps/$PKG_NAME/files/brave/product_logo_256.png deb/opt/apps/$PKG_NAME/entries/icons/hicolor/256x256/apps/$PKG_NAME.png
           chmod 4755 deb/opt/apps/com.brave.brave-browser/files/brave/chrome-sandbox'
           # 重新打包
           dpkg-deb --build deb "${APP_NAME}_${VERSION}_${ARCH}_deepin.deb"
