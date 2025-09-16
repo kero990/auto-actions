@@ -42,7 +42,7 @@ jobs:
           git clone https://github.com/obsproject/obs-browser.git ./plugins/obs-browser
           git clone https://github.com/obsproject/libdshowcapture.git ./deps/libdshowcapture/src
           git clone https://github.com/obsproject/obs-websocket.git ./plugins/obs-websocket
-          sed -i '43i#include "../models/SceneCollection.hpp"' frontend/widgets/OBSBasic.hpp
+
       # Step 2: 安装 CMake 和 Ninja（最新版本）并设置到环境变量
       - name: Install CMake and Ninja
         run: |
@@ -167,13 +167,10 @@ jobs:
 
       # Step 6: 修补 OBS 源代码（如果有必要）
       - name: Apply Source Code Patches
-        if: false
         run: |
-          sed -i 's/QFile file(cur->location);/QFile file(QString::fromStdString(cur->location.string()));/g' obs/UI/obs-app-theming.cpp
-          sed -i 's/QFile debugFile(debugOut);/QFile debugFile(QString::fromStdString(debugOut.string()));/g' obs/UI/obs-app-theming.cpp
-          sed -i 's/QDir::addSearchPath("theme", absolute(installSearchDir));/QDir::addSearchPath("theme", QString::fromStdString(absolute(installSearchDir).string()));/g' obs/UI/obs-app-theming.cpp
-          sed -i 's/QDir::addSearchPath("theme", absolute(configSearchDir));/QDir::addSearchPath("theme", QString::fromStdString(absolute(configSearchDir).string()));/g' obs/UI/obs-app-theming.cpp
-          sed -i "18 i set(CMAKE_CXX_STANDARD 17)\nset(CMAKE_CXX_STANDARD_REQUIRED ON)\nlink_libraries(stdc++fs)" obs/CMakeLists.txt
+          cd obs
+          sed -i '43i#include "../models/SceneCollection.hpp"' frontend/widgets/OBSBasic.hpp
+          sed -i '1i#include <iomanip>' ../frontend/utility/audio-encoders.cpp
           
       # Step 7: 构建 OBS Studio
       - name: Build OBS Studio
@@ -205,8 +202,8 @@ jobs:
       # Step 8: 打包为 AppImage
       - name: Package OBS as AppImage
         run: |
-          wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
-          wget https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/1-alpha-20250213-1/linuxdeploy-plugin-qt-x86_64.AppImage
+          wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+          wget -q https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/1-alpha-20250213-1/linuxdeploy-plugin-qt-x86_64.AppImage
           chmod +x *.AppImage
           ./linuxdeploy-x86_64.AppImage -e obs/bin/obs -i obs/share/icons/hicolor/scalable/apps/com.obsproject.Studio.svg -d obs/share/applications/com.obsproject.Studio.desktop \
             --output appimage \
