@@ -98,12 +98,12 @@ jobs:
           ninja  -C build install
           ldconfig
      # Step x: 编译 libVPL并安装
-      - name: Compile and Install libdrm
+      - name: Compile and Install libVPL
         run: |
           git clone https://github.com/intel/libvpl
           cd libvpl
           script/bootstrap
-          cmake -B _build -DCMAKE_INSTALL_PREFIX=$VPL_INSTALL_DIR
+          cmake -B _build 
           cmake --build _build
           cmake --install _build
           
