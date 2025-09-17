@@ -97,7 +97,16 @@ jobs:
           ninja -C build
           ninja  -C build install
           ldconfig
-
+     # Step x: 编译 libVPL并安装
+      - name: Compile and Install libdrm
+        run: |
+          git clone https://github.com/intel/libvpl
+          cd libvpl
+          script/bootstrap
+          cmake -B _build -DCMAKE_INSTALL_PREFIX=$VPL_INSTALL_DIR
+          cmake --build _build
+          cmake --install _build
+          
       - name: update autoconf
         run: |
           wget -q https://ftp.gnu.org/gnu/autoconf/autoconf-latest.tar.gz
@@ -126,7 +135,7 @@ jobs:
             glib \
             x264 \
             libsrt \
-            ffnvcodec nlohmann-json luajit mbedtls libva[glx,wayland] --clean-after-build --triplet=x64-linux-dynamic
+            ffnvcodec nlohmann-json luajit mbedtls libva[glx,wayland] rnnoise --clean-after-build --triplet=x64-linux-dynamic
           echo "VCPKG_ROOT=/opt/vcpkg" | tee -a $GITHUB_ENV ~/.bashrc
           #echo "CMAKE_TOOLCHAIN_FILE=/opt/vcpkg/scripts/buildsystems/vcpkg.cmake" | tee -a $GITHUB_ENV ~/.bashrc
           #echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/opt/vcpkg/installed/x64-linux-dynamic/lib/pkgconfig" | tee -a $GITHUB_ENV ~/.bashrc
