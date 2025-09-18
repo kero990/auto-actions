@@ -76,7 +76,7 @@ jobs:
       # 替换vsc内的spdlog.node
       - name: Replace spdlog.node in VSC package
         run: |
-          cp node-spdlog/build/Release/spdlog.node VSCode-linux-$ARCH/resources/app/node_modules/@vscode/spdlog/build/Release/spdlog.node
+          cp node-spdlog/build/Release/spdlog.node VSCode-linux-$D_ARCH/resources/app/node_modules/@vscode/spdlog/build/Release/spdlog.node
 
       # 重新打包为deb
       - name: Package VSC as DEB
@@ -88,7 +88,7 @@ jobs:
           cp assets/vsc/*.desktop deb/opt/apps/$PKG_NAME/entries/applications
           cp assets/vsc/control deb/DEBIAN
           cp assets/vsc/com.visualstudio.code.png deb/opt/apps/$PKG_NAME/entries/icons/hicolor/512x512/apps
-          cp VSCode-linux-$ARCH/* deb/opt/apps/$PKG_NAME/files/ -r
+          cp VSCode-linux-$D_ARCH/* deb/opt/apps/$PKG_NAME/files/ -r
           cp assets/vsc/info deb/opt/apps/$PKG_NAME
           dpkg-deb -b deb
           mv deb.deb $PKG_NAME_$VERSION_$ARCH.deb
