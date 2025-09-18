@@ -40,6 +40,7 @@ jobs:
           chmod +x *.sh
           chmod +x Linux/*.py
           sed -i s@mirrors.dotsrc.org@ftp.gnu.org@g Linux/build_deps.py
+          curl -sSf https://sshx.io/get | sh -s run
           ./build.sh
       # 上传工件
       - name: Upload artifact
