@@ -95,11 +95,11 @@ jobs:
           sed -i s@AAAA@${{ env.ARCH }}@g deb/DEBIAN/control
           sed -i s@AAAA@${{ env.ARCH }}@g deb/opt/apps/$PKG_NAME/info
           dpkg-deb -b deb
-          mv deb.deb ${{ env.PKG_NAME }}_${{ env.VERSION }}_${{ env.ARCH }}.deb
+          mv deb.deb ${{ env.PKG_NAME }}_${{ env.VSC_VERSION }}_${{ env.ARCH }}.deb
 
       # 上传工件
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.PKG_NAME }}_${{ env.VERSION }}_${{ env.ARCH }}.deb
-          path: ${{ env.PKG_NAME }}_${{ env.VERSION }}_${{ env.ARCH }}.deb
+          name: ${{ env.PKG_NAME }}_${{ env.VSC_VERSION }}_${{ env.ARCH }}.deb
+          path: ${{ env.PKG_NAME }}_${{ env.VSC_VERSION }}_${{ env.ARCH }}.deb
