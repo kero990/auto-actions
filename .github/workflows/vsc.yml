@@ -10,14 +10,17 @@ jobs:
       matrix:
         include:
           - arch: amd64
+            d_arch: x64
             runner: ubuntu-latest
           - arch: arm64
+            d_arch: arm64
             runner: ubuntu-22.04-arm
     container:
       image: python:3.10-buster
     env:
       ARCH: ${{ matrix.arch }}
       PKG_NAME: "com.visualstudio.code"
+      D_ARCH: ${{ matrix.d_arch }}
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
@@ -41,9 +44,9 @@ jobs:
       # 下载与解包架构对应vsc tar包（需替换实际下载URL与文件名）
       - name: Download and extract VSC tarball
         run: |
-          wget --content-disposition -q "https://code.visualstudio.com/sha/download?build=stable&os=linux-$ARCH"
+          wget --content-disposition -q "https://code.visualstudio.com/sha/download?build=stable&os=linux-$D_ARCH"
           tar -xzvf code*.tar.gz
-          VERSION=$(curl -sI -L "https://code.visualstudio.com/sha/download?build=stable&os=linux-deb-$ARCH" \
+          VERSION=$(curl -sI -L "https://code.visualstudio.com/sha/download?build=stable&os=linux-deb-$D_ARCH" \
            | grep -i 'content-disposition' \
            | sed -E 's/.*filename=([^;]+).*/\1/' \
            | grep -oP '[0-9]+\.[0-9]+\.[0-9]+')
