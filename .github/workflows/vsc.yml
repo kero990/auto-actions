@@ -45,7 +45,7 @@ jobs:
       - name: Download and extract VSC tarball
         run: |
           wget --content-disposition -q "https://code.visualstudio.com/sha/download?build=stable&os=linux-$D_ARCH"
-          tar -xzvf code*.tar.gz
+          tar -xzf code*.tar.gz
           VERSION=$(curl -sI -L "https://code.visualstudio.com/sha/download?build=stable&os=linux-deb-$D_ARCH" \
            | grep -i 'content-disposition' \
            | sed -E 's/.*filename=([^;]+).*/\1/' \
