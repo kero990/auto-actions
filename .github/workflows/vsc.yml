@@ -83,7 +83,7 @@ jobs:
         run: |
           mkdir -p deb/DEBIAN
           mkdir -p deb/opt/apps/$PKG_NAME/entries/applications
-          mkdir -p deb/opt/apps/$PKG_NAME/entries/icons/hicolor/256x256/apps
+          mkdir -p deb/opt/apps/$PKG_NAME/entries/icons/hicolor/512x512/apps
           mkdir -p deb/opt/apps/$PKG_NAME/files/
           cp assets/vsc/*.desktop deb/opt/apps/$PKG_NAME/entries/applications
           cp assets/vsc/control deb/DEBIAN
