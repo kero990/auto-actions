@@ -90,8 +90,8 @@ jobs:
           cp assets/vsc/com.visualstudio.code.png deb/opt/apps/$PKG_NAME/entries/icons/hicolor/512x512/apps
           cp VSCode-linux-$D_ARCH/* deb/opt/apps/$PKG_NAME/files/ -r
           cp assets/vsc/info deb/opt/apps/$PKG_NAME
-          sed -i s@VVVV@${{ env.VERSION }}@g deb/DEBIAN/control
-          sed -i s@VVVV@${{ env.VERSION }}@g deb/opt/apps/$PKG_NAME/info
+          sed -i s@VVVV@${{ env.VSC_VERSION }}@g deb/DEBIAN/control
+          sed -i s@VVVV@${{ env.VSC_VERSION }}@g deb/opt/apps/$PKG_NAME/info
           sed -i s@AAAA@${{ env.ARCH }}@g deb/DEBIAN/control
           sed -i s@AAAA@${{ env.ARCH }}@g deb/opt/apps/$PKG_NAME/info
           dpkg-deb -b deb
