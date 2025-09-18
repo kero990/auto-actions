@@ -1,0 +1,17 @@
+{
+    "appid": "com.visualstudio.code",
+    "name": "Visual Studio Code",
+    "version": "VVVV",
+    "arch": ["AAAA"],
+    "permissions": {
+        "autostart": true,
+        "notification": true,
+        "trayicon": true,
+        "clipboard": true,
+        "account": true,
+        "bluetooth": true,
+        "camera": true,
+        "audio_record": true,
+        "installed_apps": true
+    }
+}
