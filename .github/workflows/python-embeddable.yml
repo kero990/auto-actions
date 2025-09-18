@@ -1,0 +1,48 @@
+name: Python Embeddable linux
+
+on:
+  workflow_dispatch:
+    inputs:
+      arch:
+        description: "架构"
+        required: true
+        type: choice
+        options:
+          - amd64
+          - arm64
+        default: amd64
+      pyver:
+        description: "Python版本(如3.10.12)"
+        required: true
+        default: "3.10.12"
+
+jobs:
+  build-linux-embeddable:
+    runs-on: ${{ inputs.arch == 'amd64' && 'ubuntu-latest' || 'self-hosted-arm64' }}
+    container:
+      image: python:3.10-buster
+    steps:
+      - name: 安装依赖工具
+        run: |
+          sed -i s@deb.debian@archive.debian@g /etc/apt/sources.list
+          apt update 
+          apt-get remove openssl -y
+          apt-get install -y autoconf autoconf-archive gawk gettext git patch pkg-config build-essential
+
+      - name: 克隆仓库
+        run: git clone https://github.com/lmbelo/python3-embeddable.git
+
+      - name: 编译 Linux embeddable
+        run: |
+          echo "PYVER=${{ github.event.inputs.pyver }}" >> $GITHUB_ENV
+          cd python3-embeddable/python3-linux
+          chmod +x *.sh
+          chmod +x Linux/*.py
+          sed -i s@mirrors.dotsrc.org@ftp.gnu.org@g Linux/build_deps.py
+          ./build.sh
+      # 上传工件
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: python3-embeddable_${{ github.event.inputs.pyver }}_${{ github.event.inputs.arch }}
+          path: python3-embeddable/embeddable/*
