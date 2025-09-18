@@ -18,7 +18,7 @@ on:
 
 jobs:
   build-linux-embeddable:
-    runs-on: ${{ inputs.arch == 'amd64' && 'ubuntu-latest' || 'self-hosted-arm64' }}
+    runs-on: ${{ inputs.arch == 'amd64' && 'ubuntu-latest' || 'ubuntu-22.04-arm' }}
     container:
       image: python:3.10-buster
     steps:
@@ -35,6 +35,7 @@ jobs:
       - name: 编译 Linux embeddable
         run: |
           echo "PYVER=${{ github.event.inputs.pyver }}" >> $GITHUB_ENV
+          export PYVER=${{ github.event.inputs.pyver }}
           cd python3-embeddable/python3-linux
           chmod +x *.sh
           chmod +x Linux/*.py
