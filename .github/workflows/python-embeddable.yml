@@ -26,7 +26,7 @@ jobs:
         run: |
           sed -i s@deb.debian@archive.debian@g /etc/apt/sources.list
           apt update 
-          apt-get remove openssl -y
+          #apt-get remove openssl -y
           apt-get install -y autoconf autoconf-archive gawk gettext git patch pkg-config build-essential
 
       - name: 克隆仓库
