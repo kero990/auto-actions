@@ -41,9 +41,9 @@ jobs:
       # 下载与解包架构对应vsc tar包（需替换实际下载URL与文件名）
       - name: Download and extract VSC tarball
         run: |
-          wget --content-disposition  "https://code.visualstudio.com/sha/download?build=stable&os=linux-arm64"
+          wget --content-disposition -q "https://code.visualstudio.com/sha/download?build=stable&os=linux-$ARCH"
           tar -xzvf code*.tar.gz
-          VERSION=$(curl -sI -L "https://code.visualstudio.com/sha/download?build=stable&os=linux-deb-arm64" \
+          VERSION=$(curl -sI -L "https://code.visualstudio.com/sha/download?build=stable&os=linux-deb-$ARCH" \
            | grep -i 'content-disposition' \
            | sed -E 's/.*filename=([^;]+).*/\1/' \
            | grep -oP '[0-9]+\.[0-9]+\.[0-9]+')
@@ -73,7 +73,6 @@ jobs:
       # 替换vsc内的spdlog.node
       - name: Replace spdlog.node in VSC package
         run: |
-          
           cp node-spdlog/build/Release/spdlog.node VSCode-linux-$ARCH/resources/app/node_modules/@vscode/spdlog/build/Release/spdlog.node
 
       # 重新打包为deb
@@ -83,11 +82,17 @@ jobs:
           mkdir -p deb/opt/apps/$PKG_NAME/entries/applications
           mkdir -p deb/opt/apps/$PKG_NAME/entries/icons/hicolor/256x256/apps
           mkdir -p deb/opt/apps/$PKG_NAME/files/
-          
+          cp assets/vsc/*.desktop deb/opt/apps/$PKG_NAME/entries/applications
+          cp assets/vsc/control deb/DEBIAN
+          cp assets/vsc/com.visualstudio.code.png deb/opt/apps/$PKG_NAME/entries/icons/hicolor/512x512/apps
+          cp VSCode-linux-$ARCH/* deb/opt/apps/$PKG_NAME/files/ -r
+          cp assets/vsc/info deb/opt/apps/$PKG_NAME
+          dpkg-deb -b deb
+          mv deb.deb $PKG_NAME_$VERSION_$ARCH.deb
 
       # 上传工件
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: vsc-${{ matrix.arch }}.deb
-          path: vsc-${{ matrix.arch }}.deb
+          name: ${{ env.PKG_NAME }}_${{ env.VERSION }}_${{ env.ARCH }}.deb
+          path: ${{ env.PKG_NAME }}_${{ env.VERSION }}_${{ env.ARCH }}.deb
