@@ -1,0 +1,93 @@
+name: Repack VSC Multi-Arch
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-vsc:
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-latest
+          - arch: arm64
+            runner: ubuntu-22.04-arm
+    container:
+      image: python:3.10-buster
+    env:
+      ARCH: ${{ matrix.arch }}
+      PKG_NAME: "com.visualstudio.code"
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sed -i s@deb.debian@archive.debian@g /etc/apt/sources.list
+          apt-get update
+          apt-get install -y wget tar build-essential cmake git curl
+
+      # 安装nvm和指定node
+      - name: Install nvm, node 22.18.0, npm
+        run: |
+          curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+          export NVM_DIR="$HOME/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+          nvm install 22.18.0
+          nvm use 22.18.0
+          node --version
+
+      # 下载与解包架构对应vsc tar包（需替换实际下载URL与文件名）
+      - name: Download and extract VSC tarball
+        run: |
+          wget --content-disposition  "https://code.visualstudio.com/sha/download?build=stable&os=linux-arm64"
+          tar -xzvf code*.tar.gz
+          VERSION=$(curl -sI -L "https://code.visualstudio.com/sha/download?build=stable&os=linux-deb-arm64" \
+           | grep -i 'content-disposition' \
+           | sed -E 's/.*filename=([^;]+).*/\1/' \
+           | grep -oP '[0-9]+\.[0-9]+\.[0-9]+')
+          echo "VSC_VERSION=$VERSION" >> $GITHUB_ENV
+
+
+      # 编译并安装spdlog 1.8.5
+      - name: Build and install spdlog 1.8.5
+        run: |
+          git clone -b v1.8.5 https://github.com/gabime/spdlog.git
+          cd spdlog && mkdir build && cd build
+          cmake -DSPDLOG_BUILD_EXAMPLES=OFF -DSPDLOG_BUILD_TESTS=OFF ..
+          make -j$(nproc)
+          make install
+          cd ../..
+
+      # clone node-spdlog并重编译
+      - name: Rebuild spdlog.node for VSC
+        run: |
+          export NVM_DIR="$HOME/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+          nvm use 22.18.0
+          git clone https://github.com/microsoft/node-spdlog.git
+          cd node-spdlog
+          npm install
+
+      # 替换vsc内的spdlog.node
+      - name: Replace spdlog.node in VSC package
+        run: |
+          
+          cp node-spdlog/build/Release/spdlog.node VSCode-linux-$ARCH/resources/app/node_modules/@vscode/spdlog/build/Release/spdlog.node
+
+      # 重新打包为deb
+      - name: Package VSC as DEB
+        run: |
+          mkdir -p deb/DEBIAN
+          mkdir -p deb/opt/apps/$PKG_NAME/entries/applications
+          mkdir -p deb/opt/apps/$PKG_NAME/entries/icons/hicolor/256x256/apps
+          mkdir -p deb/opt/apps/$PKG_NAME/files/
+          
+
+      # 上传工件
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vsc-${{ matrix.arch }}.deb
+          path: vsc-${{ matrix.arch }}.deb
