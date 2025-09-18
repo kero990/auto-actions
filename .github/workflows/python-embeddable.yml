@@ -47,4 +47,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: python3-embeddable_${{ github.event.inputs.pyver }}_${{ github.event.inputs.arch }}
-          path: python3-embeddable/python3-linux/embeddable/*
+          path: python3-embeddable/python3-linux/embedabble/*
