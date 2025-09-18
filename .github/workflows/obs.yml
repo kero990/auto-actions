@@ -190,6 +190,8 @@ jobs:
           set(CMAKE_CXX_STANDARD_REQUIRED ON)\
           link_libraries(stdc++fs)' \
           CMakeLists.txt
+          sed -i '/^target_link_libraries.*obs-nvenc-test/ s/$/ ${CMAKE_DL_LIBS} Threads::Threads/' \
+           plugins/obs-nvenc/obs-nvenc-test/CMakeLists.txt
           
       # Step 7: 构建 OBS Studio
       - name: Build OBS Studio
