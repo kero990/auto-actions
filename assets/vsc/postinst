@@ -1,0 +1,3 @@
+#!/bin/bash
+
+chmod 4755 '/opt/apps/com.visualstudio.code/files/code/chrome-sandbox' || true
