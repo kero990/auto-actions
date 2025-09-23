@@ -94,6 +94,8 @@ jobs:
           sed -i s@VVVV@${{ env.VSC_VERSION }}@g deb/opt/apps/$PKG_NAME/info
           sed -i s@AAAA@${{ env.ARCH }}@g deb/DEBIAN/control
           sed -i s@AAAA@${{ env.ARCH }}@g deb/opt/apps/$PKG_NAME/info
+          chmod 4755 deb/opt/apps/$PKG_NAME/files/chrome-sandbox
+          cp assets/postinst deb/DEBIAN
           dpkg-deb -b deb
           mv deb.deb ${{ env.PKG_NAME }}_${{ env.VSC_VERSION }}_${{ env.ARCH }}.deb
 
