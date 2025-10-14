@@ -15,7 +15,7 @@ jobs:
 
     steps:
     - name: Checkout Repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     - name: Download and Prepare Thorium Deb Package
       id: prepare
@@ -90,7 +90,7 @@ jobs:
       run: |
         find ./ -name '*.deb'
     - name: Upload Packaged Deb to Release
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: thorium_deb
         path: thorium_${{ matrix.architecture }}/rocks.thorium.thorium-browser_${{ steps.prepare.outputs.release_version }}_${{ matrix.architecture }}.deb
