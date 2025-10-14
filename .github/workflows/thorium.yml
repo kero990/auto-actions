@@ -93,5 +93,5 @@ jobs:
     - name: Upload Packaged Deb to Release
       uses: actions/upload-artifact@v4
       with:
-        name: thorium_deb
+        name: thorium_deb_${{ matrix.architecture }}
         path: thorium_${{ matrix.architecture }}/rocks.thorium.thorium-browser_${{ steps.prepare.outputs.release_version }}_${{ matrix.architecture }}.deb
