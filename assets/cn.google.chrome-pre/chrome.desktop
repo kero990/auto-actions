@@ -1,0 +1,14 @@
+[Desktop Entry]
+Name=Google Chrome
+Name[zh_CN]=谷歌浏览器
+GenericName=Web Browser
+GenericName[zh_CN]=网页浏览器
+Comment=Access the Internet
+Comment[zh_CN]=访问互联网
+Exec=/opt/apps/cn.google.chrome-pre/files/google-chrome %U
+StartupNotify=true
+Terminal=false
+Icon=cn.google.chrome-pre
+Type=Application
+Categories=Network;WebBrowser;
+MimeType=application/pdf;application/rdf+xml;application/rss+xml;application/xhtml+xml;application/xhtml_xml;application/xml;image/gif;image/jpeg;image/png;image/webp;text/html;text/xml;x-scheme-handler/http;x-scheme-handler/https;
