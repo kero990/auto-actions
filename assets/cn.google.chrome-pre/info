@@ -1,0 +1,17 @@
+{
+    "appid": "cn.google.chrome-pre",
+    "name": "Chrome",
+    "version": "VVVV",
+    "arch": ["AAAA"],
+    "permissions": {
+        "autostart": false,
+        "notification": true,
+        "trayicon": false,
+        "clipboard": true,
+        "account": true,
+        "bluetooth": false,
+        "camera": true,
+        "audio_record": true,
+        "installed_apps": true
+    }
+}

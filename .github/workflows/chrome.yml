@@ -1,0 +1,82 @@
+name: Chrome Repack
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'assets/cn.google.chrome-pre/**'
+      - '.github/workflows/chrome.yml'
+
+jobs:
+  repack:
+    runs-on: ubuntu-latest
+    container:
+      image: python:3.10-buster
+
+    strategy:
+      matrix:
+        arch: [amd64]
+
+    env:
+      PKG_NAME: "cn.google.chrome-pre"
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Prepare tools
+        run: |
+          sed -i s@deb.debian@archive.debian@g /etc/apt/sources.list
+          apt-get update
+          apt-get install -y wget dpkg-dev binutils
+
+      - name: Get Chrome version and download
+        id: getver
+        run: |
+          wget -O chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+          VERSION=$(dpkg-deb -f chrome.deb Version)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Repack as Deepin spec
+        run: |
+          set -e
+          VERSION="${{ steps.getver.outputs.version }}"
+          ARCH="${{ matrix.arch }}"
+          
+          # Create directory structure
+          mkdir -p deb/DEBIAN
+          mkdir -p deb/opt/apps/$PKG_NAME/entries/applications
+          mkdir -p deb/opt/apps/$PKG_NAME/entries/icons/hicolor/256x256/apps
+          mkdir -p deb/opt/apps/$PKG_NAME/files
+          
+          # Unpack original
+          dpkg-deb -R chrome.deb origin
+          
+          # Copy app files
+          # Chrome installs to /opt/google/chrome
+          # We copy the CONTENTS of that directory to .../files/
+          cp -r origin/opt/google/chrome/* deb/opt/apps/$PKG_NAME/files/
+          
+          # Copy metadata and assets
+          cp assets/$PKG_NAME/control deb/DEBIAN/control
+          cp assets/$PKG_NAME/chrome.desktop deb/opt/apps/$PKG_NAME/entries/applications/$PKG_NAME.desktop
+          cp assets/$PKG_NAME/info deb/opt/apps/$PKG_NAME/
+          cp assets/$PKG_NAME/$PKG_NAME.png deb/opt/apps/$PKG_NAME/entries/icons/hicolor/256x256/apps/$PKG_NAME.png
+
+          # Replace version and arch in metadata
+          sed -i "s/VVVV/$VERSION/g;s/AAAA/$ARCH/g" deb/DEBIAN/control
+          sed -i "s/VVVV/$VERSION/g;s/AAAA/$ARCH/g" deb/opt/apps/$PKG_NAME/info
+          
+          # Permissions
+          chmod 755 deb/opt/apps/$PKG_NAME/files/google-chrome
+          if [ -f deb/opt/apps/$PKG_NAME/files/chrome-sandbox ]; then
+             chmod 4755 deb/opt/apps/$PKG_NAME/files/chrome-sandbox
+          fi
+
+          # Build deb
+          dpkg-deb --build deb "${PKG_NAME}_${VERSION}_${ARCH}.deb"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: google-chrome-${{ matrix.arch }}
+          path: "${{ env.PKG_NAME }}_${{ steps.getver.outputs.version }}_${{ matrix.arch }}.deb"
