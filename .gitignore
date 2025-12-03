@@ -1,0 +1,5 @@
+deb/
+origin/
+*.deb
+*.log
+.DS_Store
