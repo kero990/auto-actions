@@ -107,13 +107,37 @@ jobs:
           cmake --build _build
           cmake --install _build
           
-      - name: update autoconf
+      - name: update autoconf、automake、libtoollize
         run: |
-          wget -q https://ftp.gnu.org/gnu/autoconf/autoconf-latest.tar.gz
+          wget -q https://mirrors.kernel.org/gnu/autoconf/autoconf-latest.tar.gz
           tar zxvf autoconf-latest.tar.gz
           cd autoconf-2.72
           ./configure
           make -j8 && make install
+          cd .. 
+          
+          # 编译安装 Automake
+          wget https://mirrors.kernel.org/gnu/automake/automake-1.18.tar.xz
+          tar xvf automake-1.18.tar.xz
+          cd automake-1.18
+          ./configure --prefix=/usr/local
+          make -j$(nproc) && make install
+          cd ..
+
+          # 你还需要 Libtool (vcpkg 报错缺少 libtoolize)
+          wget -q https://mirrors.kernel.org/gnu/libtool/libtool-2.5.4.tar.xz
+          tar xvf libtool-2.5.4.tar.gz
+          cd libtool-2.5.4
+          ./configure --prefix=/usr/local
+          make -j$(nproc) && make install
+          cd ..
+
+          # 还需要 Autoconf Archive
+          wget -q https://mirrors.kernel.org/gnu/autoconf-archive/autoconf-archive-2024.10.16.tar.xz
+          tar xvf autoconf-archive-2024.10.16.tar.xz
+          cd autoconf-archive-2024.10.16
+          ./configure --prefix=/usr/local
+          make -j$(nproc) && make install
           cd .. && rm auto* -rf
 
       # Step 4: 安装和配置 vcpkg
