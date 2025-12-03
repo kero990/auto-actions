@@ -1,0 +1,14 @@
+[Desktop Entry]
+Name=Firefox
+Name[zh_CN]=火狐浏览器
+Comment=Browse the World Wide Web
+Comment[zh_CN]=浏览互联网
+GenericName=Web Browser
+GenericName[zh_CN]=网页浏览器
+Exec=/opt/apps/org.mozilla.firefox-nal/files/firefox %u
+Terminal=false
+Type=Application
+Icon=org.mozilla.firefox-nal
+Categories=Network;WebBrowser;
+MimeType=text/html;text/xml;application/xhtml+xml;application/xml;application/rss+xml;application/rdf+xml;image/gif;image/jpeg;image/png;x-scheme-handler/http;x-scheme-handler/https;
+StartupNotify=true

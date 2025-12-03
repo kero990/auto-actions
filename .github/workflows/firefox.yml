@@ -1,0 +1,135 @@
+name: Firefox UOS Repack
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'assets/org.mozilla.firefox-nal/**'
+      - '.github/workflows/firefox.yml'
+
+jobs:
+  repack:
+    runs-on: ubuntu-latest
+    container:
+      image: debian:buster
+
+    strategy:
+      matrix:
+        arch: [amd64, arm64]
+
+    env:
+      PKG_NAME: "org.mozilla.firefox-nal"
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Prepare tools
+        run: |
+          sed -i s@deb.debian@archive.debian@g /etc/apt/sources.list
+          dpkg --add-architecture arm64
+          apt-get update
+          apt-get install -y wget curl dpkg-dev binutils gnupg2 ca-certificates xz-utils
+
+      - name: Add Mozilla Repo
+        run: |
+          mkdir -p /etc/apt/keyrings
+          wget -q https://packages.mozilla.org/apt/repo-signing-key.gpg -O- | tee /etc/apt/keyrings/packages.mozilla.org.asc > /dev/null
+          echo "deb [signed-by=/etc/apt/keyrings/packages.mozilla.org.asc] https://packages.mozilla.org/apt mozilla main" | tee -a /etc/apt/sources.list.d/mozilla.list
+          echo 'Package: *
+          Pin: origin packages.mozilla.org
+          Pin-Priority: 1000' | tee /etc/apt/preferences.d/mozilla
+          apt-get update
+
+      - name: Download Firefox
+        id: download
+        run: |
+          # Download the package for the current architecture
+          apt-get download firefox:${{ matrix.arch }}
+          
+          # Find the downloaded file
+          DEB_FILE=$(ls firefox_*.deb)
+          echo "deb_file=$DEB_FILE" >> $GITHUB_OUTPUT
+          
+          # Extract version
+          VERSION=$(dpkg-deb -f $DEB_FILE Version)
+          echo "Original version: $VERSION"
+          
+          # Construct new version (epoch:version-deepin1)
+          NEW_VERSION="1:${VERSION}-deepin1"
+          echo "New version: $NEW_VERSION"
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Repack as Deepin spec
+        id: repack
+        run: |
+          set -e
+          VERSION="${{ steps.download.outputs.version }}"
+          ARCH="${{ matrix.arch }}"
+          DEB_FILE="${{ steps.download.outputs.deb_file }}"
+          
+          # Create directory structure
+          mkdir -p deb/DEBIAN
+          mkdir -p deb/opt/apps/$PKG_NAME/entries/applications
+          mkdir -p deb/opt/apps/$PKG_NAME/entries/icons/hicolor/256x256/apps
+          mkdir -p deb/opt/apps/$PKG_NAME/files
+          
+          # Unpack original
+          dpkg-deb -R $DEB_FILE origin
+          
+          # Copy app files
+          if [ -d origin/opt/firefox ]; then
+            cp -r origin/opt/firefox/* deb/opt/apps/$PKG_NAME/files/
+          elif [ -d origin/usr/lib/firefox ]; then
+            cp -r origin/usr/lib/firefox/* deb/opt/apps/$PKG_NAME/files/
+          else
+            echo "Cannot find firefox directory in origin"
+            find origin -maxdepth 3
+            exit 1
+          fi
+          
+          # Copy metadata and assets
+          cp assets/$PKG_NAME/control deb/DEBIAN/control
+          cp assets/$PKG_NAME/firefox.desktop deb/opt/apps/$PKG_NAME/entries/applications/$PKG_NAME.desktop
+          cp assets/$PKG_NAME/info deb/opt/apps/$PKG_NAME/
+          
+          # Download Icon (128px as placeholder for 256px)
+          wget -q -O deb/opt/apps/$PKG_NAME/entries/icons/hicolor/256x256/apps/$PKG_NAME.png https://raw.githubusercontent.com/mozilla/gecko-dev/master/browser/branding/official/content/icon128.png || echo "Icon download failed"
+          
+          # Replace version and arch in metadata
+          sed -i "s/VVVV/$VERSION/g;s/AAAA/$ARCH/g" deb/DEBIAN/control
+          sed -i "s/VVVV/$VERSION/g;s/AAAA/$ARCH/g" deb/opt/apps/$PKG_NAME/info
+          
+          # Permissions
+          chmod 755 deb/opt/apps/$PKG_NAME/files/firefox
+          
+          # Build deb
+          FILENAME="${PKG_NAME}_${VERSION}_${ARCH}.deb"
+          dpkg-deb --build deb "$FILENAME"
+          echo "filename=$FILENAME" >> $GITHUB_OUTPUT
+
+      - name: Upload to GitHub Release
+        uses: actions/upload-artifact@v4
+        with:
+          name: firefox-${{ matrix.arch }}
+          path: "${{ steps.repack.outputs.filename }}"
+
+      - name: Upload to bashupload
+        id: bashupload
+        continue-on-error: true
+        run: |
+          FILE="${{ steps.repack.outputs.filename }}"
+          echo "Uploading $FILE to bashupload.app..."
+          
+          OUTPUT=$(curl -s bashupload.app -T "$FILE" -H 'X-Expiration-Seconds: 86400')
+          echo "$OUTPUT"
+          
+          LINK=$(echo "$OUTPUT" | grep -o 'http://bashupload.app/[^[:space:]]*' | head -n 1)
+          
+          if [ -n "$LINK" ]; then
+             echo "Download link: $LINK"
+             echo "link=$LINK" >> $GITHUB_OUTPUT
+             echo "### Download $FILE" >> $GITHUB_STEP_SUMMARY
+             echo "Link: [$LINK]($LINK)" >> $GITHUB_STEP_SUMMARY
+          else
+             echo "Could not parse download link"
+          fi
