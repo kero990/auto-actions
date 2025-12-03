@@ -103,7 +103,9 @@ jobs:
           chmod 755 deb/opt/apps/$PKG_NAME/files/firefox
           
           # Build deb
-          FILENAME="${PKG_NAME}_${VERSION}_${ARCH}.deb"
+          # Replace colon with underscore for filename compatibility
+          SAFE_VERSION=$(echo "$VERSION" | tr ':' '_')
+          FILENAME="${PKG_NAME}_${SAFE_VERSION}_${ARCH}.deb"
           dpkg-deb --build deb "$FILENAME"
           echo "filename=$FILENAME" >> $GITHUB_OUTPUT
 
