@@ -151,6 +151,7 @@ jobs:
           mv gettext-0.22.5.tar.gz /opt/vcpkg/downloads/
           mv automake-1.17.tar.gz /opt/vcpkg/downloads/
           CC=clang-20 CXX=clang++-20 /opt/vcpkg/vcpkg install ffmpeg[gpl,postproc,x264,x265,fdk-aac,openssl] simde libsrt pipewire nlohmann-json luajit vulkan freetype ffnvcodec fdk-aac --triplet=x64-linux-dynamic --clean-after-build 
+          /opt/vcpkg/vcpkg install libva --clean-after-build --triplet=x64-linux-dynamic
           #CC=clang-20 CXX=clang++-20 /opt/vcpkg/vcpkg install rnnoise --clean-after-build 
           echo "VCPKG_ROOT=/opt/vcpkg" | tee -a $GITHUB_ENV ~/.bashrc
           echo "CMAKE_TOOLCHAIN_FILE=/opt/vcpkg/scripts/buildsystems/vcpkg.cmake" | tee -a $GITHUB_ENV ~/.bashrc
