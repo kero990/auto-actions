@@ -150,7 +150,7 @@ jobs:
           mkdir -p /opt/vcpkg/downloads/
           mv gettext-0.22.5.tar.gz /opt/vcpkg/downloads/
           mv automake-1.17.tar.gz /opt/vcpkg/downloads/
-          CC=clang-20 CXX=clang++-20 /opt/vcpkg/vcpkg install ffmpeg[gpl,postproc,x264,x265,fdk-aac,openssl] simde libsrt pipewire nlohmann-json luajit vulkan freetype
+          CC=clang-20 CXX=clang++-20 /opt/vcpkg/vcpkg install ffmpeg[gpl,postproc,x264,x265,fdk-aac,openssl] simde libsrt pipewire nlohmann-json luajit vulkan freetype ffnvcodec
             # --triplet=x64-linux-dynamic
           #CC=clang-20 CXX=clang++-20 /opt/vcpkg/vcpkg install rnnoise --clean-after-build 
           echo "VCPKG_ROOT=/opt/vcpkg" | tee -a $GITHUB_ENV ~/.bashrc
@@ -171,8 +171,6 @@ jobs:
           ninja -C build
           ninja  -C build install
           ldconfig  
-
-
           
       # Step 7: 构建 OBS Studio
       - name: Build OBS Studio
