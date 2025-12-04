@@ -150,43 +150,15 @@ jobs:
           mkdir -p /opt/vcpkg/downloads/
           mv gettext-0.22.5.tar.gz /opt/vcpkg/downloads/
           mv automake-1.17.tar.gz /opt/vcpkg/downloads/
-          /opt/vcpkg/vcpkg install \
-            ffmpeg[gpl,postproc,x264,x265,fdk-aac,openssl] \
-            openssl \
-            sdl2 \
-            pipewire \
-            pcre2 \
-            glib \
-            x264 \
-            libsrt \
-            ffnvcodec nlohmann-json luajit mbedtls libva[glx,wayland]  --clean-after-build 
+          CC=clang-20 CXX=clang++-20 /opt/vcpkg/vcpkg install ffmpeg[gpl,postproc,x264,x265,fdk-aac,openssl] simde libsrt pipewire nlohmann-json luajit vulkan freetype
             # --triplet=x64-linux-dynamic
-          CC=clang-20 CXX=clang++-20 /opt/vcpkg/vcpkg install rnnoise --clean-after-build 
+          #CC=clang-20 CXX=clang++-20 /opt/vcpkg/vcpkg install rnnoise --clean-after-build 
           echo "VCPKG_ROOT=/opt/vcpkg" | tee -a $GITHUB_ENV ~/.bashrc
-          #echo "CMAKE_TOOLCHAIN_FILE=/opt/vcpkg/scripts/buildsystems/vcpkg.cmake" | tee -a $GITHUB_ENV ~/.bashrc
+          echo "CMAKE_TOOLCHAIN_FILE=/opt/vcpkg/scripts/buildsystems/vcpkg.cmake" | tee -a $GITHUB_ENV ~/.bashrc
           #echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/opt/vcpkg/installed/x64-linux-dynamic/lib/pkgconfig" | tee -a $GITHUB_ENV ~/.bashrc
           #mv assets/obs_vcpkg.json obs/vcpkg.json
           #cd obs && /opt/vcpkg/vcpkg x-update-baseline --add-initial-baseline
           #/opt/vcpkg/vcpkg install --clean-after-build --triplet=x64-linux-dynamic
-          
-          cat > /opt/vcpkg/installed/x64-linux-dynamic/lib/pkgconfig/libpostproc.pc << 'EOF'
-          prefix=${pcfiledir}/../..
-          exec_prefix=${prefix}
-          libdir=${prefix}/lib
-          includedir=${prefix}/include
-
-          Name: libpostproc
-          Description: FFmpeg postprocessing library
-          Version: 58.3.100
-          Requires: 
-          Requires.private: libavutil >= 59
-          Conflicts:
-          Libs: -L${libdir}  -lpostproc 
-          Libs.private: -lm -latomic
-          Cflags: -I${includedir}
-
-          EOF
-          cp /opt/vcpkg/installed/x64-linux-dynamic/* /usr/local/ -rf
           ldconfig
       # Step 5: 编译 librist 并安装
       - name: Compile and Install librist
@@ -200,23 +172,7 @@ jobs:
           ninja  -C build install
           ldconfig  
 
-      # Step 6: 修补 OBS 源代码（如果有必要）
-      - name: Apply Source Code Patches
-        run: |
-          cd obs
-          sed -i '43i#include "../models/SceneCollection.hpp"' frontend/widgets/OBSBasic.hpp
-          sed -i '1i#include <iomanip>' ./frontend/utility/audio-encoders.cpp
-          sed -i 's/QDir::addSearchPath("theme", absolute(installSearchDir));/QDir::addSearchPath("theme", QString::fromStdString(absolute(installSearchDir).string()));/' frontend/OBSApp_Themes.cpp
-          sed -i 's/QDir::addSearchPath("theme", absolute(configSearchDir));/QDir::addSearchPath("theme", QString::fromStdString(absolute(configSearchDir).string()));/' frontend/OBSApp_Themes.cpp
-          sed -i '866s|QFile file(cur->location);|QFile file(QString::fromStdString(cur->location.string()));|' frontend/OBSApp_Themes.cpp
-          sed -i 's/#include <sstream>/#include <sstream>\n#include <iomanip>/' frontend/utility/audio-encoders.cpp
-          sed -i '17i\
-          set(CMAKE_CXX_STANDARD 17)\
-          set(CMAKE_CXX_STANDARD_REQUIRED ON)\
-          link_libraries(stdc++fs)' \
-          CMakeLists.txt
-          sed -i '/^target_link_libraries.*obs-nvenc-test/ s/$/ ${CMAKE_DL_LIBS} Threads::Threads/' \
-           plugins/obs-nvenc/obs-nvenc-test/CMakeLists.txt
+
           
       # Step 7: 构建 OBS Studio
       - name: Build OBS Studio
@@ -227,7 +183,7 @@ jobs:
           cmake .. --preset ubuntu \
             -GNinja \
             -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-            #-DCMAKE_TOOLCHAIN_FILE=$CMAKE_TOOLCHAIN_FILE \
+            -DCMAKE_TOOLCHAIN_FILE=$CMAKE_TOOLCHAIN_FILE \
             -DENABLE_RELOCATABLE=true \
             -DENABLE_PORTABLE_CONFIG=true \
             -DENABLE_BROWSER=false \
@@ -240,8 +196,7 @@ jobs:
             -DCMAKE_SHARED_LINKER_FLAGS="-fuse-ld=lld" \
             -DCMAKE_LINKER=/usr/bin/ld.lld-20 \
             -DCMAKE_VERBOSE_MAKEFILE=ON \
-            -DOBS_VERSION_OVERRIDE=$LATEST_RELEASE \
-            -DVCPKG_TARGET_TRIPLET=x64-linux-dynamic
+            -DOBS_VERSION_OVERRIDE=$LATEST_RELEASE 
           ninja
           ninja install
 
