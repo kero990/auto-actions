@@ -194,6 +194,7 @@ jobs:
             -DCMAKE_LINKER=/usr/bin/ld.lld-20 \
             -DCMAKE_VERBOSE_MAKEFILE=ON \
             -DOBS_VERSION_OVERRIDE=$LATEST_RELEASE 
+            -DVCPKG_TARGET_TRIPLET=x64-linux-dynamic
           ninja
           ninja install
 
