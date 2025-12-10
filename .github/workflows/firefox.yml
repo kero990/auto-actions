@@ -54,10 +54,11 @@ jobs:
           VERSION=$(dpkg-deb -f $DEB_FILE Version)
           echo "Original version: $VERSION"
           
-          # Construct new version (use official version directly)
-          NEW_VERSION="$VERSION"
-          echo "New version: $NEW_VERSION"
-          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          # Strip ~build* and other suffixes to get clean official version
+          # Remove everything from ~ onwards (e.g., 146.0~build2 -> 146.0)
+          CLEAN_VERSION=$(echo "$VERSION" | sed 's/~.*//')
+          echo "Clean version: $CLEAN_VERSION"
+          echo "version=$CLEAN_VERSION" >> $GITHUB_OUTPUT
 
       - name: Repack as Deepin spec
         id: repack
