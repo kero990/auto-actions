@@ -92,9 +92,21 @@ jobs:
           cp assets/$PKG_NAME/control deb/DEBIAN/control
           cp assets/$PKG_NAME/firefox.desktop deb/opt/apps/$PKG_NAME/entries/applications/$PKG_NAME.desktop
           cp assets/$PKG_NAME/info deb/opt/apps/$PKG_NAME/
-          
-          # Download Icon (128px as placeholder for 256px)
-          wget -q -O deb/opt/apps/$PKG_NAME/entries/icons/hicolor/256x256/apps/$PKG_NAME.png https://raw.githubusercontent.com/mozilla/gecko-dev/master/browser/branding/official/content/icon128.png || echo "Icon download failed"
+
+          # Extract and copy icon from official Firefox deb package
+          if [ -f origin/usr/share/icons/hicolor/256x256/apps/firefox.png ]; then
+            cp origin/usr/share/icons/hicolor/256x256/apps/firefox.png deb/opt/apps/$PKG_NAME/entries/icons/hicolor/256x256/apps/$PKG_NAME.png
+          else
+            echo "Warning: 256x256 icon not found in original package, trying other resolutions"
+            # Fall back to highest available resolution
+            for size in 256x256 128x128 96x96 64x64 48x48 32x32; do
+              if [ -f origin/usr/share/icons/hicolor/$size/apps/firefox.png ]; then
+                cp origin/usr/share/icons/hicolor/$size/apps/firefox.png deb/opt/apps/$PKG_NAME/entries/icons/hicolor/256x256/apps/$PKG_NAME.png
+                echo "Using icon from $size resolution"
+                break
+              fi
+            done
+          fi
           
           # Replace version and arch in metadata
           sed -i "s/VVVV/$VERSION/g;s/AAAA/$ARCH/g" deb/DEBIAN/control
