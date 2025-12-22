@@ -79,15 +79,56 @@ jobs:
           
           # Copy app files
           if [ -d origin/opt/firefox ]; then
-            cp -r origin/opt/firefox/* deb/opt/apps/$PKG_NAME/files/
+           cp -r origin/opt/firefox/* deb/opt/apps/$PKG_NAME/files/
           elif [ -d origin/usr/lib/firefox ]; then
-            cp -r origin/usr/lib/firefox/* deb/opt/apps/$PKG_NAME/files/
+           cp -r origin/usr/lib/firefox/* deb/opt/apps/$PKG_NAME/files/
           else
-            echo "Cannot find firefox directory in origin"
-            find origin -maxdepth 3
-            exit 1
+           echo "Cannot find firefox directory in origin"
+           find origin -maxdepth 3
+           exit 1
           fi
-          
+
+          # Create wrapper script for proper profile and langpack handling
+          cat > deb/opt/apps/$PKG_NAME/files/firefox-wrapper << 'WRAPPER_EOF'
+#!/bin/bash
+# Firefox wrapper script to ensure proper profile path and language pack access
+
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Set Firefox binary location
+FIREFOX_BIN="$SCRIPT_DIR/firefox"
+
+# Ensure Firefox uses the standard profile directory in user's home
+# This allows Firefox to find existing profiles from other installations
+export MOZ_LEGACY_PROFILES=1
+
+# Make sure Firefox can find language packs in the relocated directory
+# Language packs are typically in browser/extensions/ or distribution/extensions/
+if [ -d "$SCRIPT_DIR/browser/extensions" ]; then
+  export MOZ_EXTENSIONS_DIR="$SCRIPT_DIR/browser/extensions"
+fi
+
+# Ensure Firefox uses the correct library path
+export LD_LIBRARY_PATH="$SCRIPT_DIR:${LD_LIBRARY_PATH}"
+
+# Execute Firefox with all passed arguments
+exec "$FIREFOX_BIN" "$@"
+WRAPPER_EOF
+
+          chmod 755 deb/opt/apps/$PKG_NAME/files/firefox-wrapper
+
+          # Verify language packs are present
+          echo "Checking for language packs..."
+          if [ -d deb/opt/apps/$PKG_NAME/files/browser/extensions ]; then
+            echo "Language packs found in browser/extensions:"
+            ls -la deb/opt/apps/$PKG_NAME/files/browser/extensions/ | grep -i "langpack\|zh" || echo "No language pack files found"
+          fi
+          if [ -d deb/opt/apps/$PKG_NAME/files/distribution/extensions ]; then
+            echo "Language packs found in distribution/extensions:"
+            ls -la deb/opt/apps/$PKG_NAME/files/distribution/extensions/ | grep -i "langpack\|zh" || echo "No language pack files found"
+          fi
+
           # Copy metadata and assets
           cp assets/$PKG_NAME/control deb/DEBIAN/control
           cp assets/$PKG_NAME/firefox.desktop deb/opt/apps/$PKG_NAME/entries/applications/$PKG_NAME.desktop
