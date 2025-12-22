@@ -79,13 +79,13 @@ jobs:
           
           # Copy app files
           if [ -d origin/opt/firefox ]; then
-           cp -r origin/opt/firefox/* deb/opt/apps/$PKG_NAME/files/
+            cp -r origin/opt/firefox/* deb/opt/apps/$PKG_NAME/files/
           elif [ -d origin/usr/lib/firefox ]; then
-           cp -r origin/usr/lib/firefox/* deb/opt/apps/$PKG_NAME/files/
+            cp -r origin/usr/lib/firefox/* deb/opt/apps/$PKG_NAME/files/
           else
-           echo "Cannot find firefox directory in origin"
-           find origin -maxdepth 3
-           exit 1
+            echo "Cannot find firefox directory in origin"
+            find origin -maxdepth 3
+            exit 1
           fi
 
           # Create wrapper script for proper profile and langpack handling
