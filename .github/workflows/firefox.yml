@@ -4,7 +4,6 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - 'assets/org.mozilla.firefox-nal/**'
       - '.github/workflows/firefox.yml'
 
 jobs:
@@ -27,7 +26,7 @@ jobs:
         run: |
           sed -i s@deb.debian@archive.debian@g /etc/apt/sources.list
           apt-get update
-          apt-get install -y wget curl dpkg-dev bzip2 ca-certificates
+          apt-get install -y wget curl dpkg-dev bzip2 ca-certificates xz-utils
 
       - name: Download and Extract Firefox
         id: download
@@ -39,18 +38,24 @@ jobs:
             OS_TYPE="linux-aarch64"
           fi
 
-          # 获取最新版本号
+          # 获取最新版本号和真实下载链接
           DOWNLOAD_URL="https://download.mozilla.org/?product=firefox-latest-ssl&os=$OS_TYPE&lang=zh-CN"
-          REAL_URL=$(curl -Ls -o /dev/null -w %{url_effective} "$DOWNLOAD_URL")
-          VERSION=$(echo "$REAL_URL" | grep -oP 'releases/\K[0-9.]+(?=/)' )
           
+          # 获取重定向后的真实 URL
+          REAL_URL=$(curl -Ls -o /dev/null -w %{url_effective} "$DOWNLOAD_URL")
+          
+          # 从 URL 中提取版本号
+          VERSION=$(echo "$REAL_URL" | grep -oP 'releases/\K[0-9.]+(?=/)' )
           echo "Version: $VERSION"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           
-          # 下载并解压
-          wget -O firefox.tar.bz2 "$DOWNLOAD_URL"
+          # 下载文件（不再强行指定 bz2 后缀，直接存为 firefox.archive）
+          echo "Downloading from: $REAL_URL"
+          wget -O firefox.archive "$REAL_URL"
+          
+          # 自动识别格式并解压 (去掉 -j 参数)
           mkdir -p firefox-raw
-          tar -jxvf firefox.tar.bz2 -C firefox-raw --strip-components=1
+          tar -xvf firefox.archive -C firefox-raw --strip-components=1
 
       - name: Repack as UOS spec
         id: repack
@@ -84,29 +89,3 @@ jobs:
           # 确保主程序有执行权限
           chmod +x "$APP_DIR/files/firefox"
           # 确保所有目录权限正确
-          find deb -type d -exec chmod 755 {} \;
-
-          # 5. 构建 deb 包
-          FILENAME="${PKG_NAME}_${VERSION}_${ARCH}.deb"
-          dpkg-deb --build deb "$FILENAME"
-          echo "filename=$FILENAME" >> $GITHUB_OUTPUT
-
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: firefox-${{ matrix.arch }}
-          path: "${{ steps.repack.outputs.filename }}"
-
-      - name: Upload to bashupload
-        id: bashupload
-        continue-on-error: true
-        run: |
-          FILE="${{ steps.repack.outputs.filename }}"
-          echo "Uploading $FILE to bashupload.app..."
-          OUTPUT=$(curl -s bashupload.app -T "$FILE" -H 'X-Expiration-Seconds: 86400')
-          LINK=$(echo "$OUTPUT" | grep -o 'http://bashupload.app/[^[:space:]]*' | head -n 1)
-          if [ -n "$LINK" ]; then
-             echo "link=$LINK" >> $GITHUB_OUTPUT
-             echo "### Download $FILE" >> $GITHUB_STEP_SUMMARY
-             echo "Link: [$LINK]($LINK)" >> $GITHUB_STEP_SUMMARY
-          fi
