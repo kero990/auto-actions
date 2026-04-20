@@ -1,4 +1,4 @@
-name: Build dart_simple_live
+name: Dart Simple Live Build
 
 on:
   workflow_dispatch:
