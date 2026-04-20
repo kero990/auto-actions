@@ -20,7 +20,7 @@ jobs:
           cache: 'gradle'
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.13.5'
+          flutter-version: '3.27.0'
           cache: true
       - name: Build APK
         run: |
@@ -49,7 +49,7 @@ jobs:
           cache: 'gradle'
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.13.5'
+          flutter-version: '3.27.0'
           cache: true
       - name: Build TV APK
         run: |
@@ -70,7 +70,7 @@ jobs:
         run: git clone https://github.com/xiaoyaocz/dart_simple_live
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.13.5'
+          flutter-version: '3.27.0'
           cache: true
       - name: Build iOS
         run: |
@@ -94,13 +94,15 @@ jobs:
     steps:
       - name: Prepare environment
         run: |
-          sed -i 's/deb.debian.org/archive.debian.org/g' /etc/apt/sources.list
-          sed -i 's/security.debian.org/archive.debian.org/g' /etc/apt/sources.list
-          apt-get update
-          apt-get install -y curl git wget unzip xz-utils libglu1-mesa libgtk-3-dev libblkid-dev liblzma-dev libgcrypt20-dev libmpv-dev pkg-config clang cmake ninja-build
+          echo "deb http://archive.debian.org/debian buster main" > /etc/apt/sources.list
+          echo "deb http://archive.debian.org/debian-security buster/updates main" >> /etc/apt/sources.list
+          echo "deb http://archive.debian.org/debian buster-updates main" >> /etc/apt/sources.list
+          apt-get update || true
+          apt-get install -y --allow-downgrades --allow-remove-essential --allow-change-held-packages \
+            curl git wget unzip xz-utils libglu1-mesa libgtk-3-dev libblkid-dev liblzma-dev libgcrypt20-dev libmpv-dev pkg-config clang cmake ninja-build
       - name: Install Flutter
         run: |
-          git clone https://github.com/flutter/flutter.git -b 3.13.5 --depth 1 /opt/flutter
+          git clone https://github.com/flutter/flutter.git -b 3.27.0 --depth 1 /opt/flutter
       - name: Build Linux
         run: |
           export PATH="$PATH:/opt/flutter/bin"
