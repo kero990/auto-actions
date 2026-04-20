@@ -13,21 +13,44 @@ jobs:
     steps:
       - name: Clone dart_simple_live
         run: git clone https://github.com/xiaoyaocz/dart_simple_live
+
       - uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: "17"
           cache: 'gradle'
-      - uses: subosito/flutter-action@v2
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.27.0'
+          flutter-version: '3.38.3'
           cache: true
+        continue-on-error: true
+        id: flutter-setup
+
+      - name: Fallback Flutter
+        if: steps.flutter-setup.outcome == 'failure'
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Resolve Version Conflicts
+        run: |
+          cd dart_simple_live/simple_live_app
+          if grep -q "dependency_overrides:" pubspec.yaml; then
+            sed -i '/dependency_overrides:/a \  intl: 0.20.2' pubspec.yaml
+          else
+            echo -e "\ndependency_overrides:\n  intl: 0.20.2" >> pubspec.yaml
+          fi
+
       - name: Build APK
         run: |
           cd dart_simple_live/simple_live_app
           flutter pub get
           flutter build apk --release
           mv build/app/outputs/flutter-apk/app-release.apk ../../simple_live_app_android.apk
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
@@ -41,37 +64,63 @@ jobs:
         run: |
           git clone https://github.com/xiaoyaocz/dart_simple_live
           cd dart_simple_live
-          git checkout TV || echo "TV branch not found, using default"
+          git checkout TV || echo "TV branch not found"
+
       - uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: "17"
           cache: 'gradle'
-      - uses: subosito/flutter-action@v2
+
+      - name: Setup Flutter Master
+        uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.27.0'
+          channel: 'master'
           cache: true
+
       - name: Build TV APK
         run: |
           cd dart_simple_live/simple_live_tv_app
           flutter pub get
           flutter build apk --release --target-platform android-arm
-          mv build/app/outputs/flutter-apk/app-release.apk ../../simple_live_tv_app_android_v7a.apk
+          mv build/app/outputs/flutter-apk/app-release.apk ../../simple_live_tv_app_android_armhf.apk
+
       - name: Upload TV APK
         uses: actions/upload-artifact@v4
         with:
           name: android-tv-apk
-          path: simple_live_tv_app_android_v7a.apk
+          path: simple_live_tv_app_android_armhf.apk
 
   build-ios:
     runs-on: macos-latest
     steps:
       - name: Clone dart_simple_live
         run: git clone https://github.com/xiaoyaocz/dart_simple_live
-      - uses: subosito/flutter-action@v2
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.27.0'
+          flutter-version: '3.38.3'
           cache: true
+        continue-on-error: true
+        id: flutter-setup
+
+      - name: Fallback Flutter
+        if: steps.flutter-setup.outcome == 'failure'
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Resolve Version Conflicts
+        run: |
+          cd dart_simple_live/simple_live_app
+          if grep -q "dependency_overrides:" pubspec.yaml; then
+            sed -i '/dependency_overrides:/a \  intl: 0.20.2' pubspec.yaml
+          else
+            echo -e "\ndependency_overrides:\n  intl: 0.20.2" >> pubspec.yaml
+          fi
+
       - name: Build iOS
         run: |
           cd dart_simple_live/simple_live_app
@@ -81,6 +130,7 @@ jobs:
           mkdir Payload
           cp -r "build/ios/iphoneos/$APP_NAME" Payload/
           zip -r ../../simple_live_app_ios_sideload.ipa Payload
+
       - name: Upload iOS IPA
         uses: actions/upload-artifact@v4
         with:
@@ -100,18 +150,30 @@ jobs:
           apt-get update || true
           apt-get install -y --allow-downgrades --allow-remove-essential --allow-change-held-packages \
             curl git wget unzip xz-utils libglu1-mesa libgtk-3-dev libblkid-dev liblzma-dev libgcrypt20-dev libmpv-dev pkg-config clang cmake ninja-build
+
       - name: Install Flutter
         run: |
-          git clone https://github.com/flutter/flutter.git -b 3.27.0 --depth 1 /opt/flutter
+          git clone https://github.com/flutter/flutter.git /opt/flutter
+          cd /opt/flutter
+          git checkout 3.38.3 || git checkout stable
+
       - name: Build Linux
         run: |
           export PATH="$PATH:/opt/flutter/bin"
           flutter config --no-analytics
           git clone https://github.com/xiaoyaocz/dart_simple_live
           cd dart_simple_live/simple_live_app
+          
+          if grep -q "dependency_overrides:" pubspec.yaml; then
+            sed -i '/dependency_overrides:/a \  intl: 0.20.2' pubspec.yaml
+          else
+            echo -e "\ndependency_overrides:\n  intl: 0.20.2" >> pubspec.yaml
+          fi
+          
           flutter pub get
           flutter build linux --release
           tar -czvf ../../simple_live_app_linux_portable.tar.gz -C build/linux/x64/release/bundle .
+
       - name: Upload Linux tarball
         uses: actions/upload-artifact@v4
         with:
@@ -136,6 +198,6 @@ jobs:
           prerelease: false
           files: |
             simple_live_app_android.apk
-            simple_live_tv_app_android_v7a.apk
+            simple_live_tv_app_android_armhf.apk
             simple_live_app_ios_sideload.ipa
             simple_live_app_linux_portable.tar.gz
