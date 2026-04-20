@@ -153,7 +153,7 @@ jobs:
           if grep -q "dependency_overrides:" pubspec.yaml; then
             # macOS sed needs different syntax for appending
             sed -i '' '/dependency_overrides:/a \
-  intl: 0.20.2' pubspec.yaml
+            intl: 0.20.2' pubspec.yaml
           else
             printf "\ndependency_overrides:\n  intl: 0.20.2\n" >> pubspec.yaml
           fi
