@@ -51,11 +51,10 @@ jobs:
           echo "deb_file=$DEB_FILE" >> $GITHUB_OUTPUT
           
           # Extract version
-          VERSION=$(dpkg-deb -f $DEB_FILE Version)
+          VERSION=$(dpkg-deb -f "$DEB_FILE" Version)
           echo "Original version: $VERSION"
           
           # Strip ~build* and other suffixes to get clean official version
-          # Remove everything from ~ onwards (e.g., 146.0~build2 -> 146.0)
           CLEAN_VERSION=$(echo "$VERSION" | sed 's/~.*//')
           echo "Clean version: $CLEAN_VERSION"
           echo "version=$CLEAN_VERSION" >> $GITHUB_OUTPUT
@@ -75,7 +74,7 @@ jobs:
           mkdir -p deb/opt/apps/$PKG_NAME/files
           
           # Unpack original
-          dpkg-deb -R $DEB_FILE origin
+          dpkg-deb -R "$DEB_FILE" origin
           
           # Copy app files
           if [ -d origin/opt/firefox ]; then
@@ -88,45 +87,25 @@ jobs:
             exit 1
           fi
 
-          # Create wrapper script for proper profile and langpack handling
+          # Create wrapper script
           cat > deb/opt/apps/$PKG_NAME/files/firefox-wrapper << 'WRAPPER_EOF'
-#!/bin/bash
-# Firefox wrapper script to ensure proper profile path and language pack access
-
-# Get the directory where this script is located
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-# Set Firefox binary location
-FIREFOX_BIN="$SCRIPT_DIR/firefox"
-
-# Ensure Firefox uses the standard profile directory in user's home
-# This allows Firefox to find existing profiles from other installations
-export MOZ_LEGACY_PROFILES=1
-
-# Make sure Firefox can find language packs in the relocated directory
-# Language packs are typically in browser/extensions/ or distribution/extensions/
-if [ -d "$SCRIPT_DIR/browser/extensions" ]; then
-  export MOZ_EXTENSIONS_DIR="$SCRIPT_DIR/browser/extensions"
-fi
-
-# Ensure Firefox uses the correct library path
-export LD_LIBRARY_PATH="$SCRIPT_DIR:${LD_LIBRARY_PATH}"
-
-# Execute Firefox with all passed arguments
-exec "$FIREFOX_BIN" "$@"
-WRAPPER_EOF
+          #!/bin/bash
+          SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+          FIREFOX_BIN="$SCRIPT_DIR/firefox"
+          export MOZ_LEGACY_PROFILES=1
+          if [ -d "$SCRIPT_DIR/browser/extensions" ]; then
+            export MOZ_EXTENSIONS_DIR="$SCRIPT_DIR/browser/extensions"
+          fi
+          export LD_LIBRARY_PATH="$SCRIPT_DIR:${LD_LIBRARY_PATH}"
+          exec "$FIREFOX_BIN" "$@"
+          WRAPPER_EOF
 
           chmod 755 deb/opt/apps/$PKG_NAME/files/firefox-wrapper
 
           # Verify language packs are present
           echo "Checking for language packs..."
           if [ -d deb/opt/apps/$PKG_NAME/files/browser/extensions ]; then
-            echo "Language packs found in browser/extensions:"
-            ls -la deb/opt/apps/$PKG_NAME/files/browser/extensions/ | grep -i "langpack\|zh" || echo "No language pack files found"
-          fi
-          if [ -d deb/opt/apps/$PKG_NAME/files/distribution/extensions ]; then
-            echo "Language packs found in distribution/extensions:"
-            ls -la deb/opt/apps/$PKG_NAME/files/distribution/extensions/ | grep -i "langpack\|zh" || echo "No language pack files found"
+            ls -la deb/opt/apps/$PKG_NAME/files/browser/extensions/ | grep -i "langpack\|zh" || echo "No langpacks in browser/extensions"
           fi
 
           # Copy metadata and assets
@@ -134,16 +113,13 @@ WRAPPER_EOF
           cp assets/$PKG_NAME/firefox.desktop deb/opt/apps/$PKG_NAME/entries/applications/$PKG_NAME.desktop
           cp assets/$PKG_NAME/info deb/opt/apps/$PKG_NAME/
 
-          # Extract and copy icon from official Firefox deb package
+          # Extract and copy icon
           if [ -f origin/usr/share/icons/hicolor/256x256/apps/firefox.png ]; then
             cp origin/usr/share/icons/hicolor/256x256/apps/firefox.png deb/opt/apps/$PKG_NAME/entries/icons/hicolor/256x256/apps/$PKG_NAME.png
           else
-            echo "Warning: 256x256 icon not found in original package, trying other resolutions"
-            # Fall back to highest available resolution
-            for size in 256x256 128x128 96x96 64x64 48x48 32x32; do
+            for size in 128x128 96x96 64x64 48x48 32x32; do
               if [ -f origin/usr/share/icons/hicolor/$size/apps/firefox.png ]; then
                 cp origin/usr/share/icons/hicolor/$size/apps/firefox.png deb/opt/apps/$PKG_NAME/entries/icons/hicolor/256x256/apps/$PKG_NAME.png
-                echo "Using icon from $size resolution"
                 break
               fi
             done
@@ -157,13 +133,12 @@ WRAPPER_EOF
           chmod 755 deb/opt/apps/$PKG_NAME/files/firefox
           
           # Build deb
-          # Replace colon with underscore for filename compatibility
           SAFE_VERSION=$(echo "$VERSION" | tr ':' '_')
           FILENAME="${PKG_NAME}_${SAFE_VERSION}_${ARCH}.deb"
           dpkg-deb --build deb "$FILENAME"
           echo "filename=$FILENAME" >> $GITHUB_OUTPUT
 
-      - name: Upload to GitHub Release
+      - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: firefox-${{ matrix.arch }}
