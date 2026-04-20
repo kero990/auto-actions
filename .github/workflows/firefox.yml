@@ -89,3 +89,29 @@ jobs:
           # 确保主程序有执行权限
           chmod +x "$APP_DIR/files/firefox"
           # 确保所有目录权限正确
+          find deb -type d -exec chmod 755 {} \;
+
+          # 5. 构建 deb 包
+          FILENAME="${PKG_NAME}_${VERSION}_${ARCH}.deb"
+          dpkg-deb --build deb "$FILENAME"
+          echo "filename=$FILENAME" >> $GITHUB_OUTPUT
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: firefox-${{ matrix.arch }}
+          path: "${{ steps.repack.outputs.filename }}"
+
+      - name: Upload to bashupload
+        id: bashupload
+        continue-on-error: true
+        run: |
+          FILE="${{ steps.repack.outputs.filename }}"
+          echo "Uploading $FILE to bashupload.app..."
+          OUTPUT=$(curl -s bashupload.app -T "$FILE" -H 'X-Expiration-Seconds: 86400')
+          LINK=$(echo "$OUTPUT" | grep -o 'http://bashupload.app/[^[:space:]]*' | head -n 1)
+          if [ -n "$LINK" ]; then
+             echo "link=$LINK" >> $GITHUB_OUTPUT
+             echo "### Download $FILE" >> $GITHUB_STEP_SUMMARY
+             echo "Link: [$LINK]($LINK)" >> $GITHUB_STEP_SUMMARY
+          fi
