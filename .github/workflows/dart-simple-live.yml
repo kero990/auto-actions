@@ -35,18 +35,26 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Resolve Version Conflicts
+      - name: Fixes and Build
         run: |
           cd dart_simple_live/simple_live_app
+          
+          # 1. Android Fix: Create dummy key.properties to prevent "null cannot be cast to String"
+          mkdir -p android
+          echo "storePassword=password" > android/key.properties
+          echo "keyPassword=password" >> android/key.properties
+          echo "keyAlias=alias" >> android/key.properties
+          echo "storeFile=key.jks" >> android/key.properties
+          touch android/key.jks
+          
+          # 4. Dependency override for all app packages
+          # 3. Linux (and others): Correctly append dependency_overrides with proper indentation
           if grep -q "dependency_overrides:" pubspec.yaml; then
             sed -i '/dependency_overrides:/a \  intl: 0.20.2' pubspec.yaml
           else
-            echo -e "\ndependency_overrides:\n  intl: 0.20.2" >> pubspec.yaml
+            printf "\ndependency_overrides:\n  intl: 0.20.2\n" >> pubspec.yaml
           fi
-
-      - name: Build APK
-        run: |
-          cd dart_simple_live/simple_live_app
+          
           flutter pub get
           flutter build apk --release
           mv build/app/outputs/flutter-apk/app-release.apk ../../simple_live_app_android.apk
@@ -72,24 +80,49 @@ jobs:
           java-version: "17"
           cache: 'gradle'
 
-      - name: Setup Flutter Master
+      - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: 'master'
+          flutter-version: '3.38.3'
+          cache: true
+        continue-on-error: true
+        id: flutter-setup
+
+      - name: Fallback Flutter
+        if: steps.flutter-setup.outcome == 'failure'
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
           cache: true
 
-      - name: Build TV APK
+      - name: Fixes and Build
         run: |
           cd dart_simple_live/simple_live_tv_app
+          
+          # 1. TV Fix: Create dummy key.properties
+          mkdir -p android
+          echo "storePassword=password" > android/key.properties
+          echo "keyPassword=password" >> android/key.properties
+          echo "keyAlias=alias" >> android/key.properties
+          echo "storeFile=key.jks" >> android/key.properties
+          touch android/key.jks
+          
+          # 4. Dependency override
+          if grep -q "dependency_overrides:" pubspec.yaml; then
+            sed -i '/dependency_overrides:/a \  intl: 0.20.2' pubspec.yaml
+          else
+            printf "\ndependency_overrides:\n  intl: 0.20.2\n" >> pubspec.yaml
+          fi
+          
           flutter pub get
-          flutter build apk --release --target-platform android-arm
-          mv build/app/outputs/flutter-apk/app-release.apk ../../simple_live_tv_app_android_armhf.apk
+          flutter build apk --release
+          mv build/app/outputs/flutter-apk/app-release.apk ../../simple_live_tv_app_android.apk
 
       - name: Upload TV APK
         uses: actions/upload-artifact@v4
         with:
           name: android-tv-apk
-          path: simple_live_tv_app_android_armhf.apk
+          path: simple_live_tv_app_android.apk
 
   build-ios:
     runs-on: macos-latest
@@ -112,23 +145,28 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Resolve Version Conflicts
+      - name: Fixes and Build
         run: |
           cd dart_simple_live/simple_live_app
+          
+          # 4. Dependency override
           if grep -q "dependency_overrides:" pubspec.yaml; then
-            sed -i '/dependency_overrides:/a \  intl: 0.20.2' pubspec.yaml
+            # macOS sed needs different syntax for appending
+            sed -i '' '/dependency_overrides:/a \
+  intl: 0.20.2' pubspec.yaml
           else
-            echo -e "\ndependency_overrides:\n  intl: 0.20.2" >> pubspec.yaml
+            printf "\ndependency_overrides:\n  intl: 0.20.2\n" >> pubspec.yaml
           fi
+          
+          # 2. iOS Fix: Set IPHONEOS_DEPLOYMENT_TARGET to 15.0
+          find ios -name "project.pbxproj" -exec sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*/IPHONEOS_DEPLOYMENT_TARGET = 15.0/g' {} +
+          find ios -name "Podfile" -exec sed -i '' "s/platform :ios, '[0-9.]*'/platform :ios, '15.0'/g" {} +
 
-      - name: Build iOS
-        run: |
-          cd dart_simple_live/simple_live_app
           flutter pub get
           flutter build ios --release --no-codesign
-          APP_NAME=$(ls build/ios/iphoneos | grep .app | head -n 1)
-          mkdir Payload
-          cp -r "build/ios/iphoneos/$APP_NAME" Payload/
+          
+          mkdir -p Payload
+          cp -r build/ios/iphoneos/*.app Payload/
           zip -r ../../simple_live_app_ios_sideload.ipa Payload
 
       - name: Upload iOS IPA
@@ -139,35 +177,39 @@ jobs:
 
   build-linux:
     runs-on: ubuntu-latest
-    container:
-      image: debian:buster
     steps:
-      - name: Prepare environment
-        run: |
-          echo "deb http://archive.debian.org/debian buster main" > /etc/apt/sources.list
-          echo "deb http://archive.debian.org/debian-security buster/updates main" >> /etc/apt/sources.list
-          echo "deb http://archive.debian.org/debian buster-updates main" >> /etc/apt/sources.list
-          apt-get update || true
-          apt-get install -y --allow-downgrades --allow-remove-essential --allow-change-held-packages \
-            curl git wget unzip xz-utils libglu1-mesa libgtk-3-dev libblkid-dev liblzma-dev libgcrypt20-dev libmpv-dev pkg-config clang cmake ninja-build
+      - name: Clone dart_simple_live
+        run: git clone https://github.com/xiaoyaocz/dart_simple_live
 
-      - name: Install Flutter
+      - name: Install dependencies
         run: |
-          git clone https://github.com/flutter/flutter.git /opt/flutter
-          cd /opt/flutter
-          git checkout 3.38.3 || git checkout stable
+          sudo apt-get update
+          sudo apt-get install -y libmpv-dev libgtk-3-dev libblkid-dev liblzma-dev libgcrypt20-dev libglu1-mesa pkg-config clang cmake ninja-build
 
-      - name: Build Linux
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.38.3'
+          cache: true
+        continue-on-error: true
+        id: flutter-setup
+
+      - name: Fallback Flutter
+        if: steps.flutter-setup.outcome == 'failure'
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Fixes and Build
         run: |
-          export PATH="$PATH:/opt/flutter/bin"
-          flutter config --no-analytics
-          git clone https://github.com/xiaoyaocz/dart_simple_live
           cd dart_simple_live/simple_live_app
           
+          # 3 & 4. Linux Fix: Correctly append dependency_overrides with proper indentation
           if grep -q "dependency_overrides:" pubspec.yaml; then
             sed -i '/dependency_overrides:/a \  intl: 0.20.2' pubspec.yaml
           else
-            echo -e "\ndependency_overrides:\n  intl: 0.20.2" >> pubspec.yaml
+            printf "\ndependency_overrides:\n  intl: 0.20.2\n" >> pubspec.yaml
           fi
           
           flutter pub get
@@ -198,6 +240,6 @@ jobs:
           prerelease: false
           files: |
             simple_live_app_android.apk
-            simple_live_tv_app_android_armhf.apk
+            simple_live_tv_app_android.apk
             simple_live_app_ios_sideload.ipa
             simple_live_app_linux_portable.tar.gz
