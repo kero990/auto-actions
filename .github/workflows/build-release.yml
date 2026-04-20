@@ -1,4 +1,4 @@
-name: Build and Release
+name: Build Release
 
 on:
   workflow_dispatch:
@@ -6,185 +6,133 @@ on:
       tag:
         description: 'Tag for the release'
         required: true
-        default: 'v1.0.0'
 
 jobs:
-  android-mobile:
-    name: Build Android Mobile
+  build-android:
     runs-on: ubuntu-latest
     steps:
-      - name: Clone Repository
-        run: |
-          git clone https://github.com/xiaoyaocz/dart_simple_live.git .
-      - name: Setup Java
-        uses: actions/setup-java@v4
+      - name: Clone dart_simple_live
+        run: git clone https://github.com/xiaoyaocz/dart_simple_live
+      - uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '17'
+          distribution: 'zulu'
+          java-version: "17"
           cache: 'gradle'
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.13.5'
           cache: true
-      - name: Download Android keystore
-        id: android_keystore
-        uses: timheuer/base64-to-file@v1.2
-        with:
-          fileName: keystore.jks
-          encodedString: ${{ secrets.KEYSTORE_BASE64 }}
-      - name: Create key.properties
-        run: |
-          echo "storeFile=${{ steps.android_keystore.outputs.filePath }}" > simple_live_app/android/key.properties
-          echo "storePassword=${{ secrets.STORE_PASSWORD }}" >> simple_live_app/android/key.properties
-          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> simple_live_app/android/key.properties
-          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> simple_live_app/android/key.properties
       - name: Build APK
         run: |
-          cd simple_live_app
+          cd dart_simple_live/simple_live_app
           flutter pub get
           flutter build apk --release
-      - name: Rename APK
-        run: |
-          mv simple_live_app/build/app/outputs/flutter-apk/app-release.apk simple_live_app_${{ github.event.inputs.tag }}_android.apk
-      - name: Upload Artifact
+          mv build/app/outputs/flutter-apk/app-release.apk ../../simple_live_app_android.apk
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: android-mobile-apk
-          path: simple_live_app_${{ github.event.inputs.tag }}_android.apk
+          name: android-apk
+          path: simple_live_app_android.apk
 
-  android-tv:
-    name: Build Android TV
+  build-android-tv:
     runs-on: ubuntu-latest
     steps:
-      - name: Clone Repository
+      - name: Clone dart_simple_live
         run: |
-          git clone https://github.com/xiaoyaocz/dart_simple_live.git .
-      - name: Setup Java
-        uses: actions/setup-java@v4
+          git clone https://github.com/xiaoyaocz/dart_simple_live
+          cd dart_simple_live
+          git checkout TV || echo "TV branch not found, using default"
+      - uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '17'
+          distribution: 'zulu'
+          java-version: "17"
           cache: 'gradle'
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.13.5'
           cache: true
-      - name: Download Android keystore
-        id: android_keystore
-        uses: timheuer/base64-to-file@v1.2
-        with:
-          fileName: keystore.jks
-          encodedString: ${{ secrets.KEYSTORE_BASE64 }}
-      - name: Create key.properties
+      - name: Build TV APK
         run: |
-          echo "storeFile=${{ steps.android_keystore.outputs.filePath }}" > simple_live_tv_app/android/key.properties
-          echo "storePassword=${{ secrets.STORE_PASSWORD }}" >> simple_live_tv_app/android/key.properties
-          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> simple_live_tv_app/android/key.properties
-          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> simple_live_tv_app/android/key.properties
-      - name: Build APK
-        run: |
-          cd simple_live_tv_app
+          cd dart_simple_live/simple_live_tv_app
           flutter pub get
           flutter build apk --release --target-platform android-arm
-      - name: Rename APK
-        run: |
-          mv simple_live_tv_app/build/app/outputs/flutter-apk/app-release.apk simple_live_tv_app_${{ github.event.inputs.tag }}_android_tv_armhf.apk
-      - name: Upload Artifact
+          mv build/app/outputs/flutter-apk/app-release.apk ../../simple_live_tv_app_android_v7a.apk
+      - name: Upload TV APK
         uses: actions/upload-artifact@v4
         with:
           name: android-tv-apk
-          path: simple_live_tv_app_${{ github.event.inputs.tag }}_android_tv_armhf.apk
+          path: simple_live_tv_app_android_v7a.apk
 
-  ios:
-    name: Build iOS
+  build-ios:
     runs-on: macos-latest
     steps:
-      - name: Clone Repository
-        run: |
-          git clone https://github.com/xiaoyaocz/dart_simple_live.git .
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+      - name: Clone dart_simple_live
+        run: git clone https://github.com/xiaoyaocz/dart_simple_live
+      - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.13.5'
           cache: true
       - name: Build iOS
         run: |
-          cd simple_live_app
+          cd dart_simple_live/simple_live_app
           flutter pub get
           flutter build ios --release --no-codesign
-      - name: Package IPA
-        run: |
-          cd simple_live_app
-          mkdir -p Payload
-          cp -r build/ios/iphoneos/Runner.app Payload/
-          zip -r ../simple_live_app_${{ github.event.inputs.tag }}_ios_sideload.ipa Payload
-      - name: Upload Artifact
+          APP_NAME=$(ls build/ios/iphoneos | grep .app | head -n 1)
+          mkdir Payload
+          cp -r "build/ios/iphoneos/$APP_NAME" Payload/
+          zip -r ../../simple_live_app_ios_sideload.ipa Payload
+      - name: Upload iOS IPA
         uses: actions/upload-artifact@v4
         with:
           name: ios-ipa
-          path: simple_live_app_${{ github.event.inputs.tag }}_ios_sideload.ipa
+          path: simple_live_app_ios_sideload.ipa
 
-  linux:
-    name: Build Linux
+  build-linux:
     runs-on: ubuntu-latest
     container:
-      image: debian:10
+      image: debian:buster
     steps:
-      - name: Install dependencies
+      - name: Prepare environment
         run: |
-          echo 'Acquire::Check-Valid-Until "false";' > /etc/apt/apt.conf.d/99no-check-valid-until
-          echo "deb http://archive.debian.org/debian buster main" > /etc/apt/sources.list
-          echo "deb http://archive.debian.org/debian-security buster/updates main" >> /etc/apt/sources.list
+          sed -i s@deb.debian@archive.debian@g /etc/apt/sources.list
           apt-get update
-          apt-get install -y curl git xz-utils zip unzip libglu1-mesa clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libmpv-dev
-      - name: Clone Repository
+          apt-get install -y curl git wget unzip xz-utils libglu1-mesa libgtk-3-dev libblkid-dev liblzma-dev libgcrypt20-dev libmpv-dev pkg-config clang cmake ninja-build
+      - name: Install Flutter
         run: |
-          git clone https://github.com/xiaoyaocz/dart_simple_live.git .
-      - name: Setup Flutter
-        run: |
-          curl -LO https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.13.5-stable.tar.xz
-          tar xf flutter_linux_3.13.5-stable.tar.xz
-          echo "$GITHUB_WORKSPACE/flutter/bin" >> $GITHUB_PATH
+          git clone https://github.com/flutter/flutter.git -b 3.13.5 /opt/flutter
       - name: Build Linux
         run: |
-          export PATH="$PATH:$GITHUB_WORKSPACE/flutter/bin"
-          cd simple_live_app
+          export PATH="$PATH:/opt/flutter/bin"
           flutter config --no-analytics
-          flutter config --enable-linux-desktop
+          git clone https://github.com/xiaoyaocz/dart_simple_live
+          cd dart_simple_live/simple_live_app
           flutter pub get
           flutter build linux --release
-      - name: Package Linux
-        run: |
-          cd simple_live_app/build/linux/x64/release
-          tar -czvf $GITHUB_WORKSPACE/simple_live_app_${{ github.event.inputs.tag }}_linux_x64_portable.tar.gz bundle
-      - name: Upload Artifact
+          tar -czvf ../../simple_live_app_linux_portable.tar.gz -C build/linux/x64/release/bundle .
+      - name: Upload Linux tarball
         uses: actions/upload-artifact@v4
         with:
-          name: linux-tar
-          path: simple_live_app_${{ github.event.inputs.tag }}_linux_x64_portable.tar.gz
+          name: linux-tarball
+          path: simple_live_app_linux_portable.tar.gz
 
-  release:
-    name: Create Release
-    needs: [android-mobile, android-tv, ios, linux]
+  create-release:
+    needs: [build-android, build-android-tv, build-ios, build-linux]
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event.inputs.tag }}
           name: Release ${{ github.event.inputs.tag }}
           draft: false
           prerelease: false
           files: |
-            android-mobile-apk/*.apk
-            android-tv-apk/*.apk
-            ios-ipa/*.ipa
-            linux-tar/*.tar.gz
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            simple_live_app_android.apk
+            simple_live_tv_app_android_v7a.apk
+            simple_live_app_ios_sideload.ipa
+            simple_live_app_linux_portable.tar.gz
