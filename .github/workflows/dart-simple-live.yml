@@ -94,7 +94,8 @@ jobs:
     steps:
       - name: Prepare environment
         run: |
-          sed -i s@deb.debian@archive.debian@g /etc/apt/sources.list
+          sed -i 's/deb.debian.org/archive.debian.org/g' /etc/apt/sources.list
+          sed -i 's/security.debian.org/archive.debian.org/g' /etc/apt/sources.list
           apt-get update
           apt-get install -y curl git wget unzip xz-utils libglu1-mesa libgtk-3-dev libblkid-dev liblzma-dev libgcrypt20-dev libmpv-dev pkg-config clang cmake ninja-build
       - name: Install Flutter
