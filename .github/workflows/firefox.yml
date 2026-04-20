@@ -35,7 +35,7 @@ jobs:
           if [ "${{ matrix.arch }}" = "amd64" ]; then
             OS_TYPE="linux64"
           else
-            OS_TYPE="linux-aarch64"
+            OS_TYPE="linux64-aarch64"
           fi
 
           # 获取最新版本号和真实下载链接
