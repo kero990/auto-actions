@@ -39,9 +39,8 @@ jobs:
           keytool -genkey -v -keystore android/app/key.jks -keyalg RSA -keysize 2048 -validity 10000 -alias alias -storepass password -keypass password -dname "CN=Example, OU=Example, O=Example, L=Example, S=Example, C=US"
           
           # 4. Dependency override for all app packages
-          # 3. Linux (and others): Correctly append dependency_overrides with proper indentation
           if grep -q "dependency_overrides:" pubspec.yaml; then
-            sed -i '/dependency_overrides:/a \  intl: 0.20.2' pubspec.yaml
+            perl -i -pe 's/dependency_overrides:/dependency_overrides:\n  intl: 0.20.2/g' pubspec.yaml
           else
             printf "\ndependency_overrides:\n  intl: 0.20.2\n" >> pubspec.yaml
           fi
@@ -91,7 +90,7 @@ jobs:
           
           # 4. Dependency override
           if grep -q "dependency_overrides:" pubspec.yaml; then
-            sed -i '/dependency_overrides:/a \  intl: 0.20.2' pubspec.yaml
+            perl -i -pe 's/dependency_overrides:/dependency_overrides:\n  intl: 0.20.2/g' pubspec.yaml
           else
             printf "\ndependency_overrides:\n  intl: 0.20.2\n" >> pubspec.yaml
           fi
@@ -127,16 +126,14 @@ jobs:
           
           # 4. Dependency override
           if grep -q "dependency_overrides:" pubspec.yaml; then
-            # macOS sed needs different syntax for appending
-            sed -i '' '/dependency_overrides:/a \
-  intl: 0.20.2' pubspec.yaml
+            perl -i -pe 's/dependency_overrides:/dependency_overrides:\n  intl: 0.20.2/g' pubspec.yaml
           else
             printf "\ndependency_overrides:\n  intl: 0.20.2\n" >> pubspec.yaml
           fi
           
           # 2. iOS Fix: Set IPHONEOS_DEPLOYMENT_TARGET to 15.0
-          find ios -name "project.pbxproj" -exec sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*/IPHONEOS_DEPLOYMENT_TARGET = 15.0/g' {} +
-          find ios -name "Podfile" -exec sed -i '' "s/platform :ios, '[0-9.]*'/platform :ios, '15.0'/g" {} +
+          find ios -name "project.pbxproj" -exec perl -i -pe 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*/IPHONEOS_DEPLOYMENT_TARGET = 15.0/g' {} +
+          find ios -name "Podfile" -exec perl -i -pe "s/platform :ios, '[0-9.]*'/platform :ios, '15.0'/g" {} +
           # Inject post_install hook for all pods targets
           find ios -name "Podfile" -exec perl -i -pe 's/flutter_additional_ios_build_settings\(target\)/flutter_additional_ios_build_settings(target)\n    target.build_configurations.each do |config|\n      config.build_settings["IPHONEOS_DEPLOYMENT_TARGET"] = "15.0"\n    end/g' {} +
 
@@ -174,9 +171,9 @@ jobs:
         run: |
           cd dart_simple_live/simple_live_app
           
-          # 3 & 4. Linux Fix: Correctly append dependency_overrides with proper indentation
+          # 4. Dependency override
           if grep -q "dependency_overrides:" pubspec.yaml; then
-            sed -i '/dependency_overrides:/a \  intl: 0.20.2' pubspec.yaml
+            perl -i -pe 's/dependency_overrides:/dependency_overrides:\n  intl: 0.20.2/g' pubspec.yaml
           else
             printf "\ndependency_overrides:\n  intl: 0.20.2\n" >> pubspec.yaml
           fi
