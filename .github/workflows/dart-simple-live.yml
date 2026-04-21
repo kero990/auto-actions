@@ -23,29 +23,20 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.38.3'
-          cache: true
-        continue-on-error: true
-        id: flutter-setup
-
-      - name: Fallback Flutter
-        if: steps.flutter-setup.outcome == 'failure'
-        uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
+          channel: 'master'
           cache: true
 
       - name: Fixes and Build
         run: |
           cd dart_simple_live/simple_live_app
           
-          # 1. Android Fix: Create dummy key.properties to prevent "null cannot be cast to String"
-          mkdir -p android
+          # 1. Android Fix: Create dummy key.properties and generate key.jks
+          mkdir -p android/app
           echo "storePassword=password" > android/key.properties
           echo "keyPassword=password" >> android/key.properties
           echo "keyAlias=alias" >> android/key.properties
           echo "storeFile=key.jks" >> android/key.properties
-          touch android/key.jks
+          keytool -genkey -v -keystore android/app/key.jks -keyalg RSA -keysize 2048 -validity 10000 -alias alias -storepass password -keypass password -dname "CN=Example, OU=Example, O=Example, L=Example, S=Example, C=US"
           
           # 4. Dependency override for all app packages
           # 3. Linux (and others): Correctly append dependency_overrides with proper indentation
@@ -83,29 +74,20 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.38.3'
-          cache: true
-        continue-on-error: true
-        id: flutter-setup
-
-      - name: Fallback Flutter
-        if: steps.flutter-setup.outcome == 'failure'
-        uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
+          channel: 'master'
           cache: true
 
       - name: Fixes and Build
         run: |
           cd dart_simple_live/simple_live_tv_app
           
-          # 1. TV Fix: Create dummy key.properties
-          mkdir -p android
+          # 1. TV Fix: Create dummy key.properties and generate key.jks
+          mkdir -p android/app
           echo "storePassword=password" > android/key.properties
           echo "keyPassword=password" >> android/key.properties
           echo "keyAlias=alias" >> android/key.properties
           echo "storeFile=key.jks" >> android/key.properties
-          touch android/key.jks
+          keytool -genkey -v -keystore android/app/key.jks -keyalg RSA -keysize 2048 -validity 10000 -alias alias -storepass password -keypass password -dname "CN=Example, OU=Example, O=Example, L=Example, S=Example, C=US"
           
           # 4. Dependency override
           if grep -q "dependency_overrides:" pubspec.yaml; then
@@ -133,16 +115,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.38.3'
-          cache: true
-        continue-on-error: true
-        id: flutter-setup
-
-      - name: Fallback Flutter
-        if: steps.flutter-setup.outcome == 'failure'
-        uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
+          channel: 'master'
           cache: true
 
       - name: Fixes and Build
@@ -161,6 +134,8 @@ jobs:
           # 2. iOS Fix: Set IPHONEOS_DEPLOYMENT_TARGET to 15.0
           find ios -name "project.pbxproj" -exec sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*/IPHONEOS_DEPLOYMENT_TARGET = 15.0/g' {} +
           find ios -name "Podfile" -exec sed -i '' "s/platform :ios, '[0-9.]*'/platform :ios, '15.0'/g" {} +
+          # Inject post_install hook for all pods targets
+          find ios -name "Podfile" -exec perl -i -pe 's/flutter_additional_ios_build_settings\(target\)/flutter_additional_ios_build_settings(target)\n    target.build_configurations.each do |config|\n      config.build_settings["IPHONEOS_DEPLOYMENT_TARGET"] = "15.0"\n    end/g' {} +
 
           flutter pub get
           flutter build ios --release --no-codesign
@@ -189,16 +164,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.38.3'
-          cache: true
-        continue-on-error: true
-        id: flutter-setup
-
-      - name: Fallback Flutter
-        if: steps.flutter-setup.outcome == 'failure'
-        uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
+          channel: 'master'
           cache: true
 
       - name: Fixes and Build
