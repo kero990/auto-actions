@@ -131,14 +131,18 @@ jobs:
             printf "\ndependency_overrides:\n  intl: 0.20.2\n" >> pubspec.yaml
           fi
           
-          # 2. iOS Fix: Set IPHONEOS_DEPLOYMENT_TARGET to 15.0
+          flutter pub get
+
+          # Fix 'isUltraConstrained' compiler error in connectivity_plus
+          find $HOME/.pub-cache -name "PathMonitorConnectivityProvider.swift" -exec perl -i -pe 's/path\.isUltraConstrained/false/g' {} +
+          
+          # 2. iOS Fix: Set IPHONEOS_DEPLOYMENT_TARGET to 15.0 (AFTER pub get)
           find ios -name "project.pbxproj" -exec perl -i -pe 's/IPHONEOS_DEPLOYMENT_TARGET\s*=\s*[0-9.]+/IPHONEOS_DEPLOYMENT_TARGET = 15.0/g' {} +
           find ios -name "Podfile" -exec perl -i -pe "s/^#?\s*platform :ios, .*/platform :ios, '15.0'/g" {} +
           # Inject aggressive post_install hooks
           find ios -name "Podfile" -exec perl -i -pe 's/post_install do \|installer\|/post_install do |installer|\n    installer.pods_project.build_configurations.each do |config|\n      config.build_settings["IPHONEOS_DEPLOYMENT_TARGET"] = "15.0"\n    end/g' {} +
           find ios -name "Podfile" -exec perl -i -pe 's/flutter_additional_ios_build_settings\(target\)/flutter_additional_ios_build_settings(target)\n    target.build_configurations.each do |config|\n      config.build_settings["IPHONEOS_DEPLOYMENT_TARGET"] = "15.0"\n    end/g' {} +
 
-          flutter pub get
           flutter build ios --release --no-codesign
           
           mkdir -p Payload
