@@ -132,9 +132,10 @@ jobs:
           fi
           
           # 2. iOS Fix: Set IPHONEOS_DEPLOYMENT_TARGET to 15.0
-          find ios -name "project.pbxproj" -exec perl -i -pe 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*/IPHONEOS_DEPLOYMENT_TARGET = 15.0/g' {} +
-          find ios -name "Podfile" -exec perl -i -pe "s/platform :ios, '[0-9.]*'/platform :ios, '15.0'/g" {} +
-          # Inject post_install hook for all pods targets
+          find ios -name "project.pbxproj" -exec perl -i -pe 's/IPHONEOS_DEPLOYMENT_TARGET\s*=\s*[0-9.]+/IPHONEOS_DEPLOYMENT_TARGET = 15.0/g' {} +
+          find ios -name "Podfile" -exec perl -i -pe "s/^#?\s*platform :ios, .*/platform :ios, '15.0'/g" {} +
+          # Inject aggressive post_install hooks
+          find ios -name "Podfile" -exec perl -i -pe 's/post_install do \|installer\|/post_install do |installer|\n    installer.pods_project.build_configurations.each do |config|\n      config.build_settings["IPHONEOS_DEPLOYMENT_TARGET"] = "15.0"\n    end/g' {} +
           find ios -name "Podfile" -exec perl -i -pe 's/flutter_additional_ios_build_settings\(target\)/flutter_additional_ios_build_settings(target)\n    target.build_configurations.each do |config|\n      config.build_settings["IPHONEOS_DEPLOYMENT_TARGET"] = "15.0"\n    end/g' {} +
 
           flutter pub get
