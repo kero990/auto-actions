@@ -122,6 +122,9 @@ jobs:
         run: |
           cd dart_simple_live/simple_live_app
           
+          # Disable SPM to fall back to CocoaPods
+          flutter config --no-enable-swift-package-manager
+          
           # 4. Dependency override
           if grep -q "dependency_overrides:" pubspec.yaml; then
             # macOS sed needs different syntax for appending
