@@ -175,7 +175,7 @@ jobs:
       - name: Install dependencies
         run: |
           apt-get update
-          apt-get install -y git curl unzip xz-utils libmpv-dev libgtk-3-dev libblkid-dev liblzma-dev libgcrypt20-dev libglu1-mesa pkg-config clang cmake ninja-build perl
+          apt-get install -y git curl unzip xz-utils libmpv-dev libgtk-3-dev libblkid-dev liblzma-dev libgcrypt20-dev libglu1-mesa pkg-config clang cmake ninja-build perl jq
 
       - name: Clone dart_simple_live
         run: git clone https://github.com/xiaoyaocz/dart_simple_live
@@ -222,7 +222,7 @@ jobs:
       - name: Install dependencies
         run: |
           apt-get update
-          apt-get install -y git curl unzip xz-utils libmpv-dev libgtk-3-dev libblkid-dev liblzma-dev libgcrypt20-dev libglu1-mesa pkg-config clang cmake ninja-build perl
+          apt-get install -y git curl unzip xz-utils libmpv-dev libgtk-3-dev libblkid-dev liblzma-dev libgcrypt20-dev libglu1-mesa pkg-config clang cmake ninja-build perl jq
 
       - name: Clone dart_simple_live
         run: git clone https://github.com/xiaoyaocz/dart_simple_live
@@ -249,10 +249,8 @@ jobs:
           flutter build linux --release
           
           # Patch libflutter_linux_gtk.so for ARM64 CJK fix
-          git clone https://github.com/krystic/flutter-arm-cjk-fix
-          python3 flutter-arm-cjk-fix/patch.py build/linux/arm64/release/bundle/libflutter_linux_gtk.so
-          rm -rf flutter-arm-cjk-fix
-          
+          curl -fsSL https://raw.githubusercontent.com/krystic/flutter-arm-cjk-fix/main/install.sh | sudo bash
+          flutter-font-fix -e build/linux/arm64/release/bundle/simple_live_app          
           tar -czvf ../../simple_live_app_linux_arm64_portable.tar.gz -C build/linux/arm64/release/bundle .
 
       - name: Upload Linux ARM64 tarball
