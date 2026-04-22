@@ -10,6 +10,7 @@ on:
 jobs:
   build-android:
     runs-on: ubuntu-latest
+    if: false
     steps:
       - name: Clone dart_simple_live
         run: git clone https://github.com/xiaoyaocz/dart_simple_live
@@ -57,6 +58,7 @@ jobs:
 
   build-android-tv:
     runs-on: ubuntu-latest
+    if: false
     steps:
       - name: Clone dart_simple_live
         run: |
@@ -107,6 +109,7 @@ jobs:
 
   build-ios:
     runs-on: macos-latest
+    if: false
     steps:
       - name: Set Xcode version
         run:  |
@@ -175,7 +178,7 @@ jobs:
       - name: Install dependencies
         run: |
           apt-get update
-          apt-get install -y git curl unzip xz-utils libmpv-dev libgtk-3-dev libblkid-dev liblzma-dev libgcrypt20-dev libglu1-mesa pkg-config clang cmake ninja-build perl jq
+          apt-get install -y git curl unzip xz-utils libmpv-dev libgtk-3-dev libblkid-dev liblzma-dev libgcrypt20-dev libglu1-mesa pkg-config clang cmake ninja-build perl jq libasound2-dev
 
       - name: Clone dart_simple_live
         run: git clone https://github.com/xiaoyaocz/dart_simple_live
@@ -222,7 +225,7 @@ jobs:
       - name: Install dependencies
         run: |
           apt-get update
-          apt-get install -y git curl unzip xz-utils libmpv-dev libgtk-3-dev libblkid-dev liblzma-dev libgcrypt20-dev libglu1-mesa pkg-config clang cmake ninja-build perl jq
+          apt-get install -y git curl unzip xz-utils libmpv-dev libgtk-3-dev libblkid-dev liblzma-dev libgcrypt20-dev libglu1-mesa pkg-config clang cmake ninja-build perl jq libasound2-dev
 
       - name: Clone dart_simple_live
         run: git clone https://github.com/xiaoyaocz/dart_simple_live
