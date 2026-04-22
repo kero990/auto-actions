@@ -252,7 +252,7 @@ jobs:
           flutter build linux --release
           
           # Patch libflutter_linux_gtk.so for ARM64 CJK fix
-          curl -fsSL https://raw.githubusercontent.com/krystic/flutter-arm-cjk-fix/main/install.sh | sudo bash
+          curl -fsSL https://raw.githubusercontent.com/krystic/flutter-arm-cjk-fix/main/install.sh | bash
           flutter-font-fix -e build/linux/arm64/release/bundle/simple_live_app          
           tar -czvf ../../simple_live_app_linux_arm64_portable.tar.gz -C build/linux/arm64/release/bundle .
 
