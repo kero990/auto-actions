@@ -108,6 +108,8 @@ jobs:
   build-ios:
     runs-on: macos-latest
     steps:
+      - name: Set Xcode version
+        run: sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
       - name: Clone dart_simple_live
         run: git clone https://github.com/xiaoyaocz/dart_simple_live
 
