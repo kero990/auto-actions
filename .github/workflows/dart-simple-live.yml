@@ -10,6 +10,7 @@ on:
 jobs:
   build-android:
     runs-on: ubuntu-latest
+    if: false
     steps:
       - name: Clone dart_simple_live
         run: git clone https://github.com/xiaoyaocz/dart_simple_live
@@ -57,6 +58,7 @@ jobs:
 
   build-android-tv:
     runs-on: ubuntu-latest
+    if: false
     steps:
       - name: Clone dart_simple_live
         run: |
@@ -109,7 +111,11 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Set Xcode version
-        run: sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
+        run:  |
+            XCODE_PATH=$(ls -d /Applications/Xcode_*.app | sort -V | tail -n 1)
+            echo "Using Xcode at $XCODE_PATH"
+            sudo xcode-select -s "$XCODE_PATH/Contents/Developer"
+          
       - name: Clone dart_simple_live
         run: git clone https://github.com/xiaoyaocz/dart_simple_live
 
@@ -159,6 +165,7 @@ jobs:
 
   build-linux:
     runs-on: ubuntu-latest
+    if: false
     steps:
       - name: Clone dart_simple_live
         run: git clone https://github.com/xiaoyaocz/dart_simple_live
