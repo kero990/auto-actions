@@ -178,7 +178,7 @@ jobs:
       - name: Install dependencies
         run: |
           apt-get update
-          apt-get install -y git curl unzip xz-utils libmpv-dev libgtk-3-dev libblkid-dev liblzma-dev libgcrypt20-dev libglu1-mesa pkg-config clang cmake ninja-build perl jq libasound2-dev clang clang++
+          apt-get install -y git curl unzip xz-utils libmpv-dev libgtk-3-dev libblkid-dev liblzma-dev libgcrypt20-dev libglu1-mesa pkg-config clang cmake ninja-build perl jq libasound2-dev clang
 
       - name: Clone dart_simple_live
         run: git clone https://github.com/xiaoyaocz/dart_simple_live
@@ -226,7 +226,7 @@ jobs:
       - name: Install dependencies
         run: |
           apt-get update
-          apt-get install -y git curl unzip xz-utils libmpv-dev libgtk-3-dev libblkid-dev liblzma-dev libgcrypt20-dev libglu1-mesa pkg-config clang cmake ninja-build perl jq libasound2-dev clang clang++
+          apt-get install -y git curl unzip xz-utils libmpv-dev libgtk-3-dev libblkid-dev liblzma-dev libgcrypt20-dev libglu1-mesa pkg-config clang cmake ninja-build perl jq libasound2-dev clang
 
       - name: Clone dart_simple_live
         run: git clone https://github.com/xiaoyaocz/dart_simple_live
@@ -268,6 +268,7 @@ jobs:
   create-release:
     needs: [build-android, build-android-tv, build-ios, build-linux, build-linux-arm64]
     runs-on: ubuntu-latest
+    if: false
     permissions:
       contents: write
     steps:
