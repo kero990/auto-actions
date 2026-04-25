@@ -26,7 +26,15 @@ jobs:
         run: |
           cd dart_simple_live/simple_live_app
           flutter pub get
-          flutter build apk --release
+          flutter build apk --release --obfuscate --split-debug-info=symbols
+          
+          # Strip native shared libraries
+          NDK_STRIP=$(find $ANDROID_SDK_ROOT/ndk -name llvm-strip | head -n 1 || which strip)
+          find build/app/intermediates/merged_native_libs/release/out/lib/ -name "*.so" -exec $NDK_STRIP --strip-all {} \; || true
+          
+          # Re-run build to package stripped libs
+          flutter build apk --release --obfuscate --split-debug-info=symbols
+          
           mv build/app/outputs/flutter-apk/app-release.apk ../../simple_live_app_android.apk
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -55,7 +63,15 @@ jobs:
         run: |
           cd dart_simple_live/simple_live_tv_app
           flutter pub get
-          flutter build apk --release --target-platform android-arm
+          flutter build apk --release --target-platform android-arm --obfuscate --split-debug-info=symbols
+          
+          # Strip native shared libraries
+          NDK_STRIP=$(find $ANDROID_SDK_ROOT/ndk -name llvm-strip | head -n 1 || which strip)
+          find build/app/intermediates/merged_native_libs/release/out/lib/ -name "*.so" -exec $NDK_STRIP --strip-all {} \; || true
+          
+          # Re-run build to package stripped libs
+          flutter build apk --release --target-platform android-arm --obfuscate --split-debug-info=symbols
+          
           mv build/app/outputs/flutter-apk/app-release.apk ../../simple_live_tv_app_android_v7a.apk
       - name: Upload TV APK
         uses: actions/upload-artifact@v4
