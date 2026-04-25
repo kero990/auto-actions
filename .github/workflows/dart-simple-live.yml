@@ -40,13 +40,13 @@ jobs:
           
           # 2.build
           flutter pub get
-          flutter build apk --release
-          mv build/app/outputs/flutter-apk/app-release.apk ../../simple_live_app_android.apk
+          flutter build apk --release --target-platform android-arm64
+          mv build/app/outputs/flutter-apk/app-release.apk ../../simple_live_app_android_arm64.apk
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: android-apk
-          path: simple_live_app_android.apk
+          path: simple_live_app_android_arm64.apk
 
   build-android-tv:
     runs-on: ubuntu-latest
@@ -82,13 +82,13 @@ jobs:
           
           # build
           flutter pub get
-          flutter build apk --release
-          mv build/app/outputs/flutter-apk/app-release.apk ../../simple_live_tv_app_android.apk
+          flutter build apk --release --target-platform android-arm
+          mv build/app/outputs/flutter-apk/app-release.apk ../../simple_live_tv_app_android_armhf.apk
       - name: Upload TV APK
         uses: actions/upload-artifact@v4
         with:
           name: android-tv-apk
-          path: simple_live_tv_app_android.apk
+          path: simple_live_tv_app_android_armhf.apk
 
   build-ios:
     runs-on: macos-latest
@@ -238,8 +238,8 @@ jobs:
           draft: false
           prerelease: false
           files: |
-            simple_live_app_android.apk
-            simple_live_tv_app_android.apk
+            simple_live_app_android_arm64.apk
+            simple_live_tv_app_android_armhf.apk
             simple_live_app_ios_sideload.ipa
             simple_live_app_linux_portable.tar.gz
             simple_live_app_linux_arm64_portable.tar.gz
