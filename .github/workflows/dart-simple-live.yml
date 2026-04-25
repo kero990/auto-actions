@@ -40,7 +40,7 @@ jobs:
           
           # 2.build
           flutter pub get
-          flutter build apk --release --target-platform android-arm64 --obfuscate --split-debug-info=symbols
+          flutter build apk --release --target-platform android-arm64 --obfuscate --split-debug-info=symbols --analyze-size
           
           # 3. Strip native shared libraries
           NDK_STRIP=$(find $ANDROID_SDK_ROOT/ndk -name llvm-strip | head -n 1 || which strip)
@@ -90,7 +90,7 @@ jobs:
           
           # build
           flutter pub get
-          flutter build apk --release --target-platform android-arm --obfuscate --split-debug-info=symbols
+          flutter build apk --release --target-platform android-arm --obfuscate --split-debug-info=symbols --analyze-size
           
           # Strip native shared libraries
           NDK_STRIP=$(find $ANDROID_SDK_ROOT/ndk -name llvm-strip | head -n 1 || which strip)
