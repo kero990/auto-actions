@@ -40,14 +40,26 @@ jobs:
             -storepass password -keypass password \
             -dname "CN=Example, OU=Example, O=Example, L=Example, S=Example, C=US"
 
+      - name: Set ABI filter (arm64 only)
+        run: |
+          cd dart_simple_live/simple_live_app/android/app
+          # 移除已有的 ndk 配置，然后添加新的 abiFilters
+          perl -i -pe 's/^\s*ndk\s*\{.*?\}//gs' build.gradle
+          perl -i -pe 's/(defaultConfig\s*\{)/$1\n        ndk { abiFilters '"'"'arm64-v8a'"'"' }/' build.gradle
+
       - name: Build APK (arm64)
         run: |
           cd dart_simple_live/simple_live_app
           flutter pub get
+          flutter clean
           flutter build apk --release \
             --target-platform android-arm64 \
             --obfuscate \
-            --split-debug-info=symbols #--analyze-size
+            --split-debug-info=symbols
+          
+          echo "=== Verifying APK contains only arm64 ==="
+          unzip -l build/app/outputs/flutter-apk/app-release.apk | grep -E 'lib/(arm64|armeabi|x86)' || true
+          
           cp build/app/outputs/flutter-apk/app-release.apk \
             ../../simple_live_app_android_arm64.apk
 
@@ -92,14 +104,25 @@ jobs:
             -storepass password -keypass password \
             -dname "CN=Example, OU=Example, O=Example, L=Example, S=Example, C=US"
 
-      - name: Build TV APK (armhf)
+      - name: Set ABI filter (arm only)
+        run: |
+          cd dart_simple_live/simple_live_tv_app/android/app
+          perl -i -pe 's/^\s*ndk\s*\{.*?\}//gs' build.gradle
+          perl -i -pe 's/(defaultConfig\s*\{)/$1\n        ndk { abiFilters '"'"'armeabi-v7a'"'"' }/' build.gradle
+
+      - name: Build TV APK (arm)
         run: |
           cd dart_simple_live/simple_live_tv_app
           flutter pub get
+          flutter clean
           flutter build apk --release \
             --target-platform android-arm \
             --obfuscate \
-            --split-debug-info=symbols #--analyze-size
+            --split-debug-info=symbols
+          
+          echo "=== Verifying TV APK contains only arm ==="
+          unzip -l build/app/outputs/flutter-apk/app-release.apk | grep -E 'lib/(arm64|armeabi|x86)' || true
+          
           cp build/app/outputs/flutter-apk/app-release.apk \
             ../../simple_live_tv_app_android_armhf.apk
 
@@ -108,6 +131,7 @@ jobs:
         with:
           name: android-tv-apk
           path: simple_live_tv_app_android_armhf.apk
+
 
   build-ios:
     runs-on: macos-latest
