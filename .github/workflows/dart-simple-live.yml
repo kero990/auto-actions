@@ -18,7 +18,6 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: "17"
-          cache: 'gradle'
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -26,34 +25,33 @@ jobs:
           flutter-version: '3.38.3'
           cache: true
 
-      - name: Fixes and Build
+      - name: Fix dummy keystore
         run: |
           cd dart_simple_live/simple_live_app
-          
-          # 1. Android Fix: Create dummy key.properties and generate key.jks
           mkdir -p android/app
-          echo "storePassword=password" > android/key.properties
-          echo "keyPassword=password" >> android/key.properties
-          echo "keyAlias=alias" >> android/key.properties
-          echo "storeFile=key.jks" >> android/key.properties
-          keytool -genkey -v -keystore android/app/key.jks -keyalg RSA -keysize 2048 -validity 10000 -alias alias -storepass password -keypass password -dname "CN=Example, OU=Example, O=Example, L=Example, S=Example, C=US"
-          
-          # 2.build
-          flutter pub get
-          #3 test build
-          flutter build apk --release --target-platform android-arm --analyze-size
+          cat > android/key.properties <<EOF
+          storePassword=password
+          keyPassword=password
+          keyAlias=alias
+          storeFile=key.jks
+          EOF
+          keytool -genkey -v -keystore android/app/key.jks -keyalg RSA \
+            -keysize 2048 -validity 10000 -alias alias \
+            -storepass password -keypass password \
+            -dname "CN=Example, OU=Example, O=Example, L=Example, S=Example, C=US"
 
-          
-          #flutter build apk --release --target-platform android-arm64 --obfuscate --split-debug-info=symbols
-          
-          # 3. Strip native shared libraries
-          NDK_STRIP=$(find $ANDROID_SDK_ROOT/ndk -name llvm-strip | head -n 1 || which strip)
-          find build/app/intermediates/merged_native_libs/release/out/lib/ -name "*.so" -exec $NDK_STRIP --strip-all {} \; || true
-          
-          # 4. Re-run build to package stripped libs
-          flutter build apk --release --target-platform android-arm64 --obfuscate --split-debug-info=symbols
-          
-          mv build/app/outputs/flutter-apk/app-release.apk ../../simple_live_app_android_arm64.apk
+      - name: Build APK (arm64)
+        run: |
+          cd dart_simple_live/simple_live_app
+          flutter pub get
+          flutter build apk --release \
+            --target-platform android-arm64 \
+            --obfuscate \
+            --split-debug-info=symbols \
+            --analyze-size
+          cp build/app/outputs/flutter-apk/app-release.apk \
+            ../../simple_live_app_android_arm64.apk
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
@@ -68,11 +66,11 @@ jobs:
           git clone https://github.com/xiaoyaocz/dart_simple_live
           cd dart_simple_live
           git checkout TV || echo "TV branch not found"
+
       - uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: "17"
-          cache: 'gradle'
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -80,31 +78,33 @@ jobs:
           flutter-version: '3.38.3'
           cache: true
 
-      - name: Fixes and Build
+      - name: Fix dummy keystore
         run: |
           cd dart_simple_live/simple_live_tv_app
-          
-          # 1. TV Fix: Create dummy key.properties and generate key.jks
           mkdir -p android/app
-          echo "storePassword=password" > android/key.properties
-          echo "keyPassword=password" >> android/key.properties
-          echo "keyAlias=alias" >> android/key.properties
-          echo "storeFile=key.jks" >> android/key.properties
-          keytool -genkey -v -keystore android/app/key.jks -keyalg RSA -keysize 2048 -validity 10000 -alias alias -storepass password -keypass password -dname "CN=Example, OU=Example, O=Example, L=Example, S=Example, C=US"
-          
-          # build
+          cat > android/key.properties <<EOF
+          storePassword=password
+          keyPassword=password
+          keyAlias=alias
+          storeFile=key.jks
+          EOF
+          keytool -genkey -v -keystore android/app/key.jks -keyalg RSA \
+            -keysize 2048 -validity 10000 -alias alias \
+            -storepass password -keypass password \
+            -dname "CN=Example, OU=Example, O=Example, L=Example, S=Example, C=US"
+
+      - name: Build TV APK (armhf)
+        run: |
+          cd dart_simple_live/simple_live_tv_app
           flutter pub get
-          flutter build apk --release --target-platform android-arm --analyze-size
-          #flutter build apk --release --target-platform android-arm --obfuscate --split-debug-info=symbols --analyze-size
-          
-          # Strip native shared libraries
-          NDK_STRIP=$(find $ANDROID_SDK_ROOT/ndk -name llvm-strip | head -n 1 || which strip)
-          find build/app/intermediates/merged_native_libs/release/out/lib/ -name "*.so" -exec $NDK_STRIP --strip-all {} \; || true
-          
-          # Re-run build to package stripped libs
-          flutter build apk --release --target-platform android-arm --obfuscate --split-debug-info=symbols
-          
-          mv build/app/outputs/flutter-apk/app-release.apk ../../simple_live_tv_app_android_armhf.apk
+          flutter build apk --release \
+            --target-platform android-arm \
+            --obfuscate \
+            --split-debug-info=symbols \
+            --analyze-size
+          cp build/app/outputs/flutter-apk/app-release.apk \
+            ../../simple_live_tv_app_android_armhf.apk
+
       - name: Upload TV APK
         uses: actions/upload-artifact@v4
         with:
@@ -115,11 +115,11 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Set Xcode version
-        run:  |
+        run: |
             XCODE_PATH=$(ls -d /Applications/Xcode_*.app | sort -V | tail -n 1)
             echo "Using Xcode at $XCODE_PATH"
             sudo xcode-select -s "$XCODE_PATH/Contents/Developer"
-          
+
       - name: Clone dart_simple_live
         run: git clone https://github.com/xiaoyaocz/dart_simple_live
 
@@ -136,22 +136,23 @@ jobs:
           # Disable SPM to fall back to CocoaPods
           flutter config --no-enable-swift-package-manager
           
-          # build
           flutter pub get
+          
           # Fix 'isUltraConstrained' compiler error in connectivity_plus
           find $HOME/.pub-cache -name "PathMonitorConnectivityProvider.swift" -exec perl -i -pe 's/path\.isUltraConstrained/false/g' {} +
           
-          # 2. iOS Fix: Set IPHONEOS_DEPLOYMENT_TARGET to 15.0 (AFTER pub get)
+          # Set deployment target to 15.0 & inject post_install hooks
           find ios -name "project.pbxproj" -exec perl -i -pe 's/IPHONEOS_DEPLOYMENT_TARGET\s*=\s*[0-9.]+/IPHONEOS_DEPLOYMENT_TARGET = 15.0/g' {} +
           find ios -name "Podfile" -exec perl -i -pe "s/^#?\s*platform :ios, .*/platform :ios, '15.0'/g" {} +
-          # Inject aggressive post_install hooks
           find ios -name "Podfile" -exec perl -i -pe 's/post_install do \|installer\|/post_install do |installer|\n    installer.pods_project.build_configurations.each do |config|\n      config.build_settings["IPHONEOS_DEPLOYMENT_TARGET"] = "15.0"\n    end/g' {} +
           find ios -name "Podfile" -exec perl -i -pe 's/flutter_additional_ios_build_settings\(target\)/flutter_additional_ios_build_settings(target)\n    target.build_configurations.each do |config|\n      config.build_settings["IPHONEOS_DEPLOYMENT_TARGET"] = "15.0"\n    end/g' {} +
+          
           flutter build ios --release --no-codesign
           
           mkdir -p Payload
           cp -r build/ios/iphoneos/*.app Payload/
           zip -r ../../simple_live_app_ios_sideload.ipa Payload
+
       - name: Upload iOS IPA
         uses: actions/upload-artifact@v4
         with:
@@ -186,11 +187,10 @@ jobs:
         run: |
           git config --global --add safe.directory '*'
           cd dart_simple_live/simple_live_app
-          
-          # 4 build
           flutter pub get
           flutter build linux --release
           tar -czvf ../../simple_live_app_linux_portable.tar.gz -C build/linux/x64/release/bundle .
+
       - name: Upload Linux tarball
         uses: actions/upload-artifact@v4
         with:
@@ -226,16 +226,14 @@ jobs:
         run: |
           git config --global --add safe.directory '*'
           cd dart_simple_live/simple_live_app
-          
-          # 4 build
-          
           flutter pub get
           flutter build linux --release
           
           # Patch libflutter_linux_gtk.so for ARM64 CJK fix
           curl -fsSL https://raw.githubusercontent.com/krystic/flutter-arm-cjk-fix/main/install.sh | bash
-          flutter-font-fix -e build/linux/arm64/release/bundle/simple_live_app          
+          flutter-font-fix -e build/linux/arm64/release/bundle/simple_live_app
           tar -czvf ../../simple_live_app_linux_arm64_portable.tar.gz -C build/linux/arm64/release/bundle .
+
       - name: Upload Linux ARM64 tarball
         uses: actions/upload-artifact@v4
         with:
