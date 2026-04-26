@@ -47,8 +47,7 @@ jobs:
           flutter build apk --release \
             --target-platform android-arm64 \
             --obfuscate \
-            --split-debug-info=symbols \
-            --analyze-size
+            --split-debug-info=symbols #--analyze-size
           cp build/app/outputs/flutter-apk/app-release.apk \
             ../../simple_live_app_android_arm64.apk
 
@@ -100,8 +99,7 @@ jobs:
           flutter build apk --release \
             --target-platform android-arm \
             --obfuscate \
-            --split-debug-info=symbols \
-            --analyze-size
+            --split-debug-info=symbols #--analyze-size
           cp build/app/outputs/flutter-apk/app-release.apk \
             ../../simple_live_tv_app_android_armhf.apk
 
