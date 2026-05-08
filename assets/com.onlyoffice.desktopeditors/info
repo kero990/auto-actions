@@ -1,0 +1,17 @@
+{
+    "appid": "com.onlyoffice.desktopeditors",
+    "name": "OnlyOffice DesktopEditors",
+    "version": "VVVV",
+    "arch": ["AAAA"],
+    "permissions": {
+        "autostart": false,
+        "notification": true,
+        "trayicon": true,
+        "clipboard": true,
+        "account": false,
+        "bluetooth": false,
+        "camera": false,
+        "audio_record": false,
+        "installed_apps": false
+    }
+}

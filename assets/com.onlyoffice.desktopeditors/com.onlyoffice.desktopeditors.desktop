@@ -1,0 +1,14 @@
+[Desktop Entry]
+Name=ONLYOFFICE
+Name[zh_CN]=OnlyOffice 文档
+GenericName=Office Suite
+GenericName[zh_CN]=办公套件
+Comment=Office suite for working with documents, spreadsheets, and presentations
+Comment[zh_CN]=用于处理文档、电子表格和演示文稿的办公套件
+Exec=/opt/apps/com.onlyoffice.desktopeditors/files/DesktopEditors %U
+StartupNotify=true
+Terminal=false
+Icon=com.onlyoffice.desktopeditors
+Type=Application
+Categories=Office;WordProcessor;Spreadsheet;Presentation;
+MimeType=application/msword;application/vnd.openxmlformats-officedocument.wordprocessingml.document;application/vnd.ms-word.document.macroEnabled.12;application/vnd.ms-excel;application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;application/vnd.ms-excel.sheet.macroEnabled.12;application/vnd.ms-powerpoint;application/vnd.openxmlformats-officedocument.presentationml.presentation;

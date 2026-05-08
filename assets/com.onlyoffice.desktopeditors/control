@@ -1,0 +1,10 @@
+Maintainer: kero990 <kero990@qq.com>
+Installed-Size: 350000
+Homepage: https://www.onlyoffice.com/
+Description: The most complete office suite for working with documents, spreadsheets, and presentations.
+Architecture: AAAA
+Version: VVVV
+Priority: optional
+Package: com.onlyoffice.desktopeditors
+Depends: deepin-elf-verify (>= 1.1.10-1)
+Section: office
