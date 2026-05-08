@@ -44,7 +44,7 @@ jobs:
           
           echo "version=$REAL_VERSION" >> $GITHUB_OUTPUT
 
-- name: Extract and Reorganize
+      - name: Extract and Reorganize
         run: |
           PKG_ID="com.onlyoffice.desktopeditors"
           VERSION="${{ steps.download.outputs.version }}"
