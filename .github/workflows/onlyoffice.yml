@@ -76,12 +76,23 @@ jobs:
           # 5. 处理图标 (自动化处理所有尺寸)
           ICON_SRC_BASE="source/usr/share/icons/hicolor"
           ICON_DEST_BASE="deb/opt/apps/$PKG_ID/entries/icons/hicolor"
-          for size in 24x24 32x32 48x48 64x64 128x128 256x256; do
-            SRC_ICON="$ICON_SRC_BASE/$size/apps/onlyoffice-desktopeditors.png"
-            if [ -f "$SRC_ICON" ]; then
-              cp "$SRC_ICON" "$ICON_DEST_BASE/$size/apps/$PKG_ID.png"
-            fi
-          done
+          
+          if [ -d "$ICON_SRC_BASE" ]; then
+            echo "Found icons in source, reorganizing..."
+            # 遍历所有的尺寸目录 (例如 16x16, 24x24, 等)
+            for size_dir in $(ls "$ICON_SRC_BASE"); do
+              SRC_ICON_PATH="$ICON_SRC_BASE/$size_dir/apps/onlyoffice-desktopeditors.png"
+              if [ -f "$SRC_ICON_PATH" ]; then
+                DEST_ICON_DIR="$ICON_DEST_BASE/$size_dir/apps"
+                mkdir -p "$DEST_ICON_DIR"
+                # 复制并更名为新的包名
+                cp "$SRC_ICON_PATH" "$DEST_ICON_DIR/$PKG_ID.png"
+                echo "Copied icon for size $size_dir"
+              fi
+            done
+          else
+            echo "Warning: Source icons not found at $ICON_SRC_BASE"
+          fi
 
           # 6. 处理 Desktop 文件
           DESKTOP_FILE=$(find source/usr/share/applications -name "*.desktop" | head -n 1)
