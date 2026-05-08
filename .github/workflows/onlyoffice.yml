@@ -128,7 +128,7 @@ jobs:
             EOF
 
       - name: Apply Polyfill
-        uses: lmangani/polyfill-glibc-action@v1
+        uses: lmangani/polyfill-glibc-action@main
         with:
           file: deb/opt/apps/com.onlyoffice.desktopeditors/files/libcef.so
           target: "2.28"
