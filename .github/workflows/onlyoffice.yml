@@ -51,6 +51,7 @@ jobs:
           ARCH="${{ matrix.arch }}"
           
           dpkg-deb -R onlyoffice.deb source
+          rm onlyoffice.deb
           
           mkdir -p deb/DEBIAN
           mkdir -p deb/opt/apps/$PKG_ID/files
@@ -71,11 +72,25 @@ jobs:
           fi
           
           # Handle Icons
-          cp deb/opt/apps/$PKG_ID/files/asc-de-256.png deb/opt/apps/$PKG_ID/entries/icons/hicolor/256x256/apps/$PKG_ID.png || true
-          cp deb/opt/apps/$PKG_ID/files/asc-de-128.png deb/opt/apps/$PKG_ID/entries/icons/hicolor/128x128/apps/$PKG_ID.png || true
-          cp deb/opt/apps/$PKG_ID/files/asc-de-64.png deb/opt/apps/$PKG_ID/entries/icons/hicolor/64x64/apps/$PKG_ID.png || true
-          cp deb/opt/apps/$PKG_ID/files/asc-de-32.png deb/opt/apps/$PKG_ID/entries/icons/hicolor/32x32/apps/$PKG_ID.png || true
-          cp deb/opt/apps/$PKG_ID/files/asc-de-24.png deb/opt/apps/$PKG_ID/entries/icons/hicolor/24x24/apps/$PKG_ID.png || true
+          ICON_SRC_BASE="source/usr/share/icons/hicolor"
+          ICON_DEST_BASE="deb/opt/apps/$PKG_ID/entries/icons/hicolor"
+          
+          if [ -d "$ICON_SRC_BASE" ]; then
+            echo "Found icons in source, reorganizing..."
+            # 遍历所有的尺寸目录 (例如 16x16, 24x24, 等)
+            for size_dir in $(ls "$ICON_SRC_BASE"); do
+              SRC_ICON_PATH="$ICON_SRC_BASE/$size_dir/apps/onlyoffice-desktopeditors.png"
+              if [ -f "$SRC_ICON_PATH" ]; then
+                DEST_ICON_DIR="$ICON_DEST_BASE/$size_dir/apps"
+                mkdir -p "$DEST_ICON_DIR"
+                # 复制并更名为新的包名
+                cp "$SRC_ICON_PATH" "$DEST_ICON_DIR/$PKG_ID.png"
+                echo "Copied icon for size $size_dir"
+              fi
+            done
+          else
+            echo "Warning: Source icons not found at $ICON_SRC_BASE"
+          fi
 
           # Desktop file
           DESKTOP_FILE=$(find source/usr/share/applications -name "*.desktop" | head -n 1)
@@ -96,36 +111,28 @@ jobs:
           # Control file
           cp source/DEBIAN/control deb/DEBIAN/control
           sed -i "s|^Package:.*|Package: $PKG_ID|g" deb/DEBIAN/control
-          # Remove old Maintainer scripts if they use old paths
-          rm -f deb/DEBIAN/postinst deb/DEBIAN/postrm deb/DEBIAN/preinst deb/DEBIAN/prerm
-          
-          # Prepend deepin-elf-verify (>= 1.1.10-1) to Depends
-          if grep -q "Depends: " deb/DEBIAN/control; then
-            sed -i "s|^Depends: |Depends: deepin-elf-verify (>= 1.1.10-1), |g" deb/DEBIAN/control
-          else
-            echo "Depends: deepin-elf-verify (>= 1.1.10-1)" >> deb/DEBIAN/control
-          fi
+
           
           # Info file
           cat > deb/opt/apps/$PKG_ID/info <<EOF
-            {
-                "appid": "$PKG_ID",
-                "name": "OnlyOffice DesktopEditors",
-                "version": "$VERSION",
-                "arch": ["$ARCH"],
-                "permissions": {
-                    "autostart": false,
-                    "notification": true,
-                    "trayicon": true,
-                    "clipboard": true,
-                    "account": false,
-                    "bluetooth": false,
-                    "camera": false,
-                    "audio_record": false,
-                    "installed_apps": false
-                }
-             }
-            EOF
+          {
+            "appid": "$PKG_ID",
+            "name": "OnlyOffice DesktopEditors",
+            "version": "$VERSION",
+            "arch": ["$ARCH"],
+            "permissions": {
+              "autostart": false,
+              "notification": true,
+              "trayicon": true,
+              "clipboard": true,
+              "account": false,
+              "bluetooth": false,
+              "camera": false,
+              "audio_record": false,
+              "installed_apps": false
+            }
+          }
+          EOF
 
       - name: Apply Polyfill
         uses: lmangani/polyfill-glibc-action@main
