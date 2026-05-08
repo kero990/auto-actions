@@ -108,24 +108,24 @@ jobs:
           
           # Info file
           cat > deb/opt/apps/$PKG_ID/info <<EOF
-{
-    "appid": "$PKG_ID",
-    "name": "OnlyOffice DesktopEditors",
-    "version": "$VERSION",
-    "arch": ["$ARCH"],
-    "permissions": {
-        "autostart": false,
-        "notification": true,
-        "trayicon": true,
-        "clipboard": true,
-        "account": false,
-        "bluetooth": false,
-        "camera": false,
-        "audio_record": false,
-        "installed_apps": false
-    }
-}
-EOF
+            {
+                "appid": "$PKG_ID",
+                "name": "OnlyOffice DesktopEditors",
+                "version": "$VERSION",
+                "arch": ["$ARCH"],
+                "permissions": {
+                    "autostart": false,
+                    "notification": true,
+                    "trayicon": true,
+                    "clipboard": true,
+                    "account": false,
+                    "bluetooth": false,
+                    "camera": false,
+                    "audio_record": false,
+                    "installed_apps": false
+                }
+             }
+            EOF
 
       - name: Apply Polyfill
         uses: lmangani/polyfill-glibc-action@v1
