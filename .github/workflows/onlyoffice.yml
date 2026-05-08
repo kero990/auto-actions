@@ -1,0 +1,147 @@
+name: OnlyOffice DesktopEditors Repack
+
+on:
+  workflow_dispatch:
+
+jobs:
+  repack:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [amd64, arm64]
+    container: debian:buster
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sed -i s@deb.debian@archive.debian@g /etc/apt/sources.list
+          apt-get update
+          apt-get install -y wget curl jq dpkg-dev patchelf
+
+      - name: Download OnlyOffice
+        id: download
+        run: |
+          REPO="ONLYOFFICE/DesktopEditors"
+          LATEST_TAG=$(curl -s https://api.github.com/repos/$REPO/releases/latest | jq -r .tag_name)
+          VERSION=${LATEST_TAG#v}
+          ARCH="${{ matrix.arch }}"
+          
+          if [ "$ARCH" = "amd64" ]; then
+            FILE_ARCH="amd64"
+          else
+            FILE_ARCH="arm64"
+          fi
+          
+          DOWNLOAD_URL=$(curl -s https://api.github.com/repos/$REPO/releases/latest | jq -r ".assets[] | select(.name | endswith(\"${FILE_ARCH}.deb\")) | .browser_download_url" | head -n 1)
+          
+          wget -O onlyoffice.deb "$DOWNLOAD_URL"
+          
+          # Extract actual version from deb in case tag doesn't match exactly, and sanitize
+          REAL_VERSION=$(dpkg-deb -f onlyoffice.deb Version | sed 's/:/_/g')
+          
+          echo "version=$REAL_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Extract and Reorganize
+        run: |
+          PKG_ID="com.onlyoffice.desktopeditors"
+          VERSION="${{ steps.download.outputs.version }}"
+          ARCH="${{ matrix.arch }}"
+          
+          dpkg-deb -R onlyoffice.deb source
+          
+          mkdir -p deb/DEBIAN
+          mkdir -p deb/opt/apps/$PKG_ID/files
+          mkdir -p deb/opt/apps/$PKG_ID/entries/applications
+          mkdir -p deb/opt/apps/$PKG_ID/entries/icons/hicolor/256x256/apps
+          mkdir -p deb/opt/apps/$PKG_ID/entries/icons/hicolor/128x128/apps
+          mkdir -p deb/opt/apps/$PKG_ID/entries/icons/hicolor/64x64/apps
+          mkdir -p deb/opt/apps/$PKG_ID/entries/icons/hicolor/32x32/apps
+          mkdir -p deb/opt/apps/$PKG_ID/entries/icons/hicolor/24x24/apps
+          
+          # Move files
+          if [ -d source/opt/onlyoffice/desktopeditors ]; then
+            mv source/opt/onlyoffice/desktopeditors/* deb/opt/apps/$PKG_ID/files/
+          else
+            echo "Source directory /opt/onlyoffice/desktopeditors not found!"
+            ls -R source/opt
+            exit 1
+          fi
+          
+          # Handle Icons
+          cp deb/opt/apps/$PKG_ID/files/asc-de-256.png deb/opt/apps/$PKG_ID/entries/icons/hicolor/256x256/apps/$PKG_ID.png || true
+          cp deb/opt/apps/$PKG_ID/files/asc-de-128.png deb/opt/apps/$PKG_ID/entries/icons/hicolor/128x128/apps/$PKG_ID.png || true
+          cp deb/opt/apps/$PKG_ID/files/asc-de-64.png deb/opt/apps/$PKG_ID/entries/icons/hicolor/64x64/apps/$PKG_ID.png || true
+          cp deb/opt/apps/$PKG_ID/files/asc-de-32.png deb/opt/apps/$PKG_ID/entries/icons/hicolor/32x32/apps/$PKG_ID.png || true
+          cp deb/opt/apps/$PKG_ID/files/asc-de-24.png deb/opt/apps/$PKG_ID/entries/icons/hicolor/24x24/apps/$PKG_ID.png || true
+
+          # Desktop file
+          DESKTOP_FILE=$(find source/usr/share/applications -name "*.desktop" | head -n 1)
+          cp "$DESKTOP_FILE" deb/opt/apps/$PKG_ID/entries/applications/$PKG_ID.desktop
+          
+          # Update desktop file
+          sed -i "s|Exec=.*|Exec=/opt/apps/$PKG_ID/files/DesktopEditors %U|g" deb/opt/apps/$PKG_ID/entries/applications/$PKG_ID.desktop
+          sed -i "s|Icon=.*|Icon=$PKG_ID|g" deb/opt/apps/$PKG_ID/entries/applications/$PKG_ID.desktop
+          
+          # Permissions
+          if [ -f deb/opt/apps/$PKG_ID/files/chrome-sandbox ]; then
+            chmod 4755 deb/opt/apps/$PKG_ID/files/chrome-sandbox
+          fi
+
+          # Search and replace hardcoded paths in text files
+          find deb/opt/apps/$PKG_ID/files -type f -exec grep -I -l "/opt/onlyoffice/desktopeditors" {} + | xargs -r sed -i "s|/opt/onlyoffice/desktopeditors|/opt/apps/$PKG_ID/files|g"
+          
+          # Control file
+          cp source/DEBIAN/control deb/DEBIAN/control
+          sed -i "s|^Package:.*|Package: $PKG_ID|g" deb/DEBIAN/control
+          # Remove old Maintainer scripts if they use old paths
+          rm -f deb/DEBIAN/postinst deb/DEBIAN/postrm deb/DEBIAN/preinst deb/DEBIAN/prerm
+          
+          # Prepend deepin-elf-verify (>= 1.1.10-1) to Depends
+          if grep -q "Depends: " deb/DEBIAN/control; then
+            sed -i "s|^Depends: |Depends: deepin-elf-verify (>= 1.1.10-1), |g" deb/DEBIAN/control
+          else
+            echo "Depends: deepin-elf-verify (>= 1.1.10-1)" >> deb/DEBIAN/control
+          fi
+          
+          # Info file
+          cat > deb/opt/apps/$PKG_ID/info <<EOF
+{
+    "appid": "$PKG_ID",
+    "name": "OnlyOffice DesktopEditors",
+    "version": "$VERSION",
+    "arch": ["$ARCH"],
+    "permissions": {
+        "autostart": false,
+        "notification": true,
+        "trayicon": true,
+        "clipboard": true,
+        "account": false,
+        "bluetooth": false,
+        "camera": false,
+        "audio_record": false,
+        "installed_apps": false
+    }
+}
+EOF
+
+      - name: Apply Polyfill
+        uses: lmangani/polyfill-glibc-action@v1
+        with:
+          file: deb/opt/apps/com.onlyoffice.desktopeditors/files/libcef.so
+          target: "2.28"
+
+      - name: Build Deb
+        run: |
+          PKG_ID="com.onlyoffice.desktopeditors"
+          VERSION="${{ steps.download.outputs.version }}"
+          ARCH="${{ matrix.arch }}"
+          dpkg-deb -b deb "${PKG_ID}_${VERSION}_${ARCH}.deb"
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: onlyoffice-${{ matrix.arch }}
+          path: "*.deb"
