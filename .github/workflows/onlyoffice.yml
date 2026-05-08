@@ -9,17 +9,17 @@ jobs:
     strategy:
       matrix:
         arch: [amd64, arm64]
-    container: debian:buster
+    container:
+      image: debian:buster
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Install dependencies
         run: |
           sed -i s@deb.debian@archive.debian@g /etc/apt/sources.list
           apt-get update
-          apt-get install -y wget curl jq dpkg-dev patchelf
+          apt-get install -y wget curl jq dpkg-dev patchelf xz-utils coreutils
 
       - name: Download OnlyOffice
         id: download
@@ -39,21 +39,20 @@ jobs:
           
           wget -O onlyoffice.deb "$DOWNLOAD_URL"
           
-          # Extract actual version from deb in case tag doesn't match exactly, and sanitize
           REAL_VERSION=$(dpkg-deb -f onlyoffice.deb Version | sed 's/:/_/g')
           
           echo "version=$REAL_VERSION" >> $GITHUB_OUTPUT
 
       - name: Extract and Reorganize
         run: |
+          set -e
           PKG_ID="com.onlyoffice.desktopeditors"
           VERSION="${{ steps.download.outputs.version }}"
           ARCH="${{ matrix.arch }}"
           
-          dpkg-deb -R onlyoffice.deb source
+          dpkg-deb -R onlyoffice.deb origin
           
           mkdir -p deb/DEBIAN
-          mkdir -p deb/opt/apps/$PKG_ID/files
           mkdir -p deb/opt/apps/$PKG_ID/entries/applications
           mkdir -p deb/opt/apps/$PKG_ID/entries/icons/hicolor/256x256/apps
           mkdir -p deb/opt/apps/$PKG_ID/entries/icons/hicolor/128x128/apps
@@ -61,71 +60,80 @@ jobs:
           mkdir -p deb/opt/apps/$PKG_ID/entries/icons/hicolor/32x32/apps
           mkdir -p deb/opt/apps/$PKG_ID/entries/icons/hicolor/24x24/apps
           
-          # Move files
-          if [ -d source/opt/onlyoffice/desktopeditors ]; then
-            mv source/opt/onlyoffice/desktopeditors/* deb/opt/apps/$PKG_ID/files/
+          # Find source directory structure
+          SOURCE_DIR=""
+          if [ -d "origin/opt/onlyoffice/desktopeditors" ]; then
+            SOURCE_DIR="origin/opt/onlyoffice/desktopeditors"
+          elif [ -d "origin/usr/share/onlyoffice" ]; then
+            SOURCE_DIR="origin/usr/share/onlyoffice"
           else
-            echo "Source directory /opt/onlyoffice/desktopeditors not found!"
-            ls -R source/opt
+            echo "Looking for source directory..."
+            find origin -type d -name "*onlyoffice*" 2>/dev/null || true
+            find origin -type d -name "*desktopeditors*" 2>/dev/null || true
+            ls -la origin/
+            ls -la origin/opt/ 2>/dev/null || true
             exit 1
           fi
           
-          # Handle Icons
-          cp deb/opt/apps/$PKG_ID/files/asc-de-256.png deb/opt/apps/$PKG_ID/entries/icons/hicolor/256x256/apps/$PKG_ID.png || true
-          cp deb/opt/apps/$PKG_ID/files/asc-de-128.png deb/opt/apps/$PKG_ID/entries/icons/hicolor/128x128/apps/$PKG_ID.png || true
-          cp deb/opt/apps/$PKG_ID/files/asc-de-64.png deb/opt/apps/$PKG_ID/entries/icons/hicolor/64x64/apps/$PKG_ID.png || true
-          cp deb/opt/apps/$PKG_ID/files/asc-de-32.png deb/opt/apps/$PKG_ID/entries/icons/hicolor/32x32/apps/$PKG_ID.png || true
-          cp deb/opt/apps/$PKG_ID/files/asc-de-24.png deb/opt/apps/$PKG_ID/entries/icons/hicolor/24x24/apps/$PKG_ID.png || true
-
-          # Desktop file
-          DESKTOP_FILE=$(find source/usr/share/applications -name "*.desktop" | head -n 1)
-          cp "$DESKTOP_FILE" deb/opt/apps/$PKG_ID/entries/applications/$PKG_ID.desktop
+          echo "Source directory: $SOURCE_DIR"
           
-          # Update desktop file
-          sed -i "s|Exec=.*|Exec=/opt/apps/$PKG_ID/files/DesktopEditors %U|g" deb/opt/apps/$PKG_ID/entries/applications/$PKG_ID.desktop
-          sed -i "s|Icon=.*|Icon=$PKG_ID|g" deb/opt/apps/$PKG_ID/entries/applications/$PKG_ID.desktop
+          # Copy application files
+          cp -r "$SOURCE_DIR"/* deb/opt/apps/$PKG_ID/files/
           
-          # Permissions
-          if [ -f deb/opt/apps/$PKG_ID/files/chrome-sandbox ]; then
-            chmod 4755 deb/opt/apps/$PKG_ID/files/chrome-sandbox
+          # Copy icons from the source package
+          ICON_SIZES="256 128 64 32 24"
+          for size in $ICON_SIZES; do
+            # Try different icon names used by OnlyOffice
+            for icon_name in "asc-de-${size}.png" "onlyoffice-${size}.png" "office-${size}.png"; do
+              if [ -f "deb/opt/apps/$PKG_ID/files/$icon_name" ]; then
+                cp "deb/opt/apps/$PKG_ID/files/$icon_name" "deb/opt/apps/$PKG_ID/entries/icons/hicolor/${size}x${size}/apps/${PKG_ID}.png"
+                break
+              fi
+            done
+          done
+          
+          # Copy from upstream icon directory if available
+          if [ -d "origin/usr/share/icons" ]; then
+            find origin/usr/share/icons -name "*.png" -type f | while read icon_file; do
+              size=$(echo "$icon_file" | grep -oP '\d+x\d+' | head -1)
+              if [ -n "$size" ]; then
+                cp "$icon_file" "deb/opt/apps/$PKG_ID/entries/icons/hicolor/${size}/apps/${PKG_ID}.png" 2>/dev/null || true
+              fi
+            done
           fi
-
-          # Search and replace hardcoded paths in text files
-          find deb/opt/apps/$PKG_ID/files -type f -exec grep -I -l "/opt/onlyoffice/desktopeditors" {} + | xargs -r sed -i "s|/opt/onlyoffice/desktopeditors|/opt/apps/$PKG_ID/files|g"
           
-          # Control file
-          cp source/DEBIAN/control deb/DEBIAN/control
-          sed -i "s|^Package:.*|Package: $PKG_ID|g" deb/DEBIAN/control
-          # Remove old Maintainer scripts if they use old paths
-          rm -f deb/DEBIAN/postinst deb/DEBIAN/postrm deb/DEBIAN/preinst deb/DEBIAN/prerm
-          
-          # Prepend deepin-elf-verify (>= 1.1.10-1) to Depends
-          if grep -q "Depends: " deb/DEBIAN/control; then
-            sed -i "s|^Depends: |Depends: deepin-elf-verify (>= 1.1.10-1), |g" deb/DEBIAN/control
+          # Desktop file - copy from upstream or use our template
+          UPSTREAM_DESKTOP=$(find origin -name "*.desktop" -type f 2>/dev/null | head -1)
+          if [ -n "$UPSTREAM_DESKTOP" ]; then
+            cp "$UPSTREAM_DESKTOP" "deb/opt/apps/$PKG_ID/entries/applications/${PKG_ID}.desktop"
+            # Update desktop file paths
+            sed -i "s|Exec=.*|Exec=/opt/apps/$PKG_ID/files/DesktopEditors %U|g" "deb/opt/apps/$PKG_ID/entries/applications/${PKG_ID}.desktop"
+            sed -i "s|Icon=.*|Icon=${PKG_ID}|g" "deb/opt/apps/$PKG_ID/entries/applications/${PKG_ID}.desktop"
           else
-            echo "Depends: deepin-elf-verify (>= 1.1.10-1)" >> deb/DEBIAN/control
+            cp "assets/$PKG_ID/${PKG_ID}.desktop" "deb/opt/apps/$PKG_ID/entries/applications/${PKG_ID}.desktop"
           fi
           
-          # Info file
-          cat > deb/opt/apps/$PKG_ID/info <<EOF
-            {
-                "appid": "$PKG_ID",
-                "name": "OnlyOffice DesktopEditors",
-                "version": "$VERSION",
-                "arch": ["$ARCH"],
-                "permissions": {
-                    "autostart": false,
-                    "notification": true,
-                    "trayicon": true,
-                    "clipboard": true,
-                    "account": false,
-                    "bluetooth": false,
-                    "camera": false,
-                    "audio_record": false,
-                    "installed_apps": false
-                }
-             }
-            EOF
+          # Copy asset files
+          cp "assets/$PKG_ID/control" deb/DEBIAN/control
+          cp "assets/$PKG_ID/info" "deb/opt/apps/$PKG_ID/info"
+          
+          # Replace version and architecture placeholders
+          sed -i "s/VVVV/$VERSION/g;s/AAAA/$ARCH/g" deb/DEBIAN/control
+          sed -i "s/VVVV/$VERSION/g;s/AAAA/$ARCH/g" "deb/opt/apps/$PKG_ID/info"
+          
+          # Fix chrome-sandbox permissions
+          if [ -f "deb/opt/apps/$PKG_ID/files/chrome-sandbox" ]; then
+            chmod 4755 "deb/opt/apps/$PKG_ID/files/chrome-sandbox"
+          fi
+          
+          # Search and replace hardcoded paths in all text files
+          find deb/opt/apps/$PKG_ID/files -type f \( -name "*.json" -o -name "*.conf" -o -name "*.xml" -o -name "*.ini" -o -name "*.cfg" -o -name "*.txt" \) -exec grep -I -l "/opt/onlyoffice" {} + 2>/dev/null | xargs -r sed -i "s|/opt/onlyoffice|/opt/apps/$PKG_ID/files|g" || true
+          find deb/opt/apps/$PKG_ID/files -type f \( -name "*.json" -o -name "*.conf" -o -name "*.xml" -o -name "*.ini" -o -name "*.cfg" -o -name "*.txt" \) -exec grep -I -l "onlyoffice-desktopeditors" {} + 2>/dev/null | xargs -r sed -i "s|onlyoffice-desktopeditors|$PKG_ID|g" || true
+          
+          # Recursively replace old package references
+          find deb/opt/apps/$PKG_ID/files -type f -exec grep -I -l "onlyoffice" {} + 2>/dev/null | xargs -r sed -i "s|onlyoffice|$PKG_ID|g" || true
+          
+          echo "Extraction and reorganization complete."
 
       - name: Apply Polyfill
         uses: lmangani/polyfill-glibc-action@main
@@ -138,10 +146,32 @@ jobs:
           PKG_ID="com.onlyoffice.desktopeditors"
           VERSION="${{ steps.download.outputs.version }}"
           ARCH="${{ matrix.arch }}"
-          dpkg-deb -b deb "${PKG_ID}_${VERSION}_${ARCH}.deb"
+          
+          # Ensure root ownership for all files
+          chown -R root:root deb/
+          
+          # Build with xz compression for smaller size
+          dpkg-deb -Zxz --root-owner-group --build deb "${PKG_ID}_${VERSION}_${ARCH}.deb"
+          
+          # Show size for verification
+          ls -lh "${PKG_ID}_${VERSION}_${ARCH}.deb"
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: onlyoffice-${{ matrix.arch }}
-          path: "*.deb"
+          path: "com.onlyoffice.desktopeditors_*.deb"
+
+      - name: Upload to bashupload
+        id: bashupload
+        continue-on-error: true
+        run: |
+          FILE=$(ls com.onlyoffice.desktopeditors_*.deb | head -1)
+          echo "Uploading $FILE to bashupload.app..."
+          OUTPUT=$(curl -s bashupload.app -T "$FILE" -H 'X-Expiration-Seconds: 86400')
+          LINK=$(echo "$OUTPUT" | grep -o 'http://bashupload.app/[^[:space:]]*' | head -n 1)
+          if [ -n "$LINK" ]; then
+            echo "link=$LINK" >> $GITHUB_OUTPUT
+            echo "### Download $FILE" >> $GITHUB_STEP_SUMMARY
+            echo "Link: [$LINK]($LINK)" >> $GITHUB_STEP_SUMMARY
+          fi
