@@ -44,93 +44,74 @@ jobs:
           
           echo "version=$REAL_VERSION" >> $GITHUB_OUTPUT
 
-      - name: Extract and Reorganize
+- name: Extract and Reorganize
         run: |
           PKG_ID="com.onlyoffice.desktopeditors"
           VERSION="${{ steps.download.outputs.version }}"
           ARCH="${{ matrix.arch }}"
+          NEW_FILES_PATH="/opt/apps/$PKG_ID/files"
           
+          # 1. 解压原始包
           dpkg-deb -R onlyoffice.deb source
-          rm onlyoffice.deb
           
+          # 2. 创建新目录结构
           mkdir -p deb/DEBIAN
-          mkdir -p deb/opt/apps/$PKG_ID/files
+          mkdir -p deb$NEW_FILES_PATH
           mkdir -p deb/opt/apps/$PKG_ID/entries/applications
-          mkdir -p deb/opt/apps/$PKG_ID/entries/icons/hicolor/256x256/apps
-          mkdir -p deb/opt/apps/$PKG_ID/entries/icons/hicolor/128x128/apps
-          mkdir -p deb/opt/apps/$PKG_ID/entries/icons/hicolor/64x64/apps
-          mkdir -p deb/opt/apps/$PKG_ID/entries/icons/hicolor/32x32/apps
-          mkdir -p deb/opt/apps/$PKG_ID/entries/icons/hicolor/24x24/apps
+          mkdir -p deb/opt/apps/$PKG_ID/entries/icons/hicolor/{24x24,32x32,48x48,64x64,128x128,256x256}/apps
           
-          # Move files
-          if [ -d source/opt/onlyoffice/desktopeditors ]; then
-            mv source/opt/onlyoffice/desktopeditors/* deb/opt/apps/$PKG_ID/files/
-          else
-            echo "Source directory /opt/onlyoffice/desktopeditors not found!"
-            ls -R source/opt
-            exit 1
-          fi
+          # 3. 移动核心文件
+          # 将 /opt/onlyoffice/desktopeditors/ 下的内容移到新 files 目录
+          mv source/opt/onlyoffice/desktopeditors/* deb$NEW_FILES_PATH/
           
-          # Handle Icons
+          # 4. 【核心步骤】处理官方启动脚本
+          # 官方脚本在 source/usr/bin/desktopeditors
+          # 我们把它拷到 files 目录下并重命名（或者保持原名）
+          cp source/usr/bin/desktopeditors deb$NEW_FILES_PATH/
+          chmod +x deb$NEW_FILES_PATH/desktopeditors
+          
+          # 全局替换脚本中的旧路径为新路径
+          sed -i "s|/opt/onlyoffice/desktopeditors|$NEW_FILES_PATH|g" deb$NEW_FILES_PATH/desktopeditors
+          
+          # 5. 处理图标 (自动化处理所有尺寸)
           ICON_SRC_BASE="source/usr/share/icons/hicolor"
           ICON_DEST_BASE="deb/opt/apps/$PKG_ID/entries/icons/hicolor"
-          
-          if [ -d "$ICON_SRC_BASE" ]; then
-            echo "Found icons in source, reorganizing..."
-            # 遍历所有的尺寸目录 (例如 16x16, 24x24, 等)
-            for size_dir in $(ls "$ICON_SRC_BASE"); do
-              SRC_ICON_PATH="$ICON_SRC_BASE/$size_dir/apps/onlyoffice-desktopeditors.png"
-              if [ -f "$SRC_ICON_PATH" ]; then
-                DEST_ICON_DIR="$ICON_DEST_BASE/$size_dir/apps"
-                mkdir -p "$DEST_ICON_DIR"
-                # 复制并更名为新的包名
-                cp "$SRC_ICON_PATH" "$DEST_ICON_DIR/$PKG_ID.png"
-                echo "Copied icon for size $size_dir"
-              fi
-            done
-          else
-            echo "Warning: Source icons not found at $ICON_SRC_BASE"
-          fi
+          for size in 24x24 32x32 48x48 64x64 128x128 256x256; do
+            SRC_ICON="$ICON_SRC_BASE/$size/apps/onlyoffice-desktopeditors.png"
+            if [ -f "$SRC_ICON" ]; then
+              cp "$SRC_ICON" "$ICON_DEST_BASE/$size/apps/$PKG_ID.png"
+            fi
+          done
 
-          # Desktop file
+          # 6. 处理 Desktop 文件
           DESKTOP_FILE=$(find source/usr/share/applications -name "*.desktop" | head -n 1)
           cp "$DESKTOP_FILE" deb/opt/apps/$PKG_ID/entries/applications/$PKG_ID.desktop
           
-          # Update desktop file
-          sed -i "s|Exec=.*|Exec=/opt/apps/$PKG_ID/files/DesktopEditors %U|g" deb/opt/apps/$PKG_ID/entries/applications/$PKG_ID.desktop
+          # 修改 Desktop 文件中的启动路径和图标
+          # 注意：Exec 现在指向 launcher.sh
+          sed -i "s|Exec=.*|Exec=$NEW_FILES_PATH/desktopeditors %U|g" deb/opt/apps/$PKG_ID/entries/applications/$PKG_ID.desktop
           sed -i "s|Icon=.*|Icon=$PKG_ID|g" deb/opt/apps/$PKG_ID/entries/applications/$PKG_ID.desktop
           
-          # Permissions
-          if [ -f deb/opt/apps/$PKG_ID/files/chrome-sandbox ]; then
-            chmod 4755 deb/opt/apps/$PKG_ID/files/chrome-sandbox
-          fi
-
-          # Search and replace hardcoded paths in text files
-          find deb/opt/apps/$PKG_ID/files -type f -exec grep -I -l "/opt/onlyoffice/desktopeditors" {} + | xargs -r sed -i "s|/opt/onlyoffice/desktopeditors|/opt/apps/$PKG_ID/files|g"
+          # 7. 修正 files 目录下所有配置文件中的路径
+          # 官方包里有些 .json 或 .xml 可能也写死了路径
+          find deb$NEW_FILES_PATH -type f -exec grep -I -l "/opt/onlyoffice/desktopeditors" {} + | xargs -r sed -i "s|/opt/onlyoffice/desktopeditors|$NEW_FILES_PATH|g"
           
-          # Control file
+          # 8. 复制 control 文件并添加依赖
           cp source/DEBIAN/control deb/DEBIAN/control
           sed -i "s|^Package:.*|Package: $PKG_ID|g" deb/DEBIAN/control
-
           
-          # Info file
+          
+          # 9. 生成 Deepin info 文件
           cat > deb/opt/apps/$PKG_ID/info <<EOF
           {
-            "appid": "$PKG_ID",
-            "name": "OnlyOffice DesktopEditors",
-            "version": "$VERSION",
-            "arch": ["$ARCH"],
-            "permissions": {
-              "autostart": false,
-              "notification": true,
-              "trayicon": true,
-              "clipboard": true,
-              "account": false,
-              "bluetooth": false,
-              "camera": false,
-              "audio_record": false,
-              "installed_apps": false
-            }
+              "appid": "$PKG_ID",
+              "name": "OnlyOffice DesktopEditors",
+              "version": "$VERSION",
+              "arch": ["$ARCH"],
+              "permissions": {
+                  "autostart": false, "notification": true, "trayicon": true, "clipboard": true,
+                  "account": false, "bluetooth": false, "camera": false, "audio_record": false, "installed_apps": false
+              }
           }
           EOF
 
