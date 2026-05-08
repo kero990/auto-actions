@@ -53,6 +53,7 @@ jobs:
           dpkg-deb -R onlyoffice.deb origin
           
           mkdir -p deb/DEBIAN
+          mkdir -p deb/opt/apps/$PKG_ID/files
           mkdir -p deb/opt/apps/$PKG_ID/entries/applications
           mkdir -p deb/opt/apps/$PKG_ID/entries/icons/hicolor/256x256/apps
           mkdir -p deb/opt/apps/$PKG_ID/entries/icons/hicolor/128x128/apps
