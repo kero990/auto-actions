@@ -53,6 +53,7 @@ jobs:
           
           # 1. 解压原始包
           dpkg-deb -R onlyoffice.deb source
+          rm onlyoffice.deb
           
           # 2. 创建新目录结构
           mkdir -p deb/DEBIAN
