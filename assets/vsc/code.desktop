@@ -2,7 +2,7 @@
 Name=Visual Studio Code
 Comment=Code Editing. Redefined.
 GenericName=Text Editor
-Exec=/opt/apps/com.visualstudio.code/files/code %F
+Exec=/opt/apps/com.visualstudio.code/files/code.sh %F
 Icon=com.visualstudio.code
 Type=Application
 StartupNotify=false
@@ -24,5 +24,5 @@ Name[ko]=새 빈 창
 Name[ru]=Новое пустое окно
 Name[zh_CN]=新建空窗口
 Name[zh_TW]=開新空視窗
-Exec=/opt/apps/com.visualstudio.code/files/code --new-window %F
+Exec=/opt/apps/com.visualstudio.code/files/code.sh --new-window %F
 Icon=com.visualstudio.code
