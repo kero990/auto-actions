@@ -86,6 +86,8 @@ jobs:
           mkdir -p deb/opt/apps/$PKG_NAME/entries/icons/hicolor/512x512/apps
           mkdir -p deb/opt/apps/$PKG_NAME/files/
           cp assets/vsc/*.desktop deb/opt/apps/$PKG_NAME/entries/applications
+          cp assets/vsc/code.sh deb/opt/apps/$PKG_NAME/files
+          chmod +x deb/opt/apps/$PKG_NAME/files/code.sh
           cp assets/vsc/control deb/DEBIAN
           cp assets/vsc/com.visualstudio.code.png deb/opt/apps/$PKG_NAME/entries/icons/hicolor/512x512/apps
           cp VSCode-linux-$D_ARCH/* deb/opt/apps/$PKG_NAME/files/ -r
