@@ -91,7 +91,7 @@ jobs:
     - name: Download Trae CN package
       run: |
         # Use buildVersion from API or manual input
-        if [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ -n "${{ github.event.inputs.build_version }}" ]; then
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.build_version }}" ]; then
           BUILD_VERSION="${{ github.event.inputs.build_version }}"
           echo "Using manually specified buildVersion: $BUILD_VERSION"
         else
@@ -101,14 +101,14 @@ jobs:
         
         # Map architecture names
         ARCH="${{ matrix.arch }}"
-        if [ "$ARCH" == "amd64" ]; then
+        if [ "$ARCH" = "amd64" ]; then
           DOWNLOAD_ARCH="x64"
         else
           DOWNLOAD_ARCH="arm64"
         fi
         
-        # Extract download URL from API response
-        DOWNLOAD_URL=$(grep -oE "\"${DOWNLOAD_ARCH}\.deb\":\"[^\"]*\"" version_info.json | cut -d'"' -f4)
+        # Extract download URL from API response (only first match for cn region)
+        DOWNLOAD_URL=$(grep -oE "\"${DOWNLOAD_ARCH}\.deb\":\"[^\"]*\"" version_info.json | head -1 | cut -d'"' -f4)
         
         # If URL not found in API, construct it manually
         if [ -z "$DOWNLOAD_URL" ]; then
@@ -121,6 +121,7 @@ jobs:
           echo "Failed to download package. Please upload the package manually or update the download URL."
           exit 1
         }
+    
     
     - name: Prepare package structure
       run: |
