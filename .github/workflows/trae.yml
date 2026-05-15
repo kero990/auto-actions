@@ -34,7 +34,7 @@ jobs:
       run: |
         sed -i s@deb.debian@archive.debian@g /etc/apt/sources.list
         apt-get update
-        apt-get install -y dpkg wget file binutils cmake g++ git
+        apt-get install -y dpkg wget file binutils cmake g++ git imagemagick
         
     # 安装node
     - name: Setup Node.js environment
