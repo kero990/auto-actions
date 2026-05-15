@@ -125,6 +125,7 @@ jobs:
     
     - name: Prepare package structure
       run: |
+        cp assets/trae/repackage.sh .
         chmod +x repackage.sh
         SKIP_BUILD=1 ./repackage.sh trae-cn.deb
         
