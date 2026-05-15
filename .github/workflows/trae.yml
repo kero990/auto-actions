@@ -33,6 +33,7 @@ jobs:
     
     - name: Install dependencies
       run: |
+        sed -i s@deb.debian@archive.debian@g /etc/apt/sources.list
         apt-get update
         apt-get install -y dpkg-deb wget file binutils nodejs npm cmake g++ git
     
