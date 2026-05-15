@@ -36,15 +36,12 @@ jobs:
         apt-get update
         apt-get install -y dpkg wget file binutils cmake g++ git
         
-    # 安装nvm和指定node
-    - name: Install nvm, node 22.18.0, npm
-      run: |
-          curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
-          export NVM_DIR="$HOME/.nvm"
-          [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-          nvm install 22.18.0
-          nvm use 22.18.0
-          node --version
+    # 安装node
+    - name: Setup Node.js environment
+      uses: actions/setup-node@v6
+      with: 
+        node-version: "22"
+        
   
     - name: Build spdlog.node
       run: |
