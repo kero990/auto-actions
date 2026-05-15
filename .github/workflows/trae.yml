@@ -1,0 +1,229 @@
+name: Repackage Trae CN for Deepin
+
+on:
+  push:
+  workflow_dispatch:
+    inputs:
+      trae_version:
+        description: 'Trae CN appVersion (e.g., 3.3.57)'
+        required: false
+        default: '3.3.57'
+      build_version:
+        description: 'Trae CN buildVersion (e.g., 2.3.25937) - Leave empty to use latest from API'
+        required: false
+        default: ''
+
+jobs:
+  repackage:
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-latest
+            asset_name: trae-cn-amd64.deb
+          - arch: arm64
+            runner: ubuntu-22.04-arm
+            asset_name: trae-cn-arm64.deb
+    
+    runs-on: ${{ matrix.runner }}
+    container: python:3.10-buster
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install dependencies
+      run: |
+        apt-get update
+        apt-get install -y dpkg-deb wget file binutils nodejs npm cmake g++ git
+    
+    - name: Build spdlog.node
+      run: |
+        # Clone and build node-spdlog with compatible spdlog version
+        git clone https://github.com/microsoft/node-spdlog.git
+        cd node-spdlog
+        
+        # Install dependencies and build
+        npm install
+        
+        # The built spdlog.node will be in build/Release/spdlog.node
+        echo "spdlog.node built successfully"
+        ls -la build/Release/spdlog.node
+        
+        # Check GLIBCXX requirements
+        echo "GLIBCXX requirements for built spdlog.node:"
+        objdump -T build/Release/spdlog.node | grep GLIBCXX | sort -u || true
+        
+        cd ..
+    
+    - name: Get latest version info
+      run: |
+        echo "Fetching latest version information from Trae API..."
+        # Fetch version info from API
+        API_URL="https://api.trae.ai/icube/api/v1/native/version/trae/cn/latest"
+        wget -q "$API_URL" -O version_info.json || {
+          echo "Failed to fetch version info from API"
+          exit 1
+        }
+        
+        # Extract buildVersion from API response
+        BUILD_VERSION=$(grep -oE '"version":"[^"]*"' version_info.json | head -1 | cut -d'"' -f4)
+        echo "Latest buildVersion: $BUILD_VERSION"
+        
+        # Save buildVersion for next step
+        echo "BUILD_VERSION=$BUILD_VERSION" >> $GITHUB_ENV
+    
+    - name: Download Trae CN package
+      run: |
+        # Use buildVersion from API or manual input
+        if [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ -n "${{ github.event.inputs.build_version }}" ]; then
+          BUILD_VERSION="${{ github.event.inputs.build_version }}"
+          echo "Using manually specified buildVersion: $BUILD_VERSION"
+        else
+          BUILD_VERSION="${{ env.BUILD_VERSION }}"
+          echo "Using buildVersion from API: $BUILD_VERSION"
+        fi
+        
+        # Map architecture names
+        ARCH="${{ matrix.arch }}"
+        if [ "$ARCH" == "amd64" ]; then
+          DOWNLOAD_ARCH="x64"
+        else
+          DOWNLOAD_ARCH="arm64"
+        fi
+        
+        # Extract download URL from API response
+        DOWNLOAD_URL=$(grep -oE "\"${DOWNLOAD_ARCH}\.deb\":\"[^\"]*\"" version_info.json | cut -d'"' -f4)
+        
+        # If URL not found in API, construct it manually
+        if [ -z "$DOWNLOAD_URL" ]; then
+          DOWNLOAD_URL="https://lf-cdn.trae.com.cn/obj/trae-com-cn/pkg/app/releases/stable/${BUILD_VERSION}/linux/Trae%20CN-linux-${DOWNLOAD_ARCH}.deb"
+        fi
+        
+        echo "Downloading Trae CN build version $BUILD_VERSION for $ARCH..."
+        echo "Download URL: $DOWNLOAD_URL"
+        wget -q "$DOWNLOAD_URL" -O trae-cn.deb || {
+          echo "Failed to download package. Please upload the package manually or update the download URL."
+          exit 1
+        }
+    
+    - name: Prepare package structure
+      run: |
+        chmod +x repackage.sh
+        SKIP_BUILD=1 ./repackage.sh trae-cn.deb
+        
+        # Update dependency versions for Debian 10 compatibility
+        sed -i 's/libstdc++6 (>= 9)/libstdc++6 (>= 8.3.0)/g' deb-repackage/DEBIAN/control
+        sed -i 's/libxkbfile1 (>= 1:1.1.0)/libxkbfile1 (>= 1:1.0.9)/g' deb-repackage/DEBIAN/control
+    
+    - name: Replace spdlog.node with compatible version
+      run: |
+        # Copy the built spdlog.node to the package
+        cp node-spdlog/build/Release/spdlog.node \
+           deb-repackage/opt/apps/com.trae.app/files/resources/app/node_modules/@vscode/spdlog/build/Release/spdlog.node
+        
+        # Verify the replacement
+        echo "Replaced spdlog.node with version built from node-spdlog"
+        echo "Checking GLIBCXX requirements of replaced file:"
+        objdump -T deb-repackage/opt/apps/com.trae.app/files/resources/app/node_modules/@vscode/spdlog/build/Release/spdlog.node | grep GLIBCXX | sort -u || true
+    
+    - name: Check GLIBCXX compatibility of .node files
+      run: |
+        echo "Checking GLIBCXX requirements for all .node files..."
+        find deb-repackage/opt/apps/com.trae.app/files -name "*.node" -type f | while read node_file; do
+          echo "File: $node_file"
+          max_glibcxx=$(objdump -T "$node_file" 2>/dev/null | grep -oE "GLIBCXX_[0-9]+\.[0-9]+\.[0-9]+" | sort -V | tail -1)
+          if [ -n "$max_glibcxx" ]; then
+            echo "  Maximum GLIBCXX required: $max_glibcxx"
+            # Check if this is higher than GLIBCXX_3.4.25 (Debian 10)
+            if [[ "$max_glibcxx" > "GLIBCXX_3.4.25" ]]; then
+              echo "  WARNING: $node_file requires $max_glibcxx which may not be available on Debian 10"
+            fi
+          else
+            echo "  No GLIBCXX requirements found"
+          fi
+        done
+    
+    - name: Apply glibc polyfill for libaha_net.so
+      uses: lmangani/polyfill-glibc-action@main
+      with:
+        target: deb-repackage/opt/apps/com.trae.app/files/libaha_net.so
+        glibc: "2.28"
+    
+    - name: Apply glibc polyfill for liblogifier_retrieval.so
+      uses: lmangani/polyfill-glibc-action@main
+      with:
+        target: deb-repackage/opt/apps/com.trae.app/files/liblogifier_retrieval.so
+        glibc: "2.28"
+    
+    - name: Check GLIBC compatibility
+      run: |
+        # Update check_glibc.sh to scan deb-repackage directory
+        sed 's|usr/share/trae-cn|deb-repackage/opt/apps/com.trae.app/files|g' check_glibc.sh > check_glibc_new.sh
+        chmod +x check_glibc_new.sh
+        ./check_glibc_new.sh
+        
+        # If any file still requires GLIBC > 2.28, warn but continue
+        if ./check_glibc_new.sh | grep -q "WARNING"; then
+          echo "⚠️ Some files still require GLIBC > 2.28 after polyfill."
+          echo "This may cause issues on older Deepin versions."
+        fi
+    
+    - name: Build deb package
+      run: |
+        # Set package name and version
+        PKG_NAME="com.trae.app"
+        ARCH="${{ matrix.arch }}"
+        VERSION="${{ env.BUILD_VERSION }}"
+        
+        # Build the final deb package with proper filename
+        DEB_FILE="${PKG_NAME}_${VERSION}_${ARCH}.deb"
+        dpkg-deb -b deb-repackage "$DEB_FILE"
+        
+        # Verify package contents
+        echo "Package contents:"
+        dpkg-deb -c "$DEB_FILE" | head -20
+        
+        # Save filename for next steps
+        echo "DEB_FILE=$DEB_FILE" >> $GITHUB_ENV
+        echo "PKG_NAME=$PKG_NAME" >> $GITHUB_ENV
+    
+    - name: Upload repackaged artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{ env.PKG_NAME }}_${{ env.BUILD_VERSION }}_${{ matrix.arch }}
+        path: ${{ env.DEB_FILE }}
+        retention-days: 30
+    
+    - name: Upload to bashupload
+      id: bashupload
+      continue-on-error: true
+      run: |
+        echo "Uploading ${{ env.DEB_FILE }} to bashupload.app..."
+        OUTPUT=$(curl -s bashupload.app -T "${{ env.DEB_FILE }}" -H 'X-Expiration-Seconds: 86400')
+        LINK=$(echo "$OUTPUT" | grep -o 'http://bashupload.app/[^[:space:]]*' | head -n 1)
+        if [ -n "$LINK" ]; then
+          echo "link=$LINK" >> $GITHUB_OUTPUT
+          echo "### Download ${{ env.DEB_FILE }}" >> $GITHUB_STEP_SUMMARY
+          echo "Link: [$LINK]($LINK)" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "Failed to upload to bashupload.app"
+          echo "$OUTPUT"
+        fi
+    
+    - name: Clean up temporary files
+      run: |
+        # Remove temporary files but keep the final deb
+        rm -rf node-spdlog version_info.json changelog.html check_glibc_new.sh
+        rm -f trae-cn.deb
+        echo "Cleanup completed"
+    
+    - name: Summary
+      run: |
+        echo "## Package Build Summary" >> $GITHUB_STEP_SUMMARY
+        echo "- **Package**: ${{ env.PKG_NAME }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Version**: ${{ env.BUILD_VERSION }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Architecture**: ${{ matrix.arch }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **File**: ${{ env.DEB_FILE }}" >> $GITHUB_STEP_SUMMARY
+        if [ -n "${{ steps.bashupload.outputs.link }}" ]; then
+          echo "- **Download**: [${{ steps.bashupload.outputs.link }}](${{ steps.bashupload.outputs.link }})" >> $GITHUB_STEP_SUMMARY
+        fi
