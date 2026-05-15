@@ -41,7 +41,16 @@ jobs:
       uses: actions/setup-node@v6
       with: 
         node-version: "22"
-        
+
+        # 编译并安装spdlog 1.8.5
+    - name: Build and install spdlog 
+      run: |
+          git clone -b https://github.com/gabime/spdlog.git
+          cd spdlog && mkdir build && cd build
+          cmake -DSPDLOG_BUILD_EXAMPLES=OFF -DSPDLOG_BUILD_TESTS=OFF ..
+          make -j$(nproc)
+          make install
+          cd ../..
   
     - name: Build spdlog.node
       run: |
