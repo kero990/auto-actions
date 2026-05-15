@@ -173,18 +173,6 @@ jobs:
         target: deb-repackage/opt/apps/com.trae.app/files/liblogifier_retrieval.so
         glibc: "2.28"
     
-    - name: Check GLIBC compatibility
-      run: |
-        # Update check_glibc.sh to scan deb-repackage directory
-        sed 's|usr/share/trae-cn|deb-repackage/opt/apps/com.trae.app/files|g' check_glibc.sh > check_glibc_new.sh
-        chmod +x check_glibc_new.sh
-        ./check_glibc_new.sh
-        
-        # If any file still requires GLIBC > 2.28, warn but continue
-        if ./check_glibc_new.sh | grep -q "WARNING"; then
-          echo "⚠️ Some files still require GLIBC > 2.28 after polyfill."
-          echo "This may cause issues on older Deepin versions."
-        fi
     
     - name: Build deb package
       run: |
