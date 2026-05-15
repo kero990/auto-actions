@@ -6,7 +6,7 @@ on:
       trae_version:
         description: 'Trae CN appVersion (e.g., 3.3.57)'
         required: false
-        default: '3.3.57'
+        default: ''
       build_version:
         description: 'Trae CN buildVersion (e.g., 2.3.25937) - Leave empty to use latest from API'
         required: false
