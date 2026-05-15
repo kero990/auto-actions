@@ -1,7 +1,6 @@
 name: Repackage Trae CN for Deepin
 
 on:
-  push:
   workflow_dispatch:
     inputs:
       trae_version:
@@ -35,8 +34,18 @@ jobs:
       run: |
         sed -i s@deb.debian@archive.debian@g /etc/apt/sources.list
         apt-get update
-        apt-get install -y dpkg-deb wget file binutils nodejs npm cmake g++ git
-    
+        apt-get install -y dpkg wget file binutils cmake g++ git
+        
+    # 安装nvm和指定node
+    - name: Install nvm, node 22.18.0, npm
+      run: |
+          curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+          export NVM_DIR="$HOME/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+          nvm install 22.18.0
+          nvm use 22.18.0
+          node --version
+  
     - name: Build spdlog.node
       run: |
         # Clone and build node-spdlog with compatible spdlog version
