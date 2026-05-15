@@ -36,9 +36,17 @@ cp -a "$WORK_DIR/extracted/usr/share/trae-cn/"* "$WORK_DIR/deb/opt/apps/$PACKAGE
 echo "Copying desktop files..."
 cp "$WORK_DIR/extracted/usr/share/applications/"*.desktop "$WORK_DIR/deb/opt/apps/$PACKAGE_NAME/entries/applications/"
 
-echo "Copying icon..."
+echo "Copying and resizing icon..."
 if [ -f "$WORK_DIR/extracted/usr/share/pixmaps/trae-cn.png" ]; then
     cp "$WORK_DIR/extracted/usr/share/pixmaps/trae-cn.png" "$WORK_DIR/deb/opt/apps/$PACKAGE_NAME/entries/icons/hicolor/256x256/apps/"
+    # Resize icon to match directory specification (256x256)
+    if command -v convert &> /dev/null; then
+        convert "$WORK_DIR/deb/opt/apps/$PACKAGE_NAME/entries/icons/hicolor/256x256/apps/trae-cn.png" \
+            -resize 256x256 "$WORK_DIR/deb/opt/apps/$PACKAGE_NAME/entries/icons/hicolor/256x256/apps/trae-cn.png"
+        echo "Icon resized to 256x256"
+    else
+        echo "Warning: imagemagick not found, icon will keep original resolution"
+    fi
 fi
 
 echo "Copying DEBIAN directory..."
