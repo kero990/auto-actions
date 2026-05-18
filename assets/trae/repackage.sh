@@ -38,11 +38,13 @@ cp "$WORK_DIR/extracted/usr/share/applications/"*.desktop "$WORK_DIR/deb/opt/app
 
 echo "Copying and resizing icon..."
 if [ -f "$WORK_DIR/extracted/usr/share/pixmaps/trae-cn.png" ]; then
-    cp "$WORK_DIR/extracted/usr/share/pixmaps/trae-cn.png" "$WORK_DIR/deb/opt/apps/$PACKAGE_NAME/entries/icons/hicolor/256x256/apps/"
+    ICON_DEST="$WORK_DIR/deb/opt/apps/$PACKAGE_NAME/entries/icons/hicolor/256x256/apps/$PACKAGE_NAME.png"
+    cp "$WORK_DIR/extracted/usr/share/pixmaps/trae-cn.png" "$ICON_DEST"
+    
     # Resize icon to match directory specification (256x256)
     if command -v convert &> /dev/null; then
-        convert "$WORK_DIR/deb/opt/apps/$PACKAGE_NAME/entries/icons/hicolor/256x256/apps/trae-cn.png" \
-            -resize 256x256 "$WORK_DIR/deb/opt/apps/$PACKAGE_NAME/entries/icons/hicolor/256x256/apps/trae-cn.png"
+        convert "$ICON_DEST" \
+            -resize 256x256 "$ICON_DEST"
         echo "Icon resized to 256x256"
     else
         echo "Warning: imagemagick not found, icon will keep original resolution"
@@ -59,11 +61,34 @@ sed -i "s/^Conflicts: trae-cn$/Conflicts: $PACKAGE_NAME/" "$WORK_DIR/deb/DEBIAN/
 sed -i "s/^Replaces: trae-cn$/Replaces: $PACKAGE_NAME/" "$WORK_DIR/deb/DEBIAN/control"
 
 echo "Updating hardcoded paths in desktop files..."
-sed -i "s|Exec=/usr/share/trae-cn/trae-cn|Exec=/opt/apps/$PACKAGE_NAME/files/trae-cn|g" "$WORK_DIR/deb/opt/apps/$PACKAGE_NAME/entries/applications/"*.desktop
+# 1. 重命名主 desktop 文件
+if [ -f "$WORK_DIR/deb/opt/apps/$PACKAGE_NAME/entries/applications/trae-cn.desktop" ]; then
+    mv "$WORK_DIR/deb/opt/apps/$PACKAGE_NAME/entries/applications/trae-cn.desktop" \
+       "$WORK_DIR/deb/opt/apps/$PACKAGE_NAME/entries/applications/$PACKAGE_NAME.desktop"
+fi
+
+# 2. 重命名 url-handler desktop 文件 (Deepin 规范要求前缀一致)
+if [ -f "$WORK_DIR/deb/opt/apps/$PACKAGE_NAME/entries/applications/trae-cn-url-handler.desktop" ]; then
+    mv "$WORK_DIR/deb/opt/apps/$PACKAGE_NAME/entries/applications/trae-cn-url-handler.desktop" \
+       "$WORK_DIR/deb/opt/apps/$PACKAGE_NAME/entries/applications/${PACKAGE_NAME}-url-handler.desktop"
+fi
+
+# 3. 批量修改所有的 desktop 文件内容 (包括主应用和 url-handler)
+for desktop_file in "$WORK_DIR/deb/opt/apps/$PACKAGE_NAME/entries/applications/"*.desktop; do
+    # 修改 Exec 路径（会保留原文件中的 %F 或 --open-url %U 参数）
+    sed -i "s|Exec=/usr/share/trae-cn/trae-cn|Exec=/opt/apps/$PACKAGE_NAME/files/trae-cn|g" "$desktop_file"
+    # 修改 Icon 字段
+    sed -i "s/^Icon=trae-cn/Icon=$PACKAGE_NAME/g" "$desktop_file"
+done
 
 echo "Updating hardcoded paths in postinst script..."
 sed -i "s|ln -s /usr/share/trae-cn/bin/trae-cn|ln -s /opt/apps/$PACKAGE_NAME/files/bin/trae-cn|" "$WORK_DIR/deb/DEBIAN/postinst"
 sed -i "s|APPARMOR_PROFILE_SOURCE='/usr/share/trae-cn/|APPARMOR_PROFILE_SOURCE='/opt/apps/$PACKAGE_NAME/files/|" "$WORK_DIR/deb/DEBIAN/postinst"
+
+echo "Fixing postrm script..."
+if [ -f "$WORK_DIR/deb/DEBIAN/postrm" ]; then
+    sed -i 's/db_purge/. \/usr\/share\/debconf\/confmodule\n\tdb_purge/g' "$WORK_DIR/deb/DEBIAN/postrm"
+fi
 
 echo "Updating hardcoded paths in apparmor profiles..."
 find "$WORK_DIR/deb/opt/apps/$PACKAGE_NAME/files" -name "apparmor-profile" -exec \
@@ -74,7 +99,6 @@ sed -i "s|VSCODE_PATH=\"/usr/share/trae-cn\"|VSCODE_PATH=\"/opt/apps/$PACKAGE_NA
 
 if [ "${SKIP_BUILD}" = "1" ]; then
     echo "Skipping build as requested. Deb directory is at: $WORK_DIR/deb"
-    # Copy deb directory to current directory for further processing
     cp -r "$WORK_DIR/deb" "./deb-repackage"
     echo "Deb directory copied to: ./deb-repackage"
 else
