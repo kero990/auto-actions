@@ -1,0 +1,22 @@
+#!/bin/bash
+
+set -e
+
+BIN_PATH="/usr/bin/code"
+TARGET="/opt/apps/com.visualstudio.code/files/code.sh"
+
+case "$1" in
+  remove|purge|disappear)
+    if [ -L "$BIN_PATH" ]; then
+      if [ "$(readlink "$BIN_PATH")" = "$TARGET" ]; then
+        rm -f "$BIN_PATH"
+      fi
+    elif [ -f "$BIN_PATH" ]; then
+      if grep -Fq "$TARGET" "$BIN_PATH"; then
+        rm -f "$BIN_PATH"
+      fi
+    fi
+    ;;
+esac
+
+exit 0

@@ -1,3 +1,24 @@
 #!/bin/bash
 
-chmod 4755 '/opt/apps/com.visualstudio.code/files/chrome-sandbox' || true
+set -e
+
+APP_FILES="/opt/apps/com.visualstudio.code/files"
+BIN_PATH="/usr/bin/code"
+
+case "$1" in
+  configure)
+    chmod 4755 "$APP_FILES/chrome-sandbox" || true
+
+    TMP_PATH="$(mktemp "${BIN_PATH}.tmp.XXXXXX")"
+    trap 'rm -f "$TMP_PATH"' EXIT
+    cat > "$TMP_PATH" <<'EOF'
+#!/bin/sh
+exec /opt/apps/com.visualstudio.code/files/code.sh "$@"
+EOF
+    chmod 755 "$TMP_PATH"
+    mv -f "$TMP_PATH" "$BIN_PATH"
+    trap - EXIT
+    ;;
+esac
+
+exit 0
