@@ -1,0 +1,24 @@
+[Desktop Entry]
+Name=Helium
+GenericName=Web Browser
+GenericName[zh_CN]=Web Browser
+Comment=Access the Internet
+Comment[zh_CN]=Access the Internet
+Exec=/opt/apps/net.imput.helium/files/helium-wrapper %U
+StartupNotify=true
+Terminal=false
+Icon=net.imput.helium
+Type=Application
+Categories=Network;WebBrowser;
+MimeType=application/pdf;application/rdf+xml;application/rss+xml;application/xhtml+xml;application/xhtml_xml;application/xml;image/gif;image/jpeg;image/png;image/webp;text/html;text/xml;x-scheme-handler/http;x-scheme-handler/https;
+Actions=new-window;new-private-window;
+
+[Desktop Action new-window]
+Name=New Window
+Name[zh_CN]=New Window
+Exec=/opt/apps/net.imput.helium/files/helium-wrapper
+
+[Desktop Action new-private-window]
+Name=New Incognito Window
+Name[zh_CN]=New Incognito Window
+Exec=/opt/apps/net.imput.helium/files/helium-wrapper --incognito

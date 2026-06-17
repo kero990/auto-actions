@@ -1,0 +1,122 @@
+name: Helium Browser Repack
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/helium.yml'
+      - 'assets/net.imput.helium/**'
+
+jobs:
+  repack:
+    runs-on: ubuntu-latest
+    container:
+      image: debian:buster
+
+    strategy:
+      matrix:
+        arch: [amd64, arm64]
+
+    env:
+      PKG_NAME: "net.imput.helium"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare tools
+        run: |
+          sed -i s@deb.debian@archive.debian@g /etc/apt/sources.list
+          apt-get update
+          apt-get install -y wget curl dpkg-dev ca-certificates
+
+      - name: Download Helium deb
+        id: download
+        run: |
+          set -e
+          ARCH="${{ matrix.arch }}"
+          API_URL="https://api.github.com/repos/imputnet/helium-linux/releases/latest"
+          RELEASE_JSON="$(curl -fsSL "$API_URL")"
+          DEB_URL="$(printf '%s\n' "$RELEASE_JSON" | grep -oE "https://github.com/imputnet/helium-linux/releases/download/[^\"]+/helium-bin_[^\"]+_${ARCH}\.deb" | head -n 1)"
+
+          if [ -z "$DEB_URL" ]; then
+            echo "Unable to find Helium deb for $ARCH" >&2
+            exit 1
+          fi
+
+          DEB_NAME="$(basename "$DEB_URL")"
+          VERSION="$(printf '%s\n' "$DEB_NAME" | sed -E "s/^helium-bin_([^_]+)_${ARCH}\.deb$/\1/")"
+
+          echo "Version: $VERSION"
+          echo "Download URL: $DEB_URL"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+          curl -fL --retry 3 -o helium.deb "$DEB_URL"
+
+      - name: Repack as Deepin spec
+        id: repack
+        run: |
+          set -e
+          VERSION="${{ steps.download.outputs.version }}"
+          ARCH="${{ matrix.arch }}"
+          APP_DIR="deb/opt/apps/$PKG_NAME"
+
+          dpkg-deb -R helium.deb origin
+
+          mkdir -p deb/DEBIAN
+          mkdir -p "$APP_DIR/files"
+          mkdir -p "$APP_DIR/entries/applications"
+          mkdir -p "$APP_DIR/entries/icons/hicolor/256x256/apps"
+
+          cp -a origin/opt/helium/. "$APP_DIR/files/"
+          cp assets/$PKG_NAME/control deb/DEBIAN/control
+          cp assets/$PKG_NAME/info "$APP_DIR/info"
+          cp assets/$PKG_NAME/$PKG_NAME.desktop "$APP_DIR/entries/applications/$PKG_NAME.desktop"
+
+          if [ -f origin/usr/share/icons/hicolor/256x256/apps/helium.png ]; then
+            cp origin/usr/share/icons/hicolor/256x256/apps/helium.png "$APP_DIR/entries/icons/hicolor/256x256/apps/$PKG_NAME.png"
+          else
+            cp "$APP_DIR/files/product_logo_256.png" "$APP_DIR/entries/icons/hicolor/256x256/apps/$PKG_NAME.png"
+          fi
+
+          if [ -f "$APP_DIR/files/helium-wrapper" ]; then
+            sed -Ei "s/(CHROME_VERSION_EXTRA=).*/\1deepin/" "$APP_DIR/files/helium-wrapper"
+            chmod +x "$APP_DIR/files/helium-wrapper"
+          fi
+          chmod +x "$APP_DIR/files/helium" || true
+          if [ -f "$APP_DIR/files/chrome-sandbox" ]; then
+            chmod 4755 "$APP_DIR/files/chrome-sandbox"
+          fi
+
+          INSTALLED_SIZE="$(du -sk deb | awk '{print $1}')"
+          sed -i "s/VVVV/$VERSION/g;s/AAAA/$ARCH/g;s/SSSS/$INSTALLED_SIZE/g" deb/DEBIAN/control
+          sed -i "s/VVVV/$VERSION/g;s/AAAA/$ARCH/g" "$APP_DIR/info"
+
+          find deb -type d -exec chmod 755 {} \;
+          chmod 644 deb/DEBIAN/control
+          chmod 644 "$APP_DIR/info"
+          chmod 644 "$APP_DIR/entries/applications/$PKG_NAME.desktop"
+          chmod 644 "$APP_DIR/entries/icons/hicolor/256x256/apps/$PKG_NAME.png"
+
+          FILENAME="${PKG_NAME}_${VERSION}_${ARCH}.deb"
+          dpkg-deb --build deb "$FILENAME"
+          echo "filename=$FILENAME" >> "$GITHUB_OUTPUT"
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: helium-${{ matrix.arch }}
+          path: "${{ steps.repack.outputs.filename }}"
+
+      - name: Upload to bashupload
+        id: bashupload
+        continue-on-error: true
+        run: |
+          FILE="${{ steps.repack.outputs.filename }}"
+          echo "Uploading $FILE to bashupload.app..."
+          OUTPUT="$(curl -s bashupload.app -T "$FILE" -H 'X-Expiration-Seconds: 86400')"
+          LINK="$(printf '%s\n' "$OUTPUT" | grep -o 'http://bashupload.app/[^[:space:]]*' | head -n 1)"
+          if [ -n "$LINK" ]; then
+             echo "link=$LINK" >> "$GITHUB_OUTPUT"
+             echo "### Download $FILE" >> "$GITHUB_STEP_SUMMARY"
+             echo "Link: [$LINK]($LINK)" >> "$GITHUB_STEP_SUMMARY"
+          fi
