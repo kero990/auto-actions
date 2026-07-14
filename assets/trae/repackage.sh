@@ -81,6 +81,11 @@ for desktop_file in "$WORK_DIR/deb/opt/apps/$PACKAGE_NAME/entries/applications/"
     sed -i "s/^Icon=trae-cn/Icon=$PACKAGE_NAME/g" "$desktop_file"
 done
 
+#在/usr加入desktop修复图标缺失
+mkdir $WORK_DIR/deb/usr/share -p
+cp $WORK_DIR/deb/opt/apps/$PACKAGE_NAME/entries/applications/ $WORK_DIR/deb/usr/share -rf
+cp $WORK_DIR/deb/opt/apps/$PACKAGE_NAME/entries/icons/ $WORK_DIR/deb/usr/share/ -rf
+
 echo "Updating hardcoded paths in postinst script..."
 sed -i "s|ln -s /usr/share/trae-cn/bin/trae-cn|ln -s /opt/apps/$PACKAGE_NAME/files/bin/trae-cn|" "$WORK_DIR/deb/DEBIAN/postinst"
 sed -i "s|APPARMOR_PROFILE_SOURCE='/usr/share/trae-cn/|APPARMOR_PROFILE_SOURCE='/opt/apps/$PACKAGE_NAME/files/|" "$WORK_DIR/deb/DEBIAN/postinst"
