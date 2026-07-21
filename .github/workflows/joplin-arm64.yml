@@ -24,21 +24,55 @@ jobs:
       run : npm i -g yarn
     - name: build
       run : |
-            git clone https://github.com/laurent22/joplin --depth 1
-            cd joplin
-            BUILD_SEQUENCIAL=1 yarn install
-            cd packages/app-desktop/
-            yarn dist --linux dir --publish=never
-            # delete onnxruntime-node win&darwin
-            rm dist/linux-arm64-unpacked/resources/app.asar.unpacked/node_modules/onnxruntime-node/bin/napi-v6/win32 -rf
-            rm dist/linux-arm64-unpacked/resources/app.asar.unpacked/node_modules/onnxruntime-node/bin/napi-v6/darwin -rf
-            rm dist/linux-arm64-unpacked/resources/app.asar.unpacked/node_modules/onnxruntime-node/bin/napi-v6/linux/x64/ -rf
+          git clone https://github.com/laurent22/joplin --depth 1
+          cd joplin
+          echo "VERSION=$(node -p "require('$PWD/packages/app-desktop/package.json').version")" >> $GITHUB_ENV
+          BUILD_SEQUENCIAL=1 yarn install
+          cd packages/app-desktop/
+          yarn dist --linux dir --publish=never
+          # delete onnxruntime-node win&darwin
+          rm dist/linux-arm64-unpacked/resources/app.asar.unpacked/node_modules/onnxruntime-node/bin/napi-v6/win32 -rf
+          rm dist/linux-arm64-unpacked/resources/app.asar.unpacked/node_modules/onnxruntime-node/bin/napi-v6/darwin -rf
+          rm dist/linux-arm64-unpacked/resources/app.asar.unpacked/node_modules/onnxruntime-node/bin/napi-v6/linux/x64/ -rf
     - name: package
       env:
-          PKG_NAME:org.joplinapp.joplin
+          PKG_NAME: "org.joplinapp.joplin"
       run : |
-            # 创建工作目录
-            mkdir -p deb/DEBIAN
-            mkdir -p deb/opt/apps/$PKG_NAME/entries/applications
-            mkdir -p deb/opt/apps/$PKG_NAME/entries/icons/hicolor/256x256/apps
-            mkdir -p deb/opt/apps/$PKG_NAME/files/brave
+          # 创建工作目录
+          mkdir -p deb/DEBIAN
+          mkdir -p deb/opt/apps/$PKG_NAME/entries/applications
+          mkdir -p deb/opt/apps/$PKG_NAME/entries/icons/hicolor/256x256/apps
+          mkdir -p deb/opt/apps/$PKG_NAME/files/
+
+          cp assets/joplin/control deb/DEBIAN
+          cp assets/joplin/info deb/opt/apps/$PKG_NAME/
+          cp assets/joplin/org.joplinapp.joplin.desktop deb/opt/apps/$PKG_NAME/entries/applications
+          cp joplin/packages/app-desktop/dist/linux-arm64-unpacked/* deb/opt/apps/$PKG_NAME/files/ -rf
+          wget https://raw.githubusercontent.com/laurent22/joplin/dev/Assets/LinuxIcons/256x256.png -O deb/opt/apps/$PKG_NAME/entries/icons/hicolor/256x256/apps/org.joplinapp.joplin.png
+
+          sed -i "s/VVVV/$VERSION/g" deb/DEBIAN/control
+          sed -i "s/VVVV/$VERSION/g" deb/opt/apps/$PKG_NAME/info
+          dpkg-deb -b deb
+          mv deb.deb $PKG_NAME_$VERSION_arm64.deb
+
+    - name: Deploy website by WebDAV
+      uses: XPH0816/webdav-deploy-action@v0.3
+      with:
+          url: "https://api.1yunpan.com/api/webdav_server.php"
+          username: ${{ secrets.WEBDAV_USERNAME }}
+          password: ${{ secrets.WEBDAV_PASSWORD }}
+          local: "*.deb"   # 本地要同步的文件夹
+          remote: "github/"        # 远程 WebDAV 的文件夹路径
+          method: "copy"           # 可以是 "sync"（同步）或 "copy"（仅复制）
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v2
+      env:
+          PKG_NAME: "org.joplinapp.joplin"
+      with:
+          tag_name: ${{ github.env.PKG_NAME }}_${{ github.env.VERSION }}
+          name: ${{ github.env.PKG_NAME }}_${{ github.env.VERSION }}
+          draft: false
+          prerelease: false
+          files: |
+            *.deb
