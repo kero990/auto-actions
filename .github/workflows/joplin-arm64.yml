@@ -58,15 +58,6 @@ jobs:
           dpkg-deb -b deb
           mv deb.deb $PKG_NAME_$VERSION_arm64.deb
 
-    - name: Deploy website by WebDAV
-      uses: XPH0816/webdav-deploy-action@v0.3
-      with:
-          url: "https://api.1yunpan.com/api/webdav_server.php"
-          username: ${{ secrets.WEBDAV_USERNAME }}
-          password: ${{ secrets.WEBDAV_PASSWORD }}
-          local: "*.deb"   # 本地要同步的文件夹
-          remote: "github/"        # 远程 WebDAV 的文件夹路径
-          method: "copy"           # 可以是 "sync"（同步）或 "copy"（仅复制）
 
     - name: Create Release
       uses: softprops/action-gh-release@v2
