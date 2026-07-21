@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Joplin
+Version=1.0
+Exec=/opt/apps/org.joplinapp.joplin/files/joplinapp-desktop
+Icon=org.joplinapp.joplin
+Type=Application
+Terminal=false
+StartupNotify=true
+Encoding=UTF-8
+Categories=TextEditor;
