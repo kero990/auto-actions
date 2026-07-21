@@ -1,0 +1,44 @@
+name: Joplin
+on: workflow_dispatch
+jobs:
+  build:
+    container: python:3.11-buster
+    runs-on: ubuntu-24.04-arm
+    
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install dep
+      run : |
+          sed -i s@deb.debian@archive.debian@g /etc/apt/sources.list
+          echo 'deb http://archive.debian.org/debian buster-backports main' >> /etc/apt/sources.list
+          apt update
+          apt install -t buster-backports build-essential git curl wget nano cmake gettext libsecret-1-dev rsync -y
+          curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.6/install.sh | bash
+    - name: Install nvm
+      run : |
+          nvm install 22
+          nvm use 22
+    - name: Install Rust-toolchain
+      run : curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+    - name: Install yarn
+      run : npm i -g yarn
+    - name: build
+      run : |
+            git clone https://github.com/laurent22/joplin --depth 1
+            cd joplin
+            BUILD_SEQUENCIAL=1 yarn install
+            cd packages/app-desktop/
+            yarn dist --linux dir --publish=never
+            # delete onnxruntime-node win&darwin
+            rm dist/linux-arm64-unpacked/resources/app.asar.unpacked/node_modules/onnxruntime-node/bin/napi-v6/win32 -rf
+            rm dist/linux-arm64-unpacked/resources/app.asar.unpacked/node_modules/onnxruntime-node/bin/napi-v6/darwin -rf
+            rm dist/linux-arm64-unpacked/resources/app.asar.unpacked/node_modules/onnxruntime-node/bin/napi-v6/linux/x64/ -rf
+    - name: package
+      env:
+          PKG_NAME:org.joplinapp.joplin
+      run : |
+            # 创建工作目录
+            mkdir -p deb/DEBIAN
+            mkdir -p deb/opt/apps/$PKG_NAME/entries/applications
+            mkdir -p deb/opt/apps/$PKG_NAME/entries/icons/hicolor/256x256/apps
+            mkdir -p deb/opt/apps/$PKG_NAME/files/brave
