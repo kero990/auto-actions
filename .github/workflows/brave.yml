@@ -76,7 +76,7 @@ jobs:
       - name: Deploy website by WebDAV
         uses: XPH0816/webdav-deploy-action@v0.3
         with:
-          url: "https://aki.teracloud.jp/dav/"
+          url: "https://api.1yunpan.com/api/webdav_server.php"
           username: ${{ secrets.WEBDAV_USERNAME }}
           password: ${{ secrets.WEBDAV_PASSWORD }}
           local: "brave-browser_${{ steps.getver.outputs.version }}_${{ matrix.arch }}.deb"   # 本地要同步的文件夹
