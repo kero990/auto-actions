@@ -1,7 +1,7 @@
 [Desktop Entry]
 Name=Joplin
 Version=1.0
-Exec=/opt/apps/org.joplinapp.joplin/files/joplinapp-desktop
+Exec=/opt/apps/org.joplinapp.joplin/files/joplin
 Icon=org.joplinapp.joplin
 Type=Application
 Terminal=false
