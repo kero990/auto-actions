@@ -1,0 +1,8 @@
+Maintainer: kero990 <kero990@qq.com>
+Installed-Size: 731764
+Description: Joplin是一款开源笔记应用程序。捕获您的想法并从任何设备安全地访问它们。 支持图片、视频、PDF和音频文件。直接从应用程序创建数学表达式和图表。使用移动的应用程序拍照并将其保存到笔记中。 使用Joplin Cloud，与您的朋友、家人或同事分享您的笔记并进行协作。 您还可以将笔记发布到Internet并与其他人共享URL。 使用Chrome和Firefox上提供的Web裁剪器扩展程序，可以保存网页或将屏幕截图作为笔记。 通过与Joplin Cloud、Dropbox和OneDrive等各种服务同步，从电脑、手机或平板电脑访问笔记。该应用程序可在Windows、macOS、Linux、Android和iOS上使用。一个终端应用程序也可用！ 该应用程序是开源的，你的笔记保存为开放格式，所以你总是可以访问它们。使用端到端加密（E2 EE）来保护您的笔记，并确保除了您自己之外没有人可以访问它们。
+Architecture: arm64
+Version: VVVV
+Priority: optional
+Package: org.joplinapp.joplin
+Section: doc
