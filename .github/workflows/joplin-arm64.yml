@@ -4,6 +4,8 @@ jobs:
   build:
     container: python:3.11-buster
     runs-on: ubuntu-24.04-arm
+    env:
+          PKG_NAME: "org.joplinapp.joplin"
     
     steps:
     - uses: actions/checkout@v4
@@ -29,7 +31,7 @@ jobs:
       run : |
           git clone https://github.com/laurent22/joplin --depth 1
           cd joplin
-          echo "VERSION=$(node -p "require('$PWD/packages/app-desktop/package.json').version")" >> $GITHUB_ENV
+          echo "VERSION=$(node -p "require('./packages/app-desktop/package.json').version")" >> $GITHUB_ENV
           BUILD_SEQUENCIAL=1 yarn install
           cd packages/app-desktop/
           yarn dist --linux appimage --publish=never
@@ -38,8 +40,6 @@ jobs:
           rm dist/linux-arm64-unpacked/resources/app.asar.unpacked/node_modules/onnxruntime-node/bin/napi-v6/darwin -rf
           rm dist/linux-arm64-unpacked/resources/app.asar.unpacked/node_modules/onnxruntime-node/bin/napi-v6/linux/x64/ -rf
     - name: package
-      env:
-          PKG_NAME: "org.joplinapp.joplin"
       run : |
           # 创建工作目录
           mkdir -p deb/DEBIAN
@@ -56,7 +56,8 @@ jobs:
           sed -i "s/VVVV/$VERSION/g" deb/DEBIAN/control
           sed -i "s/VVVV/$VERSION/g" deb/opt/apps/$PKG_NAME/info
           dpkg-deb -b deb
-          mv deb.deb $PKG_NAME_$VERSION_arm64.deb
+          mv deb.deb ${{ env.PKG_NAME }}_${{ env.VERSION }}_arm64.deb
+          
 
 
     - name: Create Release
@@ -64,8 +65,8 @@ jobs:
       env:
           PKG_NAME: "org.joplinapp.joplin"
       with:
-          tag_name: ${{ github.env.PKG_NAME }}_${{ github.env.VERSION }}
-          name: ${{ github.env.PKG_NAME }}_${{ github.env.VERSION }}
+          tag_name: ${{ env.PKG_NAME }}_${{ env.VERSION }}
+          name: ${{ env.PKG_NAME }}_${{ env.VERSION }}
           draft: false
           prerelease: false
           files: |
