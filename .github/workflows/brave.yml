@@ -73,15 +73,23 @@ jobs:
           # 重新打包
           dpkg-deb --build deb "${APP_NAME}_${VERSION}_${ARCH}.deb"
 
-      - name: Deploy website by WebDAV
-        uses: XPH0816/webdav-deploy-action@v0.3
-        with:
-          url: "https://api.1yunpan.com/api/webdav_server.php"
-          username: ${{ secrets.WEBDAV_USERNAME }}
-          password: ${{ secrets.WEBDAV_PASSWORD }}
-          local: "brave-browser_${{ steps.getver.outputs.version }}_${{ matrix.arch }}.deb"   # 本地要同步的文件夹
-          remote: "github/"        # 远程 WebDAV 的文件夹路径
-          method: "copy"           # 可以是 "sync"（同步）或 "copy"（仅复制）
+      - name: Upload to S3
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_EC2_METADATA_DISABLED: "true"
+          AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
+
+        run: |
+          pip install awscli
+          # 配置分片大小（例如 16MB）
+          aws configure set default.s3.multipart_chunksize 88888888
+          aws configure set default.s3.multipart_threshold 88888888          
+
+          # 纯上传模式（cp --recursive），指定自定义 Endpoint
+          aws s3 cp ./*.deb s3://${{ secrets.AWS_S3_BUCKET }}/github \
+            --recursive \
+            --endpoint-url https://s3.1yunpan.com
 
       # 6. 上传结果
       - name: Upload artifact
