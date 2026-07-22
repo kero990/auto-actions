@@ -56,6 +56,7 @@ jobs:
           mkdir -p deb/opt/apps/$PKG_NAME/entries/icons/hicolor/256x256/apps
           mkdir -p deb/opt/apps/$PKG_NAME/files/brave
           dpkg-deb -R brave.deb origin
+          rm brave.deb
 
           # 覆盖control和desktop文件, 并替换变量
           cp assets/brave/control deb/DEBIAN/control
@@ -88,10 +89,14 @@ jobs:
           aws configure set default.s3.multipart_threshold 88888888
           aws configure set default.s3.max_concurrent_requests 1
 
-          # 纯上传模式（cp --recursive），指定自定义 Endpoint
-          aws s3 cp ./*.deb s3://${{ secrets.AWS_S3_BUCKET }}/github \
-            --recursive \
-            --endpoint-url https://s3.1yunpan.com
+          # 遍历上传所有的 .deb 文件
+            for file in ./*.deb; do
+              # 预防没有匹配到任何 .deb 文件的情况
+              [ -f "$file" ] || continue
+              
+              aws s3 cp "$file" s3://${{ secrets.AWS_S3_BUCKET }}/github/ \
+                --endpoint-url https://s3.1yunpan.com
+            done
 
       # 6. 上传结果
       - name: Upload artifact
