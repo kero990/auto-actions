@@ -83,8 +83,10 @@ jobs:
         run: |
           pip install awscli
           # 配置分片大小（例如 16MB）
+          aws configure set default.s3.addressing_style path
           aws configure set default.s3.multipart_chunksize 88888888
-          aws configure set default.s3.multipart_threshold 88888888          
+          aws configure set default.s3.multipart_threshold 88888888
+          aws configure set default.s3.max_concurrent_requests 1
 
           # 纯上传模式（cp --recursive），指定自定义 Endpoint
           aws s3 cp ./*.deb s3://${{ secrets.AWS_S3_BUCKET }}/github \
