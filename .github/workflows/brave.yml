@@ -75,6 +75,7 @@ jobs:
           dpkg-deb --build deb "${APP_NAME}_${VERSION}_${ARCH}.deb"
 
       - name: Upload to S3
+        if: false
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -99,6 +100,15 @@ jobs:
               aws s3 cp "$file" s3://${{ secrets.AWS_S3_BUCKET }}/github/ \
                 --endpoint-url https://s3.1yunpan.com
             done
+            
+      - name: Upload to WebDAV
+        uses: bxb100/action-upload-webdav@v1
+        with:
+          webdav_address: https://www.vyuyun.com/dav
+          webdav_username: ${{secrets.WEBDAV_USERNAME}}
+          webdav_password: ${{secrets.WEBDAV_PASSWORD}}
+          webdav_upload_path: "/github"
+          files: "*.deb"
 
       # 6. 上传结果
       - name: Upload artifact
