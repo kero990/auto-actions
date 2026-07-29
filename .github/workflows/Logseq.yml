@@ -29,8 +29,10 @@ jobs:
     steps:
       - name: Install system dependencies
         run: |
+          sed -i s@deb.debian@archive.debian@g /etc/apt/sources.list
+          echo 'deb http://archive.debian.org/debian buster-backports main' >> /etc/apt/sources.list
           apt-get update
-          apt-get install -y \
+          apt-get install -y -t buster-backports \
             build-essential \
             curl \
             git \
@@ -155,5 +157,25 @@ jobs:
       - name: Upload rsapi artifact
         uses: actions/upload-artifact@v4
         with:
-          name: logseq ${{ steps.get_release_version.outputs.release_version }} ${{ matrix.logseq_arch }}
+          name: logseq_${{ matrix.logseq_arch }}
           path: com.logseq.desktop_${{ steps.get_release_version.outputs.release_version }}_${{ matrix.logseq_arch }}.deb
+  
+  release:
+    needs: build-and-package # 确保所有架构编译成功后再创建 Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: get version again
+        run: echo "VERSION=$(curl -sL https://api.github.com/repos/logseq/logseq/releases/latest | jq -r '.tag_name' | sed 's/^v//')"  >> $GITHUB_ENV
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: logseq_*
+          merge-multiple: true # 将所有下载的文件解压到同个目录
+
+      - name: Create Combined Release
+        uses: ncipollo/release-action@v1
+        with:
+          name: logseq ${{ env.VERSION }}
+          tag: wiliwili_${{ env.VERSION }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          artifacts: "*.deb"
