@@ -15,7 +15,7 @@ jobs:
             node_arch: x64
             rust_target: x86_64-unknown-linux-gnu
             rsapi_filename: rsapi.linux-x64-gnu.node
-            logseq_arch: x64
+            logseq_arch: x86_64
           - arch: aarch64
             runner: ubuntu-24.04-arm
             node_arch: arm64
@@ -44,12 +44,14 @@ jobs:
 
       - name: Install Node.js 20
         uses: actions/setup-node@v3
+        if: false
         with:
           node-version: 20
           architecture: ${{ matrix.node_arch }}
 
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
+        if: false
         with:
           profile: minimal
           toolchain: stable
@@ -57,9 +59,11 @@ jobs:
           override: true
 
       - name: Install Yarn
+        if: false
         run: npm install -g yarn
 
       - name: Clone and build rsapi
+        if: false
         run: |
           git clone https://github.com/logseq/rsapi
           cd rsapi
@@ -76,6 +80,7 @@ jobs:
 
       - name: Replace rsapi in Logseq
         run: |
+          if: false
           mkdir -p logseq-app/Logseq-linux-${{ matrix.logseq_arch }}/resources/app/node_modules/@logseq/rsapi-linux-${{ matrix.logseq_arch }}-gnu/
           cp rsapi/packages/rsapi/${{ matrix.rsapi_filename }} logseq-app/Logseq-linux-${{ matrix.logseq_arch }}/resources/app/node_modules/@logseq/rsapi-linux-${{ matrix.logseq_arch }}-gnu/${{ matrix.rsapi_filename }}
           ls -la logseq-app/Logseq-linux-${{ matrix.logseq_arch }}/resources/app/node_modules/@logseq/rsapi-linux-${{ matrix.logseq_arch }}-gnu/
