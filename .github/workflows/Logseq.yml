@@ -79,8 +79,8 @@ jobs:
           unzip logseq.zip -d logseq-app
 
       - name: Replace rsapi in Logseq
-        run: |
-          if: false
+        if: false
+        run: |          
           mkdir -p logseq-app/Logseq-linux-${{ matrix.logseq_arch }}/resources/app/node_modules/@logseq/rsapi-linux-${{ matrix.logseq_arch }}-gnu/
           cp rsapi/packages/rsapi/${{ matrix.rsapi_filename }} logseq-app/Logseq-linux-${{ matrix.logseq_arch }}/resources/app/node_modules/@logseq/rsapi-linux-${{ matrix.logseq_arch }}-gnu/${{ matrix.rsapi_filename }}
           ls -la logseq-app/Logseq-linux-${{ matrix.logseq_arch }}/resources/app/node_modules/@logseq/rsapi-linux-${{ matrix.logseq_arch }}-gnu/
