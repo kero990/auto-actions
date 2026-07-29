@@ -143,9 +143,11 @@ jobs:
 
 
   release:
-    needs: build # 确保所有架构编译成功后再创建 Release
+    needs: build-and-package # 确保所有架构编译成功后再创建 Release
     runs-on: ubuntu-latest
     steps:
+      - name: get version again
+        run: echo "VERSION=$(curl -sL https://api.github.com/repos/xfangfang/wiliwili/releases/latest | jq -r '.tag_name' | sed 's/^v//')" >> $GITHUB_ENV
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
@@ -155,7 +157,7 @@ jobs:
       - name: Create Combined Release
         uses: ncipollo/release-action@v1
         with:
-          name: wiliwili ${{ steps.get_release_version.outputs.release_version }}
-          tag: wiliwili_${{ steps.get_release_version.outputs.release_version }}
+          name: wiliwili ${{ env.VERSION }}
+          tag: wiliwili_${{ env.VERSION }}
           token: ${{ secrets.GITHUB_TOKEN }}
           artifacts: "*.deb"
