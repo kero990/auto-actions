@@ -12,8 +12,10 @@ jobs:
         include:
           - platform: amd64
             os: ubuntu-latest
+            libdir: x86_64-linux-gnu
           - platform: arm64
             os: ubuntu-22.04-arm
+            libdir: aarch64-linux-gnu
     container: python:3.11-buster
     defaults:
       run:
@@ -106,10 +108,10 @@ jobs:
         # 拷贝部分V23/25变化的库
         patchelf --set-rpath "\$ORIGIN:\$ORIGIN/lib:\$ORIGIN/../lib" deb/opt/apps/com.github.wiliwili/files/wiliwili
         mkdir -p deb/opt/apps/com.github.wiliwili/files/lib
-        cp /usr/lib/aarch64-linux-gnu/libmpv.so.1 deb/opt/apps/com.github.wiliwili/files/lib -L
-        cp /usr/lib/aarch64-linux-gnu/libwebp.so.6 deb/opt/apps/com.github.wiliwili/files/lib -L
-        cp /usr/lib/aarch64-linux-gnu/libssl.so.1.1 deb/opt/apps/com.github.wiliwili/files/lib -L
-        cp /usr/lib/aarch64-linux-gnu/libcrypto.so.1.1 deb/opt/apps/com.github.wiliwili/files/lib -L
+        cp /usr/lib/${{ matrix.libdir }}/libmpv.so.1 deb/opt/apps/com.github.wiliwili/files/lib -L
+        cp /usr/lib/${{ matrix.libdir }}/libwebp.so.6 deb/opt/apps/com.github.wiliwili/files/lib -L
+        cp /usr/lib/${{ matrix.libdir }}/libssl.so.1.1 deb/opt/apps/com.github.wiliwili/files/lib -L
+        cp /usr/lib/${{ matrix.libdir }}/libcrypto.so.1.1 deb/opt/apps/com.github.wiliwili/files/lib -L
 
     - name: Get and replace release version for ${{ matrix.platform }}
       id: get_release_version
@@ -132,15 +134,28 @@ jobs:
         cd wiliwili
         dpkg-deb -b deb
         mv deb.deb com.github.wiliwili_${{ steps.get_release_version.outputs.release_version }}_${{ matrix.platform }}.deb
-        
-    - name: Upload Release
-      uses: ncipollo/release-action@v1
+
+    - name: Upload Temp Artifact
+      uses: actions/upload-artifact@v4
       with:
-           name: wiliwili ${{ steps.get_release_version.outputs.release_version }} ${{ matrix.platform }}
-           tag: wiliwili_${{ steps.get_release_version.outputs.release_version }}_${{ matrix.platform }}
-           omitBodyDuringUpdate: true
-           body: This release is built by github-action.
-           token: ${{ secrets.GITHUB_TOKEN }}
-           allowUpdates: true
-           artifacts: >
-              ./wiliwili/com.github.wiliwili_${{ steps.get_release_version.outputs.release_version }}_${{ matrix.platform }}.deb
+        name: wiliwili-${{ matrix.platform }}
+        path: ./wiliwili/com.github.wiliwili_${{ steps.get_release_version.outputs.release_version }}_${{ matrix.platform }}.deb
+
+
+  release:
+    needs: build # 确保所有架构编译成功后再创建 Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: wiliwili-*
+          merge-multiple: true # 将所有下载的文件解压到同个目录
+
+      - name: Create Combined Release
+        uses: ncipollo/release-action@v1
+        with:
+          name: wiliwili ${{ steps.get_release_version.outputs.release_version }}
+          tag: wiliwili_${{ steps.get_release_version.outputs.release_version }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          artifacts: "*.deb"
