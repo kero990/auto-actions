@@ -99,7 +99,7 @@ jobs:
           [Desktop Entry]
           Name=Logseq
           Version=VERSION_NUMBER
-          Exec=/opt/apps/com.logseq.desktop/files/Logseq
+          Exec=/opt/apps/com.logseq.desktop/files/logseq
           Icon=com.logseq.desktop
           Type=Application
           Terminal=false
