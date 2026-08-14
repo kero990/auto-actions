@@ -12,8 +12,8 @@ permissions:
   contents: write
 
 env:
-  PKG_NAME: open-pdf-studio
-  APP_ID: open-pdf-studio
+  PKG_NAME: com.github.open-pdf-studio
+  APP_ID: com.github.open-pdf-studio
   APP_NAME: Open PDF Studio
   ICON_BASENAME: open-pdf-studio
 
@@ -52,7 +52,7 @@ jobs:
   # Container-style debs (UOS variant) for low-glibc UOS/DeepinV20 systems.
   # Convert each AnyLinux AppImage into a deepin /opt/apps deb:
   #   - extract the AppImage (AppDir = a squashfs image)
-  #   - copy the WHOLE AppDir into /opt/apps/open-pdf-studio/files
+  #   - copy the WHOLE AppDir into /opt/apps/<APP_ID>/files
   #   - 'Open PDF Studio.desktop' + 'Open PDF Studio.png' as deb resources
   #     (png forced to 256x256, desktop Exec rewritten to the absolute path)
   #   - dpkg-deb -Zxz (xz compression for UOS), name ..._UOS.deb
@@ -122,13 +122,24 @@ jobs:
           # 1) whole AppDir content -> /opt/apps/<APP_ID>/files
           cp -a "$WORK/appdir/." "$APPID_DIR/files/"
 
-          # 2) deepin info
+          # 2) deepin/UOS info (full permission set, UOS spec)
           cat > "$APPID_DIR/info" <<EOF
           {
               "appid": "${APP_ID}",
-              "name": "${APP_NAME}",
+              "name": "open-pdf-studio",
               "version": "${VERSION}",
-              "arch": ["${DEB_ARCH}"]
+              "arch": ["${DEB_ARCH}"],
+              "permissions": {
+                  "autostart": false,
+                  "notification": false,
+                  "trayicon": false,
+                  "clipboard": true,
+                  "account": false,
+                  "bluetooth": false,
+                  "camera": false,
+                  "audio_record": false,
+                  "installed_apps": false
+              }
           }
           EOF
 
@@ -162,7 +173,7 @@ jobs:
       - name: Upload container deb artifact
         uses: actions/upload-artifact@v4
         with:
-          name: open-pdf-studio-uos-${{ env.VERSION }}-${{ matrix.label }}
+          name: com.github.open-pdf-studio-uos-${{ env.VERSION }}-${{ matrix.label }}
           path: out/*.deb
           if-no-files-found: error
 
@@ -276,9 +287,15 @@ jobs:
 
           # ---- 2. extract + reorganize into deepin layout ---------------------
           echo "== Reorganizing into deepin /opt/apps layout =="
-          rm -rf "$WORK/upstream"
+          rm -rf "$WORK/upstream" "$WORK/upstream-ctrl"
           dpkg-deb -x "$DEB" "$WORK/upstream"
+          dpkg-deb -e "$DEB" "$WORK/upstream-ctrl"
           UP="$WORK/upstream"
+
+          # carry over the OFFICIAL package's dependency set verbatim
+          # (dpkg-deb -e extracts the control file of the upstream deb)
+          UP_DEPENDS="$(sed -n 's/^Depends: *//p' "$WORK/upstream-ctrl/control" | tr -d '\r' || true)"
+          echo "upstream Depends: ${UP_DEPENDS:-<none>}"
 
           APPID_DIR="$PKG_ROOT/opt/apps/${APP_ID}"
           mkdir -p "$APPID_DIR/files/bin" "$APPID_DIR/files/lib" \
@@ -289,25 +306,39 @@ jobs:
           cat > "$APPID_DIR/info" <<EOF
           {
               "appid": "${APP_ID}",
-              "name": "${APP_NAME}",
+              "name": "open-pdf-studio",
               "version": "${VERSION}",
-              "arch": ["${DEB_ARCH}"]
+              "arch": ["${DEB_ARCH}"],
+              "permissions": {
+                  "autostart": false,
+                  "notification": false,
+                  "trayicon": false,
+                  "clipboard": true,
+                  "account": false,
+                  "bluetooth": false,
+                  "camera": false,
+                  "audio_record": false,
+                  "installed_apps": false
+              }
           }
           EOF
 
-          # standard deb keeps the system webkit deps like the official package
-          cat > "$PKG_ROOT/DEBIAN/control" <<EOF
-          Package: ${PKG_NAME}
-          Version: ${VERSION}
-          Section: misc
-          Priority: optional
-          Architecture: ${DEB_ARCH}
-          Maintainer: open-pdf-studio build <noreply@localhost>
-          Depends: libwebkit2gtk-4.1-0, libgtk-3-0, cups-bsd
-          Description: Open PDF Studio (deepin repackage)
-           A free, open-source PDF annotation editor, repackaged into the
-           deepin /opt/apps layout for UOS / Deepin systems.
-          EOF
+          # standard deb keeps the OFFICIAL dependency set (extracted above),
+          # so it stays identical to the upstream package
+          {
+            echo "Package: ${PKG_NAME}"
+            echo "Version: ${VERSION}"
+            echo "Section: misc"
+            echo "Priority: optional"
+            echo "Architecture: ${DEB_ARCH}"
+            echo "Maintainer: open-pdf-studio build <noreply@localhost>"
+            if [ -n "$UP_DEPENDS" ]; then
+              echo "Depends: ${UP_DEPENDS}"
+            fi
+            echo "Description: Open PDF Studio (deepin repackage)"
+            echo " A free, open-source PDF annotation editor, repackaged into the"
+            echo " deepin /opt/apps layout for UOS / Deepin systems."
+          } > "$PKG_ROOT/DEBIAN/control"
 
           # usr/bin -> files/bin
           if [ -d "$UP/usr/bin" ]; then
@@ -356,15 +387,15 @@ jobs:
       - name: Upload standard deb artifact
         uses: actions/upload-artifact@v4
         with:
-          name: open-pdf-studio-std-${{ env.VERSION }}-${{ matrix.label }}
+          name: com.github.open-pdf-studio-std-${{ env.VERSION }}-${{ matrix.label }}
           path: out/*.deb
           if-no-files-found: error
 
   # --------------------------------------------------------------------------
-  # Publish: collect the 4 debs and create the release open-pdf-studio-<version>
+  # Publish: collect the 4 debs and create the release com.github.open-pdf-studio-<version>
   # --------------------------------------------------------------------------
   release:
-    name: Release open-pdf-studio-${{ needs.resolve-version.outputs.version }}
+    name: Release com.github.open-pdf-studio-${{ needs.resolve-version.outputs.version }}
     needs: [resolve-version, container, standard]
     runs-on: ubuntu-latest
     env:
@@ -373,7 +404,7 @@ jobs:
       - name: Download all deb artifacts
         uses: actions/download-artifact@v4
         with:
-          pattern: open-pdf-studio-*
+          pattern: com.github.open-pdf-studio-*
           merge-multiple: true
 
       - name: Verify the 4 debs are present
@@ -385,10 +416,32 @@ jobs:
       - name: Create release and upload debs
         uses: ncipollo/release-action@v1
         with:
-          name: open-pdf-studio-${{ env.VERSION }}
-          tag: open-pdf-studio-${{ env.VERSION }}
+          name: com.github.open-pdf-studio-${{ env.VERSION }}
+          tag: com.github.open-pdf-studio-${{ env.VERSION }}
           artifacts: "*.deb"
           allowUpdates: true
           replacesArtifacts: true
-          generateReleaseNotes: true
+          generateReleaseNotes: false
+          body: |
+            Open PDF Studio repackaged for deepin / UOS as `com.github.open-pdf-studio` v${{ env.VERSION }}.
+
+            Upstream: [OpenAEC Foundation / open-pdf-studio](https://github.com/OpenAEC-Foundation/open-pdf-studio) v${{ env.VERSION }} (stable, non-nightly).
+
+            ## Assets
+
+            | File | Variant | Runtime |
+            | --- | --- | --- |
+            | `com.github.open-pdf-studio_${{ env.VERSION }}_amd64.deb` | standard | system libraries (same Depends as the official package) |
+            | `com.github.open-pdf-studio_${{ env.VERSION }}_arm64.deb` | standard (source-built) | system libraries |
+            | `com.github.open-pdf-studio_${{ env.VERSION }}_amd64_UOS.deb` | AnyLinux UOS container | bundled runtime, no system deps |
+            | `com.github.open-pdf-studio_${{ env.VERSION }}_arm64_UOS.deb` | AnyLinux UOS container | bundled runtime, no system deps |
+
+            ## Install
+
+            ```bash
+            sudo apt install ./com.github.open-pdf-studio_${{ env.VERSION }}_amd64.deb
+            sudo apt install ./com.github.open-pdf-studio_${{ env.VERSION }}_amd64_UOS.deb
+            ```
+
+            Installed into the deepin `/opt/apps/com.github.open-pdf-studio` layout with full UOS `info` (appid / permissions).
           token: ${{ secrets.GITHUB_TOKEN }}
