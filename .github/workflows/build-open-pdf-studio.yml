@@ -1,0 +1,394 @@
+name: build-and-release-open-pdf-studio
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Optional version override (e.g. 1.84.0). Leave empty to auto-resolve the latest non-nightly upstream release."
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+env:
+  PKG_NAME: open-pdf-studio
+  APP_ID: open-pdf-studio
+  APP_NAME: Open PDF Studio
+  ICON_BASENAME: open-pdf-studio
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  # --------------------------------------------------------------------------
+  # Resolve the version to package: prefer the workflow override, otherwise
+  # take the latest STABLE (non-nightly) upstream release. GitHub's
+  # /releases/latest returns the newest release that is neither a draft nor a
+  # prerelease, so nightly rolls are always skipped.
+  # --------------------------------------------------------------------------
+  resolve-version:
+    name: Resolve upstream release version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.resolve.outputs.version }}
+    steps:
+      - name: Resolve non-nightly version
+        id: resolve
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          if [ -n "$INPUT_VERSION" ]; then
+            VERSION="$INPUT_VERSION"
+          else
+            VERSION="$(curl -fsSL https://api.github.com/repos/OpenAEC-Foundation/open-pdf-studio/releases/latest | python3 -c 'import sys,json; sys.stdout.write(json.load(sys.stdin)["tag_name"].lstrip("v"))')"
+          fi
+          [ -n "$VERSION" ] || { echo "ERROR: could not resolve version" >&2; exit 1; }
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Resolved version: ${VERSION}"
+  # --------------------------------------------------------------------------
+  # Container-style debs (UOS variant) for low-glibc UOS/DeepinV20 systems.
+  # Convert each AnyLinux AppImage into a deepin /opt/apps deb:
+  #   - extract the AppImage (AppDir = a squashfs image)
+  #   - copy the WHOLE AppDir into /opt/apps/open-pdf-studio/files
+  #   - 'Open PDF Studio.desktop' + 'Open PDF Studio.png' as deb resources
+  #     (png forced to 256x256, desktop Exec rewritten to the absolute path)
+  #   - dpkg-deb -Zxz (xz compression for UOS), name ..._UOS.deb
+  # --------------------------------------------------------------------------
+  container:
+    name: UOS container deb (${{ matrix.label }})
+    needs: resolve-version
+    runs-on: ${{ matrix.runner }}
+    env:
+      VERSION: ${{ needs.resolve-version.outputs.version }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-22.04
+            label: x64
+            apparch: x86_64
+            dearch: amd64
+          - runner: ubuntu-22.04-arm
+            label: arm64
+            apparch: aarch64
+            dearch: arm64
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install packaging deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl file squashfs-tools xz-utils python3-pil
+
+      - name: Build UOS container deb from AnyLinux AppImage
+        env:
+          VERSION: ${{ env.VERSION }}
+          APPARCH: ${{ matrix.apparch }}
+          DEB_ARCH: ${{ matrix.dearch }}
+        run: |
+          set -euo pipefail
+          WORK="${GITHUB_WORKSPACE:-$PWD}"
+          PKG_ROOT="$WORK/pkg"
+          OUT_DIR="$WORK/out"
+          mkdir -p "$OUT_DIR"
+
+          echo "== Downloading AnyLinux AppImage ($APPARCH) =="
+          APPIMAGE_URL="https://github.com/kero990/AnyLinux4UOS/releases/download/open-pdf-studio_v${VERSION}/Open_PDF_Studio-v${VERSION}-anylinux-${APPARCH}.AppImage"
+          curl -fL --retry 3 -o "$WORK/app.AppImage" "$APPIMAGE_URL"
+          chmod +x "$WORK/app.AppImage"
+
+          echo "== Extracting AppImage (AppDir) =="
+          rm -rf "$WORK/squashfs-root" "$WORK/AppDir" "$WORK/appdir"
+          if ( cd "$WORK" && "$WORK/app.AppImage" --appimage-extract ) >/dev/null 2>&1; then
+            if [ -d "$WORK/squashfs-root" ]; then mv "$WORK/squashfs-root" "$WORK/appdir"
+            elif [ -d "$WORK/AppDir" ]; then mv "$WORK/AppDir" "$WORK/appdir"
+            else echo "ERROR: extraction produced no AppDir" >&2; exit 1; fi
+          else
+            unsquashfs -q -d "$WORK/appdir" "$WORK/app.AppImage"
+          fi
+          test -f "$WORK/appdir/Open PDF Studio.desktop"
+          test -f "$WORK/appdir/Open PDF Studio.png"
+
+          echo "== Assembling deepin package tree =="
+          APPID_DIR="$PKG_ROOT/opt/apps/${APP_ID}"
+          mkdir -p "$APPID_DIR/files" \
+                   "$APPID_DIR/entries/applications" \
+                   "$APPID_DIR/entries/icons/hicolor/256x256/apps" \
+                   "$PKG_ROOT/DEBIAN"
+
+          # 1) whole AppDir content -> /opt/apps/<APP_ID>/files
+          cp -a "$WORK/appdir/." "$APPID_DIR/files/"
+
+          # 2) deepin info
+          cat > "$APPID_DIR/info" <<EOF
+          {
+              "appid": "${APP_ID}",
+              "name": "${APP_NAME}",
+              "version": "${VERSION}",
+              "arch": ["${DEB_ARCH}"]
+          }
+          EOF
+
+          # 3) deb control (container bundles its own runtime -> no Depends)
+          cat > "$PKG_ROOT/DEBIAN/control" <<EOF
+          Package: ${PKG_NAME}
+          Version: ${VERSION}
+          Section: misc
+          Priority: optional
+          Architecture: ${DEB_ARCH}
+          Maintainer: open-pdf-studio build <noreply@localhost>
+          Description: Open PDF Studio (deepin UOS container repackage)
+           A free, open-source PDF annotation editor, bundled with its own
+           runtime for low-glibc UOS/DeepinV20 systems (container variant).
+          EOF
+
+          # 4) desktop resource, Exec rewritten to the absolute path inside
+          #    files/ (bin/open-pdf-studio is the sharun launcher)
+          sed -E 's#^Exec=.*#Exec=/opt/apps/'"${APP_ID}"'/files/bin/open-pdf-studio %F#' \
+            "$WORK/appdir/Open PDF Studio.desktop" > \
+            "$APPID_DIR/entries/applications/Open PDF Studio.desktop"
+
+          # 5) png resource forced to 256x256
+          python3 -c 'import sys; from PIL import Image; im=Image.open(sys.argv[1]).convert("RGBA"); im.resize((256,256),Image.LANCZOS).save(sys.argv[2])' "$WORK/appdir/Open PDF Studio.png" "$APPID_DIR/entries/icons/hicolor/256x256/apps/${ICON_BASENAME}.png"
+
+          echo "== Packaging deb (xz) =="
+          dpkg-deb --root-owner-group -Zxz -b "$PKG_ROOT" "$OUT_DIR/${PKG_NAME}_${VERSION}_${DEB_ARCH}_UOS.deb"
+          dpkg-deb -I "$OUT_DIR/${PKG_NAME}_${VERSION}_${DEB_ARCH}_UOS.deb" | sed -n '1,14p'
+          ls -lh "$OUT_DIR/"
+
+      - name: Upload container deb artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: open-pdf-studio-uos-${{ env.VERSION }}-${{ matrix.label }}
+          path: out/*.deb
+          if-no-files-found: error
+
+  # --------------------------------------------------------------------------
+  # Standard debs (native system glibc) in the deepin /opt/apps layout.
+  #   amd64 -> download the official release deb (never the nightly)
+  #   arm64 -> no official release: compile with Tauri. The official tree
+  #            hardcodes x86_64-style resource paths (binaries/linux-x64),
+  #            so keep those paths but fetch the arm64 PDFium runtime.
+  # --------------------------------------------------------------------------
+  standard:
+    name: standard deb (${{ matrix.label }}, ${{ matrix.source }})
+    needs: resolve-version
+    runs-on: ${{ matrix.runner }}
+    env:
+      VERSION: ${{ needs.resolve-version.outputs.version }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-22.04
+            label: x64
+            dearch: amd64
+            source: download
+          - runner: ubuntu-22.04-arm
+            label: arm64
+            dearch: arm64
+            source: tauri
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl jq file xz-utils pkg-config build-essential cmake libssl-dev python3-pil
+          if [ "${{ matrix.source }}" = "tauri" ]; then
+            sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+          fi
+
+      - name: Setup Node.js
+        if: matrix.source == 'tauri'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Rust
+        if: matrix.source == 'tauri'
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build standard deepin deb
+        env:
+          VERSION: ${{ env.VERSION }}
+          DEB_ARCH: ${{ matrix.dearch }}
+          SOURCE: ${{ matrix.source }}
+        run: |
+          set -euo pipefail
+          WORK="${GITHUB_WORKSPACE:-$PWD}"
+          PKG_ROOT="$WORK/pkg"
+          OUT_DIR="$WORK/out"
+          mkdir -p "$OUT_DIR"
+          UPSTREAM="OpenAEC-Foundation/open-pdf-studio"
+
+          case "$DEB_ARCH" in
+            amd64|x86_64) TRIPLE=x86_64-unknown-linux-gnu; PDFIUM_ARCH=x64 ;;
+            arm64|aarch64) TRIPLE=aarch64-unknown-linux-gnu; PDFIUM_ARCH=arm64 ;;
+            *) echo "unsupported arch $DEB_ARCH" >&2; exit 1 ;;
+          esac
+
+          # ---- 1. obtain an upstream official deb -----------------------------
+          if [ "$SOURCE" = "tauri" ]; then
+            echo "== Compiling Open PDF Studio with Tauri ($DEB_ARCH) =="
+            SRC="$WORK/src"
+            rm -rf "$SRC"
+            git clone --depth 1 "https://github.com/${UPSTREAM}" "$SRC"
+            cd "$SRC"
+
+            cargo build --release -p pdfium-worker
+            # sidecar must exist for tauri-build validation; name it for the
+            # real build triple (mirrors the official x86_64 pre-copy)
+            mkdir -p open-pdf-studio/src-tauri/binaries
+            cp target/release/pdfium-worker "open-pdf-studio/src-tauri/binaries/pdfium-worker-${TRIPLE}"
+            cp target/release/pdfium-worker "open-pdf-studio/src-tauri/binaries/pdfium-worker-x86_64-unknown-linux-gnu"
+
+            # libpdfium.so: fetch the PDFium runtime matching THIS arch, but
+            # drop it in the path the official tree hardcodes
+            # (binaries/linux-x64 -> resource libpdfium.so)
+            mkdir -p open-pdf-studio/src-tauri/binaries/linux-x64
+            curl -fL --retry 3 -o /tmp/pdfium-linux.tgz \
+              "https://github.com/bblanchon/pdfium-binaries/releases/download/chromium%2F7834/pdfium-linux-${PDFIUM_ARCH}.tgz"
+            tar xzf /tmp/pdfium-linux.tgz -C /tmp lib/libpdfium.so
+            cp /tmp/lib/libpdfium.so open-pdf-studio/src-tauri/binaries/linux-x64/libpdfium.so
+
+            cd open-pdf-studio
+            npm ci
+            # upstream tauri.conf.json uses "createUpdaterArtifacts":
+            # "v1Compatible", which forces signing and fails without
+            # TAURI_SIGNING_PRIVATE_KEY. We repackage to our own deepin layout
+            # and ship no updater metadata, so disable updater artifacts.
+            python3 -c 'import json,sys; p=sys.argv[1]; c=json.load(open(p)); c.setdefault("bundle",{})["createUpdaterArtifacts"]=False; json.dump(c,open(p,"w"),indent=2); print("patched:", p, "-> createUpdaterArtifacts = false")' "$PWD/src-tauri/tauri.conf.json"
+            npx tauri build --bundles deb
+            cd "$WORK"
+
+            DEB="$(find "$SRC/target/release/bundle/deb" -maxdepth 1 -name '*.deb' | head -1)"
+            [ -n "$DEB" ] || { echo "ERROR: tauri build produced no .deb" >&2; exit 1; }
+          else
+            echo "== Downloading official release deb ($DEB_ARCH) =="
+            curl -fL --retry 3 -o "$WORK/upstream.deb" \
+              "https://github.com/${UPSTREAM}/releases/download/v${VERSION}/Open.PDF.Studio_${VERSION}_${DEB_ARCH}.deb"
+            DEB="$WORK/upstream.deb"
+          fi
+
+          # ---- 2. extract + reorganize into deepin layout ---------------------
+          echo "== Reorganizing into deepin /opt/apps layout =="
+          rm -rf "$WORK/upstream"
+          dpkg-deb -x "$DEB" "$WORK/upstream"
+          UP="$WORK/upstream"
+
+          APPID_DIR="$PKG_ROOT/opt/apps/${APP_ID}"
+          mkdir -p "$APPID_DIR/files/bin" "$APPID_DIR/files/lib" \
+                   "$APPID_DIR/entries/applications" \
+                   "$APPID_DIR/entries/icons/hicolor/256x256/apps" \
+                   "$PKG_ROOT/DEBIAN"
+
+          cat > "$APPID_DIR/info" <<EOF
+          {
+              "appid": "${APP_ID}",
+              "name": "${APP_NAME}",
+              "version": "${VERSION}",
+              "arch": ["${DEB_ARCH}"]
+          }
+          EOF
+
+          # standard deb keeps the system webkit deps like the official package
+          cat > "$PKG_ROOT/DEBIAN/control" <<EOF
+          Package: ${PKG_NAME}
+          Version: ${VERSION}
+          Section: misc
+          Priority: optional
+          Architecture: ${DEB_ARCH}
+          Maintainer: open-pdf-studio build <noreply@localhost>
+          Depends: libwebkit2gtk-4.1-0, libgtk-3-0, cups-bsd
+          Description: Open PDF Studio (deepin repackage)
+           A free, open-source PDF annotation editor, repackaged into the
+           deepin /opt/apps layout for UOS / Deepin systems.
+          EOF
+
+          # usr/bin -> files/bin
+          if [ -d "$UP/usr/bin" ]; then
+            cp -a "$UP/usr/bin/." "$APPID_DIR/files/bin/"
+          fi
+
+          # usr/lib/<product>/... -> files/lib/<product>/...
+          for d in "$UP"/usr/lib/*/; do
+            [ -d "$d" ] || continue
+            cp -a "$d" "$APPID_DIR/files/lib/"
+          done
+
+          # desktop -> entries/applications (Exec rewritten)
+          DESKTOP="$(find "$UP/usr/share/applications" -maxdepth 1 -name '*.desktop' -print -quit 2>/dev/null || true)"
+          if [ -n "$DESKTOP" ] && [ -f "$DESKTOP" ]; then
+            MAIN_BIN="$(find "$APPID_DIR/files/bin" -maxdepth 1 -type f -perm -u+x -printf '%f\n' | grep -Ev '\.so$' | head -1)"
+            MAIN_BIN="${MAIN_BIN:-open-pdf-studio}"
+            sed -E "s#^Exec=.*#Exec=/opt/apps/${APP_ID}/files/bin/${MAIN_BIN} %F#" "$DESKTOP" > \
+              "$APPID_DIR/entries/applications/$(basename "$DESKTOP")"
+          fi
+
+          # icons -> entries/icons/hicolor (+ ensure a 256x256 icon)
+          if [ -d "$UP/usr/share/icons/hicolor" ]; then
+            cp -a "$UP/usr/share/icons/hicolor" "$APPID_DIR/entries/icons/"
+            if [ ! -f "$APPID_DIR/entries/icons/hicolor/256x256/apps/${ICON_BASENAME}.png" ]; then
+              SRC_ICON="$(find "$UP/usr/share/icons" -name '*.png' | sort | tail -1 || true)"
+              if [ -n "$SRC_ICON" ]; then
+                python3 -c 'import sys; from PIL import Image; im=Image.open(sys.argv[1]).convert("RGBA"); im.resize((256,256),Image.LANCZOS).save(sys.argv[2])' "$SRC_ICON" "$APPID_DIR/entries/icons/hicolor/256x256/apps/${ICON_BASENAME}.png"
+              fi
+            fi
+          fi
+
+          # misc share data (metainfo/appdata, bash-completion, man, doc)
+          for d in metainfo bash-completion doc man; do
+            if [ -d "$UP/usr/share/$d" ]; then
+              mkdir -p "$APPID_DIR/files/share"
+              cp -a "$UP/usr/share/$d" "$APPID_DIR/files/share/"
+            fi
+          done
+
+          echo "== Packaging deb (xz) =="
+          dpkg-deb --root-owner-group -Zxz -b "$PKG_ROOT" "$OUT_DIR/${PKG_NAME}_${VERSION}_${DEB_ARCH}.deb"
+          dpkg-deb -I "$OUT_DIR/${PKG_NAME}_${VERSION}_${DEB_ARCH}.deb" | sed -n '1,14p'
+          ls -lh "$OUT_DIR/"
+
+      - name: Upload standard deb artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: open-pdf-studio-std-${{ env.VERSION }}-${{ matrix.label }}
+          path: out/*.deb
+          if-no-files-found: error
+
+  # --------------------------------------------------------------------------
+  # Publish: collect the 4 debs and create the release open-pdf-studio-<version>
+  # --------------------------------------------------------------------------
+  release:
+    name: Release open-pdf-studio-${{ needs.resolve-version.outputs.version }}
+    needs: [resolve-version, container, standard]
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.resolve-version.outputs.version }}
+    steps:
+      - name: Download all deb artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: open-pdf-studio-*
+          merge-multiple: true
+
+      - name: Verify the 4 debs are present
+        run: |
+          ls -lh *.deb
+          n=$(find . -maxdepth 1 -name '*.deb' | wc -l)
+          [ "$n" -eq 4 ] || { echo "ERROR: expected 4 debs, found $n" >&2; exit 1; }
+
+      - name: Create release and upload debs
+        uses: ncipollo/release-action@v1
+        with:
+          name: open-pdf-studio-${{ env.VERSION }}
+          tag: open-pdf-studio-${{ env.VERSION }}
+          artifacts: "*.deb"
+          allowUpdates: true
+          replacesArtifacts: true
+          generateReleaseNotes: true
+          token: ${{ secrets.GITHUB_TOKEN }}
