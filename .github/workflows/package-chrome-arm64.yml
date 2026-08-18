@@ -167,15 +167,18 @@ jobs:
           echo "---"
           echo "checking no /etc or /usr content remains:"
           sudo dpkg-deb -c "$DEB" | grep -E '^[^d].*( /etc/| /usr/)' && echo "FAIL: found /etc or /usr files" || echo "OK: nothing outside /opt"
-
-      - name: Upload to WebDAV
-        uses: bxb100/action-upload-webdav@v1
-        with:
-          webdav_address: https://data.cstcloud.cn/dav
-          webdav_username: ${{secrets.WEBDAV_USERNAME}}
-          webdav_password: ${{secrets.WEBDAV_PASSWORD}}
-          webdav_upload_path: "/"
-          files: "work/*.deb"
+          # 上传到s3
+          echo "上传到s3"
+          echo "安装rclone"
+          curl https://rclone.org/install.sh | sudo bash
+          echo "配置rclone"
+          rclone config create cstcloud s3 \
+               provider Other \
+               access_key_id "${{ secrets.S3_ACCESS_KEY }}" \
+               secret_access_key "${{ secrets.S3_SECRET_KEY }}" \
+               endpoint "https://s3.cstcloud.cn" 
+          echo "上传"
+          rclone copy work/*.deb cstcloud:${{ secrets.S3_BUCKET }}/ --progress
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
