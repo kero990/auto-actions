@@ -69,8 +69,8 @@ jobs:
           rm -rf "${REL_DIR}/files/cron"
 
           # 3. deepin entries: icon + desktop file
-          mkdir -p "${REL_DIR}/entries/applications" "${REL_DIR}/entries/icons"
-          cp "${REL_DIR}/files/product_logo_256.png" "${REL_DIR}/entries/icons/${APP_ID}.png"
+          mkdir -p "${REL_DIR}/entries/applications" "${REL_DIR}/entries/icons/hicolor/256x256/apps/"
+          cp "${REL_DIR}/files/product_logo_256.png" "${REL_DIR}/entries/icons/hicolor/256x256/apps/${APP_ID}.png"
 
           # 4. deepin info file
           cat > "${REL_DIR}/info" <<EOF
@@ -168,7 +168,9 @@ jobs:
           echo "---"
           echo "checking no /etc or /usr content remains:"
           sudo dpkg-deb -c "$DEB" | grep -E '^[^d].*( /etc/| /usr/)' && echo "FAIL: found /etc or /usr files" || echo "OK: nothing outside /opt"
-          # 上传到s3
+      
+      - name: Upload to S3
+        run: |
           echo "上传到s3"
           echo "安装rclone"
           curl https://rclone.org/install.sh | sudo bash
@@ -179,7 +181,8 @@ jobs:
                secret_access_key "${{ secrets.S3_SECRET_KEY }}" \
                endpoint "https://s3.cstcloud.cn" 
           echo "上传"
-          rclone copy work/*.deb cstcloud:${{ secrets.S3_BUCKET }}/ --progress
+          rclone copy work/*.deb cstcloud:${{ secrets.S3_BUCKET }}/ --progress --transfers 16 --checkers 16 \
+            --s3-chunk-size 64M --s3-upload-concurrency 8 --stats 1m -q
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
