@@ -1,0 +1,186 @@
+name: Chrome ARM64 repack
+
+on:
+  workflow_dispatch:
+ 
+
+concurrency:
+  group: deepin-chrome-arm64
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build com.google.chrome (arm64)
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
+
+    env:
+      APP_ID: com.google.chrome
+      APP_DIR: /opt/apps/com.google.chrome
+      REL_DIR: opt/apps/com.google.chrome
+      CHROME_DEB: google-chrome-stable_current_arm64.deb
+      DOWNLOAD_URL: https://dl.google.com/linux/direct/google-chrome-stable_current_arm64.deb
+
+    steps:
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends dpkg-dev curl
+
+      - name: Download official Google Chrome arm64 deb
+        run: |
+          mkdir -p work
+          curl -fSL --retry 3 --retry-delay 5 -o "work/$CHROME_DEB" "$DOWNLOAD_URL"
+          ls -lh "work/$CHROME_DEB"
+
+      - name: Extract original package
+        run: |
+          rm -rf work/pkg
+          mkdir -p work/pkg
+          dpkg-deb -R "work/$CHROME_DEB" work/pkg
+
+      - name: Read version from control
+        id: version
+        run: |
+          VERSION="$(sed -n 's/^Version:[[:space:]]*//p' work/pkg/DEBIAN/control | tr -d '\r')"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "CHROME_VERSION=${VERSION}" >> "$GITHUB_ENV"
+          echo "Building version: ${VERSION}"
+
+      - name: Restructure to Deepin layout
+        run: |
+          set -euo pipefail
+          cd work/pkg
+
+          # 1. move binaries into deepin layout /opt/apps/com.google.chrome/files
+          mkdir -p "${REL_DIR}"
+          cp -a opt/google/chrome/. "${REL_DIR}/files/"
+          rm -rf opt/google
+          rmdir opt/apps opt 2>/dev/null || true
+
+          # 2. deepin spec: everything lives under /opt/apps/<id>, so drop
+          #    /etc (google auto-update cron) and /usr (bin link + docs).
+          #    also remove the now-orphaned upstream update cron inside files/
+          rm -rf etc usr
+          rm -rf "${REL_DIR}/files/cron"
+
+          # 3. deepin entries: icon + desktop file
+          mkdir -p "${REL_DIR}/entries/applications" "${REL_DIR}/entries/icons"
+          cp "${REL_DIR}/files/product_logo_256.png" "${REL_DIR}/entries/icons/${APP_ID}.png"
+
+          # 4. deepin info file
+          cat > "${REL_DIR}/info" <<EOF
+          format=2
+          appid=${APP_ID}
+          name=Google Chrome
+          name[zh_CN]=谷歌浏览器
+          version=${CHROME_VERSION}
+          arch=$(dpkg --print-architecture)
+          description=Google Chrome is a fast, simple, and secure web browser for Linux ARM64.
+          package=${APP_ID}
+          EOF
+
+          # 5. deepin desktop entry
+          cat > "${REL_DIR}/entries/applications/${APP_ID}.desktop" <<EOF
+          [Desktop Entry]
+          Version=1.0
+          Type=Application
+          Name=Google Chrome
+          Name[zh_CN]=谷歌浏览器
+          GenericName=Web Browser
+          GenericName[zh_CN]=网页浏览器
+          Comment=Access the Internet
+          Comment[zh_CN]=访问互联网
+          Exec=${APP_DIR}/files/google-chrome %U
+          Icon=${APP_ID}
+          Terminal=false
+          Categories=Network;WebBrowser;
+          MimeType=text/html;text/xml;application/xhtml+xml;x-scheme-handler/http;x-scheme-handler/https;
+          StartupNotify=true
+          StartupWMClass=google-chrome
+          Actions=new-window;new-private-window;
+
+          [Desktop Action new-window]
+          Name=New Window
+          Name[zh_CN]=新建窗口
+          Exec=${APP_DIR}/files/google-chrome
+
+          [Desktop Action new-private-window]
+          Name=New Incognito Window
+          Name[zh_CN]=新建隐身窗口
+          Exec=${APP_DIR}/files/google-chrome --incognito
+          EOF
+
+          # 6. fix absolute path references in all text files
+          grep -rlI --exclude='*.gz' '/opt/google/chrome' "${REL_DIR}/files" 2>/dev/null | while read -r f; do
+            sed -i "s#/opt/google/chrome#${APP_DIR}/files#g" "$f"
+          done
+
+          # 7. update DEBIAN control: package name + version-related fields
+          sed -i "s/^Package:.*/Package: ${APP_ID}/" DEBIAN/control
+          sed -i '/^Replaces:/d; /^Conflicts:/d' DEBIAN/control
+          sed -i '/^Provides: www-browser$/a Replaces: google-chrome-stable\nConflicts: google-chrome-stable' DEBIAN/control
+          SIZE="$(du -sk --exclude=DEBIAN . | cut -f1)"
+          sed -i "s/^Installed-Size:.*/Installed-Size: ${SIZE}/" DEBIAN/control
+
+          # 8. DEBIAN maintainer scripts
+          cat > DEBIAN/postinst <<'EOF'
+          #!/bin/sh
+          set -e
+          APP_DIR=/opt/apps/com.google.chrome
+          if command -v update-desktop-database >/dev/null 2>&1; then
+            update-desktop-database "$APP_DIR/entries/applications" >/dev/null 2>&1 || true
+          fi
+          if command -v gtk-update-icon-cache >/dev/null 2>&1; then
+            gtk-update-icon-cache -f "$APP_DIR/entries/icons" >/dev/null 2>&1 || true
+          fi
+          exit 0
+          EOF
+          cat > DEBIAN/prerm <<'EOF'
+          #!/bin/sh
+          set -e
+          exit 0
+          EOF
+          cat > DEBIAN/postrm <<'EOF'
+          #!/bin/sh
+          set -e
+          exit 0
+          EOF
+          chmod 755 DEBIAN/postinst DEBIAN/prerm DEBIAN/postrm
+
+      - name: Build Deepin deb (xz compression, dpkg-1.19 / Debian 10 compatible)
+        run: |
+          cd work/pkg
+          sudo chown -R root:root .
+          sudo chmod 4755 "${REL_DIR}/files/chrome-sandbox"
+          sudo dpkg-deb -Zxz -z7 --build . "../${APP_ID}_${CHROME_VERSION}_arm64.deb"
+
+      - name: Verify package
+        run: |
+          DEB="work/${APP_ID}_${CHROME_VERSION}_arm64.deb"
+          sudo dpkg-deb --info "$DEB"
+          echo "---"
+          sudo dpkg-deb -c "$DEB" | grep -E 'DEBIAN/(control|postinst|prerm|postrm)|chrome-sandbox|entries/(applications|icons)|info$'
+          echo "---"
+          echo "checking no /etc or /usr content remains:"
+          sudo dpkg-deb -c "$DEB" | grep -E '^[^d].*( /etc/| /usr/)' && echo "FAIL: found /etc or /usr files" || echo "OK: nothing outside /opt"
+
+      - name: Upload to WebDAV
+        uses: bxb100/action-upload-webdav@v1
+        if: false
+        with:
+          webdav_address: https://www.vyuyun.com/dav
+          webdav_username: ${{secrets.WEBDAV_USERNAME}}
+          webdav_password: ${{secrets.WEBDAV_PASSWORD}}
+          webdav_upload_path: "/github"
+          files: "*.deb"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.APP_ID }}-deepin-arm64
+          path: work/${{ env.APP_ID }}_${{ steps.version.outputs.version }}_arm64.deb
+          if-no-files-found: error
