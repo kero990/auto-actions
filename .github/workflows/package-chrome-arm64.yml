@@ -71,6 +71,8 @@ jobs:
           # 3. deepin entries: icon + desktop file
           mkdir -p "${REL_DIR}/entries/applications" "${REL_DIR}/entries/icons/hicolor/256x256/apps/"
           cp "${REL_DIR}/files/product_logo_256.png" "${REL_DIR}/entries/icons/hicolor/256x256/apps/${APP_ID}.png"
+          mkdir -p usr/share/icons/hicolor/256x256/apps/
+          cp "${REL_DIR}/files/product_logo_256.png"  "usr/share/icons/hicolor/256x256/apps/${APP_ID}.png"
 
           # 4. deepin info file
           cat > "${REL_DIR}/info" <<EOF
@@ -168,8 +170,13 @@ jobs:
           echo "---"
           echo "checking no /etc or /usr content remains:"
           sudo dpkg-deb -c "$DEB" | grep -E '^[^d].*( /etc/| /usr/)' && echo "FAIL: found /etc or /usr files" || echo "OK: nothing outside /opt"
-      
+      - name: Upload to Tmplink
+        run: |
+          curl https://public.5t-cdn.com/tmplink/tools/uploader/install-linux.sh | sudo bash
+          tmplink-cli -token="${{ secrets.TMPLINK_TOKEN }}" -model="0" -mrid="0" -file="work/*.deb"
+          
       - name: Upload to S3
+        if: false
         run: |
           echo "上传到s3"
           echo "安装rclone"
