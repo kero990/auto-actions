@@ -41,6 +41,7 @@ jobs:
           rm -rf work/pkg
           mkdir -p work/pkg
           dpkg-deb -R "work/$CHROME_DEB" work/pkg
+          rm "work/$CHROME_DEB"
 
       - name: Read version from control
         id: version
