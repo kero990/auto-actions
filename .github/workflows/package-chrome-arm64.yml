@@ -172,8 +172,10 @@ jobs:
           sudo dpkg-deb -c "$DEB" | grep -E '^[^d].*( /etc/| /usr/)' && echo "FAIL: found /etc or /usr files" || echo "OK: nothing outside /opt"
       - name: Upload to Tmplink
         run: |
-          curl https://public.5t-cdn.com/tmplink/tools/uploader/install-linux.sh | sudo bash
-          tmplink-cli -token="${{ secrets.TMPLINK_TOKEN }}" -model="0" -mrid="0" -file="work/*.deb"
+          # curl https://public.5t-cdn.com/tmplink/tools/uploader/install-linux.sh | sudo bash
+          curl -L -o tmplink-cli "https://public.5t-cdn.com/tmplink/tools/uploader/tmplink-cli-linux-arm64"
+          chmod +x tmplink-cli
+          ./tmplink-cli -token="${{ secrets.TMPLINK_TOKEN }}" -model="0" -mrid="0" -file="work/*.deb"
           
       - name: Upload to S3
         if: false
