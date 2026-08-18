@@ -170,13 +170,11 @@ jobs:
 
       - name: Upload to WebDAV
         uses: bxb100/action-upload-webdav@v1
-        if: false
         with:
-          webdav_address: https://www.vyuyun.com/dav
+          webdav_address: https://data.cstcloud.cn/dav
           webdav_username: ${{secrets.WEBDAV_USERNAME}}
           webdav_password: ${{secrets.WEBDAV_PASSWORD}}
-          webdav_upload_path: "/github"
-          files: "*.deb"
+          files: "work/*.deb"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
