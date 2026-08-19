@@ -170,12 +170,15 @@ jobs:
           echo "---"
           echo "checking no /etc or /usr content remains:"
           sudo dpkg-deb -c "$DEB" | grep -E '^[^d].*( /etc/| /usr/)' && echo "FAIL: found /etc or /usr files" || echo "OK: nothing outside /opt"
+
       - name: Upload to Tmplink
         run: |
-          # curl https://public.5t-cdn.com/tmplink/tools/uploader/install-linux.sh | sudo bash
-          curl -L -o tmplink-cli "https://public.5t-cdn.com/tmplink/tools/uploader/tmplink-cli-linux-arm64"
-          chmod +x tmplink-cli
-          ./tmplink-cli -token="${{ secrets.TMPLINK_TOKEN }}" -model="0" -mr-id="0" -file="work/*.deb"
+          curl -k -F "file=@work/*.deb" \
+           -F "token=${{ secrets.TMPLINK_TOKEN }}" \
+           -F "model=0" \
+           -F "mr-id=0" \
+           -X POST "https://tmp-cli.vx-cdn.com/app/upload_cli"
+          
           
       - name: Upload to S3
         if: false
