@@ -175,7 +175,7 @@ jobs:
           # curl https://public.5t-cdn.com/tmplink/tools/uploader/install-linux.sh | sudo bash
           curl -L -o tmplink-cli "https://public.5t-cdn.com/tmplink/tools/uploader/tmplink-cli-linux-arm64"
           chmod +x tmplink-cli
-          ./tmplink-cli -token="${{ secrets.TMPLINK_TOKEN }}" -model="0" -mrid="0" -file="work/*.deb"
+          ./tmplink-cli -token="${{ secrets.TMPLINK_TOKEN }}" -model="0" -mr-id="0" -file="work/*.deb"
           
       - name: Upload to S3
         if: false
