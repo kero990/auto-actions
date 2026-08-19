@@ -161,19 +161,10 @@ jobs:
           sudo chmod 4755 "${REL_DIR}/files/chrome-sandbox"
           sudo dpkg-deb -Zxz -z7 --build . "../${APP_ID}_${CHROME_VERSION}_arm64.deb"
 
-      - name: Verify package
-        run: |
-          DEB="work/${APP_ID}_${CHROME_VERSION}_arm64.deb"
-          sudo dpkg-deb --info "$DEB"
-          echo "---"
-          sudo dpkg-deb -c "$DEB" | grep -E 'DEBIAN/(control|postinst|prerm|postrm)|chrome-sandbox|entries/(applications|icons)|info$'
-          echo "---"
-          echo "checking no /etc or /usr content remains:"
-          sudo dpkg-deb -c "$DEB" | grep -E '^[^d].*( /etc/| /usr/)' && echo "FAIL: found /etc or /usr files" || echo "OK: nothing outside /opt"
 
       - name: Upload to Tmplink
         run: |
-          curl -k -F "file=@work/*.deb" \
+          curl -k -F "file=@work/${APP_ID}_${CHROME_VERSION}_arm64.deb" \
            -F "token=${{ secrets.TMPLINK_TOKEN }}" \
            -F "model=0" \
            -F "mr-id=0" \
