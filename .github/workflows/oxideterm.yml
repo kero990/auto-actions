@@ -1,4 +1,4 @@
-name: OxideTerm Build 
+name: Build OxideTerm
 
 on:
   workflow_dispatch:
@@ -20,6 +20,7 @@ jobs:
             runner: ubuntu-22.04-arm
             rust_target: aarch64-unknown-linux-gnu
             dearch: arm64
+
     defaults:
       run:
         shell: bash
@@ -58,7 +59,12 @@ jobs:
           curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
           echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
 
+      - name: Clone oxideterm
+        run: |
+          git clone --depth 1 https://github.com/AnalyseDeCircuit/oxideterm.git src
+
       - name: Build all components
+        working-directory: src
         run: |
           set -euo pipefail
           export PATH="$HOME/.cargo/bin:$PATH"
@@ -85,6 +91,7 @@ jobs:
         run: |
           set -euo pipefail
           WORK="${GITHUB_WORKSPACE:-$PWD}"
+          SRC="$WORK/src"
           PKG_ROOT="$WORK/pkg"
           OUT_DIR="$WORK/out"
           mkdir -p "$OUT_DIR"
@@ -100,24 +107,24 @@ jobs:
                    "$PKG_ROOT/DEBIAN"
 
           # Copy binaries
-          cp "target/release/oxideterm" "$APPID_DIR/files/cli-bin/$RUST_TARGET/"
-          cp "target/release/oxideterm-rdp-helper" "$APPID_DIR/files/helpers/$RUST_TARGET/"
-          cp "target/release/oxideterm-vnc-helper" "$APPID_DIR/files/helpers/$RUST_TARGET/"
-          cp "target/release/oxideterm-update-helper" "$APPID_DIR/files/helpers/$RUST_TARGET/"
-          cp "target/release/oxideterm-native" "$APPID_DIR/files/"
+          cp "$SRC/target/release/oxideterm" "$APPID_DIR/files/cli-bin/$RUST_TARGET/"
+          cp "$SRC/target/release/oxideterm-rdp-helper" "$APPID_DIR/files/helpers/$RUST_TARGET/"
+          cp "$SRC/target/release/oxideterm-vnc-helper" "$APPID_DIR/files/helpers/$RUST_TARGET/"
+          cp "$SRC/target/release/oxideterm-update-helper" "$APPID_DIR/files/helpers/$RUST_TARGET/"
+          cp "$SRC/target/release/oxideterm-native" "$APPID_DIR/files/"
 
           # Copy pre-built agents if present
-          if [ -d crates/oxideterm-gpui-app/resources/agents ]; then
-            cp -r crates/oxideterm-gpui-app/resources/agents/* "$APPID_DIR/files/agents/"
+          if [ -d "$SRC/crates/oxideterm-gpui-app/resources/agents" ]; then
+            cp -r "$SRC/crates/oxideterm-gpui-app/resources/agents/"* "$APPID_DIR/files/agents/"
           fi
 
           # Copy icons if present
-          if [ -d crates/oxideterm-gpui-app/resources/icons ]; then
-            cp crates/oxideterm-gpui-app/resources/icons/* "$APPID_DIR/files/icons/"
-            if [ -f crates/oxideterm-gpui-app/resources/icons/256x256.png ]; then
-              cp crates/oxideterm-gpui-app/resources/icons/256x256.png "$APPID_DIR/entries/icons/hicolor/256x256/apps/$PKG_NAME.png"
-            elif [ -f crates/oxideterm-gpui-app/resources/icons/icon.png ]; then
-              cp crates/oxideterm-gpui-app/resources/icons/icon.png "$APPID_DIR/entries/icons/hicolor/256x256/apps/$PKG_NAME.png"
+          if [ -d "$SRC/crates/oxideterm-gpui-app/resources/icons" ]; then
+            cp "$SRC/crates/oxideterm-gpui-app/resources/icons/"* "$APPID_DIR/files/icons/"
+            if [ -f "$SRC/crates/oxideterm-gpui-app/resources/icons/256x256.png" ]; then
+              cp "$SRC/crates/oxideterm-gpui-app/resources/icons/256x256.png" "$APPID_DIR/entries/icons/hicolor/256x256/apps/$PKG_NAME.png"
+            elif [ -f "$SRC/crates/oxideterm-gpui-app/resources/icons/icon.png" ]; then
+              cp "$SRC/crates/oxideterm-gpui-app/resources/icons/icon.png" "$APPID_DIR/entries/icons/hicolor/256x256/apps/$PKG_NAME.png"
             fi
           fi
 
