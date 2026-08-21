@@ -106,17 +106,11 @@ jobs:
         with:
           name: helium-${{ matrix.arch }}
           path: "${{ steps.repack.outputs.filename }}"
-
-      - name: Upload to bashupload
-        id: bashupload
-        continue-on-error: true
+          
+      - name: Upload to Tmplink
         run: |
-          FILE="${{ steps.repack.outputs.filename }}"
-          echo "Uploading $FILE to bashupload.app..."
-          OUTPUT="$(curl -s bashupload.app -T "$FILE" -H 'X-Expiration-Seconds: 86400')"
-          LINK="$(printf '%s\n' "$OUTPUT" | grep -o 'http://bashupload.app/[^[:space:]]*' | head -n 1)"
-          if [ -n "$LINK" ]; then
-             echo "link=$LINK" >> "$GITHUB_OUTPUT"
-             echo "### Download $FILE" >> "$GITHUB_STEP_SUMMARY"
-             echo "Link: [$LINK]($LINK)" >> "$GITHUB_STEP_SUMMARY"
-          fi
+          curl -k -F "file=@${{ steps.repack.outputs.filename }}" \
+           -F "token=${{ secrets.TMPLINK_TOKEN }}" \
+           -F "model=0" \
+           -F "mr-id=0" \
+           -X POST "https://tmp-cli.vx-cdn.com/app/upload_cli"
