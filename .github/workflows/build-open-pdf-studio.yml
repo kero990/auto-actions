@@ -1,4 +1,4 @@
-name: build-and-release-open-pdf-studio
+name: build-open-pdf-studio
 
 on:
   workflow_dispatch:
@@ -8,8 +8,7 @@ on:
         required: false
         default: ""
 
-permissions:
-  contents: write
+permissions: {}
 
 env:
   PKG_NAME: com.github.open-pdf-studio
@@ -156,9 +155,8 @@ jobs:
            runtime for low-glibc UOS/DeepinV20 systems (container variant).
           EOF
 
-          # 4) desktop resource, Exec rewritten to the absolute path inside
-          #    files/ (bin/open-pdf-studio is the sharun launcher)
-          sed -E 's#^Exec=.*#Exec=/opt/apps/'"${APP_ID}"'/files/bin/open-pdf-studio %F#' \
+          # 4) desktop resource, Exec rewritten to AppRun inside files/
+          sed -E 's#^Exec=.*#Exec=/opt/apps/'"${APP_ID}"'/files/AppRun %F#' \
             "$WORK/appdir/Open PDF Studio.desktop" > \
             "$APPID_DIR/entries/applications/Open PDF Studio.desktop"
 
@@ -176,6 +174,15 @@ jobs:
           name: com.github.open-pdf-studio-uos-${{ env.VERSION }}-${{ matrix.label }}
           path: out/*.deb
           if-no-files-found: error
+
+      - name: Upload to Tmplink
+        run: |
+          DEB_FILE=$(ls out/*.deb | head -1)
+          curl -k -F "file=@${DEB_FILE}" \
+           -F "token=${{ secrets.TMPLINK_TOKEN }}" \
+           -F "model=0" \
+           -F "mr-id=0" \
+           -X POST "https://tmp-cli.vx-cdn.com/app/upload_cli"
 
   # --------------------------------------------------------------------------
   # Standard debs (native system glibc) in the deepin /opt/apps layout.
@@ -391,57 +398,11 @@ jobs:
           path: out/*.deb
           if-no-files-found: error
 
-  # --------------------------------------------------------------------------
-  # Publish: collect the 4 debs and create the release com.github.open-pdf-studio-<version>
-  # --------------------------------------------------------------------------
-  release:
-    name: Release com.github.open-pdf-studio-${{ needs.resolve-version.outputs.version }}
-    needs: [resolve-version, container, standard]
-    runs-on: ubuntu-latest
-    env:
-      VERSION: ${{ needs.resolve-version.outputs.version }}
-    steps:
-      - name: Download all deb artifacts
-        uses: actions/download-artifact@v4
-        with:
-          pattern: com.github.open-pdf-studio-*
-          merge-multiple: true
-
-      - name: Verify the 4 debs are present
+      - name: Upload to Tmplink
         run: |
-          ls -lh *.deb
-          n=$(find . -maxdepth 1 -name '*.deb' | wc -l)
-          [ "$n" -eq 4 ] || { echo "ERROR: expected 4 debs, found $n" >&2; exit 1; }
-
-      - name: Create release and upload debs
-        uses: ncipollo/release-action@v1
-        with:
-          name: com.github.open-pdf-studio-${{ env.VERSION }}
-          tag: com.github.open-pdf-studio-${{ env.VERSION }}
-          artifacts: "*.deb"
-          allowUpdates: true
-          replacesArtifacts: true
-          generateReleaseNotes: false
-          body: |
-            Open PDF Studio repackaged for deepin / UOS as `com.github.open-pdf-studio` v${{ env.VERSION }}.
-
-            Upstream: [OpenAEC Foundation / open-pdf-studio](https://github.com/OpenAEC-Foundation/open-pdf-studio) v${{ env.VERSION }} (stable, non-nightly).
-
-            ## Assets
-
-            | File | Variant | Runtime |
-            | --- | --- | --- |
-            | `com.github.open-pdf-studio_${{ env.VERSION }}_amd64.deb` | standard | system libraries (same Depends as the official package) |
-            | `com.github.open-pdf-studio_${{ env.VERSION }}_arm64.deb` | standard (source-built) | system libraries |
-            | `com.github.open-pdf-studio_${{ env.VERSION }}_amd64_UOS.deb` | AnyLinux UOS container | bundled runtime, no system deps |
-            | `com.github.open-pdf-studio_${{ env.VERSION }}_arm64_UOS.deb` | AnyLinux UOS container | bundled runtime, no system deps |
-
-            ## Install
-
-            ```bash
-            sudo apt install ./com.github.open-pdf-studio_${{ env.VERSION }}_amd64.deb
-            sudo apt install ./com.github.open-pdf-studio_${{ env.VERSION }}_amd64_UOS.deb
-            ```
-
-            Installed into the deepin `/opt/apps/com.github.open-pdf-studio` layout with full UOS `info` (appid / permissions).
-          token: ${{ secrets.GITHUB_TOKEN }}
+          DEB_FILE=$(ls out/*.deb | head -1)
+          curl -k -F "file=@${DEB_FILE}" \
+           -F "token=${{ secrets.TMPLINK_TOKEN }}" \
+           -F "model=0" \
+           -F "mr-id=0" \
+           -X POST "https://tmp-cli.vx-cdn.com/app/upload_cli"
