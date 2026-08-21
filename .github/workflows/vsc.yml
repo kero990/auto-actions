@@ -76,7 +76,8 @@ jobs:
       # 替换vsc内的spdlog.node
       - name: Replace spdlog.node in VSC package
         run: |
-          cp node-spdlog/build/Release/spdlog.node VSCode-linux-$D_ARCH/resources/app/node_modules/@vscode/spdlog/build/Release/spdlog.node
+          rm VSCode-linux-$D_ARCH/resources/app/node_modules.asar.unpacked/@vscode/spdlog/build/Release/spdlog.node
+          cp node-spdlog/build/Release/spdlog.node VSCode-linux-$D_ARCH/resources/app/node_modules.asar.unpacked/@vscode/spdlog/build/Release/
 
       # 重新打包为deb
       - name: Package VSC as DEB
