@@ -2,7 +2,7 @@
 Name=Visual Studio Code
 Comment=Code Editing. Redefined.
 GenericName=Text Editor
-Exec=/opt/apps/com.visualstudio.code/files/code.sh %F
+Exec=/opt/apps/com.visualstudio.code/files/bin/code %F
 Icon=com.visualstudio.code
 Type=Application
 StartupNotify=false
