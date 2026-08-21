@@ -1,0 +1,206 @@
+name: OxideTerm Build 
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build OxideTerm (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    container:
+      image: python:3.11-buster
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-latest
+            rust_target: x86_64-unknown-linux-gnu
+            dearch: amd64
+          - arch: arm64
+            runner: ubuntu-22.04-arm
+            rust_target: aarch64-unknown-linux-gnu
+            dearch: arm64
+
+    env:
+      PKG_NAME: com.github.oxideterm
+      APP_NAME: OxideTerm
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fix buster sources
+        run: |
+          sed -i 's|deb.debian.org|archive.debian.org|g' /etc/apt/sources.list
+          sed -i '/stretch-updates/d' /etc/apt/sources.list
+          echo 'deb http://archive.debian.org/debian buster-backports main' >> /etc/apt/sources.list
+
+      - name: Install dependencies
+        run: |
+          apt-get update
+          apt-get install -y \
+            build-essential pkg-config curl wget git ca-certificates \
+            dpkg-dev file
+          apt-get install -y -t buster-backports \
+            libasound2-dev libfontconfig1-dev libfreetype6-dev \
+            libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
+            libgtk-3-dev libssl-dev \
+            libx11-dev libxcb-cursor-dev libxcb-icccm4-dev \
+            libxcb-image0-dev libxcb-keysyms1-dev libxcb-randr0-dev \
+            libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev \
+            libxcb-xinerama0-dev libxkbcommon-dev libxkbcommon-x11-dev \
+            libunwind-dev
+
+      - name: Install Rust
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+
+      - name: Build all components
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.cargo/bin:$PATH"
+
+          echo "== Building CLI =="
+          cargo build -p oxideterm-cli --release
+
+          echo "== Building RDP helper =="
+          cargo build -p oxideterm-rdp-helper --release
+
+          echo "== Building VNC helper =="
+          cargo build -p oxideterm-vnc-helper --release
+
+          echo "== Building Update helper =="
+          cargo build -p oxideterm-update --bin oxideterm-update-helper --release
+
+          echo "== Building main app =="
+          cargo build -p oxideterm-gpui-app --release
+
+      - name: Assemble package
+        env:
+          DEB_ARCH: ${{ matrix.dearch }}
+          RUST_TARGET: ${{ matrix.rust_target }}
+        run: |
+          set -euo pipefail
+          WORK="${GITHUB_WORKSPACE:-$PWD}"
+          PKG_ROOT="$WORK/pkg"
+          OUT_DIR="$WORK/out"
+          mkdir -p "$OUT_DIR"
+
+          # Deepin /opt/apps layout
+          APPID_DIR="$PKG_ROOT/opt/apps/$PKG_NAME"
+          mkdir -p "$APPID_DIR/files/cli-bin/$RUST_TARGET" \
+                   "$APPID_DIR/files/helpers/$RUST_TARGET" \
+                   "$APPID_DIR/files/agents" \
+                   "$APPID_DIR/files/icons" \
+                   "$APPID_DIR/entries/applications" \
+                   "$APPID_DIR/entries/icons/hicolor/256x256/apps" \
+                   "$PKG_ROOT/DEBIAN"
+
+          # Copy binaries
+          cp "target/release/oxideterm" "$APPID_DIR/files/cli-bin/$RUST_TARGET/"
+          cp "target/release/oxideterm-rdp-helper" "$APPID_DIR/files/helpers/$RUST_TARGET/"
+          cp "target/release/oxideterm-vnc-helper" "$APPID_DIR/files/helpers/$RUST_TARGET/"
+          cp "target/release/oxideterm-update-helper" "$APPID_DIR/files/helpers/$RUST_TARGET/"
+          cp "target/release/oxideterm-native" "$APPID_DIR/files/"
+
+          # Copy pre-built agents if present
+          if [ -d crates/oxideterm-gpui-app/resources/agents ]; then
+            cp -r crates/oxideterm-gpui-app/resources/agents/* "$APPID_DIR/files/agents/"
+          fi
+
+          # Copy icons if present
+          if [ -d crates/oxideterm-gpui-app/resources/icons ]; then
+            cp crates/oxideterm-gpui-app/resources/icons/* "$APPID_DIR/files/icons/"
+            if [ -f crates/oxideterm-gpui-app/resources/icons/256x256.png ]; then
+              cp crates/oxideterm-gpui-app/resources/icons/256x256.png "$APPID_DIR/entries/icons/hicolor/256x256/apps/$PKG_NAME.png"
+            elif [ -f crates/oxideterm-gpui-app/resources/icons/icon.png ]; then
+              cp crates/oxideterm-gpui-app/resources/icons/icon.png "$APPID_DIR/entries/icons/hicolor/256x256/apps/$PKG_NAME.png"
+            fi
+          fi
+
+          # info file
+          cat > "$APPID_DIR/info" <<EOF
+          {
+              "appid": "$PKG_NAME",
+              "name": "OxideTerm",
+              "version": "VVVV",
+              "arch": ["AAAA"],
+              "permissions": {
+                  "autostart": false,
+                  "notification": true,
+                  "trayicon": true,
+                  "clipboard": true,
+                  "account": false,
+                  "bluetooth": false,
+                  "camera": false,
+                  "audio_record": false,
+                  "installed_apps": false
+              }
+          }
+          EOF
+
+          # desktop file
+          cat > "$APPID_DIR/entries/applications/$PKG_NAME.desktop" <<EOF
+          [Desktop Entry]
+          Name=OxideTerm
+          Comment=A GPU-accelerated terminal emulator
+          Exec=/opt/apps/$PKG_NAME/files/oxideterm-native %F
+          Icon=$PKG_NAME
+          Terminal=false
+          Type=Application
+          Categories=System;TerminalEmulator;
+          StartupNotify=true
+          EOF
+
+          # DEBIAN/control
+          INSTALLED_SIZE=$(du -sk "$PKG_ROOT" | awk '{print $1}')
+          cat > "$PKG_ROOT/DEBIAN/control" <<EOF
+          Package: $PKG_NAME
+          Version: VVVV
+          Installed-Size: SSSS
+          Section: utils
+          Priority: optional
+          Architecture: $DEB_ARCH
+          Maintainer: OxideTerm build <noreply@localhost>
+          Description: GPU-accelerated terminal emulator
+           OxideTerm is a fast, GPU-accelerated terminal emulator built with
+           GPUI, featuring RDP and VNC support.
+          EOF
+
+          # Set permissions
+          find "$PKG_ROOT" -type d -exec chmod 755 {} \;
+          chmod 644 "$PKG_ROOT/DEBIAN/control"
+          chmod 644 "$APPID_DIR/info"
+          chmod 644 "$APPID_DIR/entries/applications/$PKG_NAME.desktop"
+          chmod +x "$APPID_DIR/files/oxideterm-native"
+          chmod +x "$APPID_DIR/files/cli-bin/$RUST_TARGET/oxideterm"
+          chmod +x "$APPID_DIR/files/helpers/$RUST_TARGET/"*
+
+          # Replace placeholders
+          VERSION="${GITHUB_REF_NAME:-0.0.0}"
+          VERSION="${VERSION#v}"
+          sed -i "s/VVVV/$VERSION/g;s/AAAA/$DEB_ARCH/g;s/SSSS/$INSTALLED_SIZE/g" "$PKG_ROOT/DEBIAN/control"
+          sed -i "s/VVVV/$VERSION/g;s/AAAA/$DEB_ARCH/g" "$APPID_DIR/info"
+
+          # Build deb
+          FILENAME="${PKG_NAME}_${VERSION}_${DEB_ARCH}.deb"
+          dpkg-deb --root-owner-group -Zxz -b "$PKG_ROOT" "$OUT_DIR/$FILENAME"
+          dpkg-deb -I "$OUT_DIR/$FILENAME" | sed -n '1,14p'
+          echo "filename=$FILENAME" >> "$GITHUB_OUTPUT"
+          ls -lh "$OUT_DIR/"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: oxideterm-${{ matrix.arch }}
+          path: out/*.deb
+          if-no-files-found: error
+
+      - name: Upload to Tmplink
+        run: |
+          DEB_FILE=$(ls out/*.deb | head -1)
+          curl -k -F "file=@${DEB_FILE}" \
+           -F "token=${{ secrets.TMPLINK_TOKEN }}" \
+           -F "model=0" \
+           -F "mr-id=0" \
+           -X POST "https://tmp-cli.vx-cdn.com/app/upload_cli"
