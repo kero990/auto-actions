@@ -85,12 +85,12 @@ jobs:
           mkdir -p deb/opt/apps/$PKG_NAME/entries/applications
           mkdir -p deb/opt/apps/$PKG_NAME/entries/icons/hicolor/512x512/apps
           mkdir -p deb/opt/apps/$PKG_NAME/files/
+          mkdir -p deb/usr/bin
           cp assets/vsc/*.desktop deb/opt/apps/$PKG_NAME/entries/applications
-          cp assets/vsc/code.sh deb/opt/apps/$PKG_NAME/files
-          chmod +x deb/opt/apps/$PKG_NAME/files/code.sh
           cp assets/vsc/control deb/DEBIAN
           cp assets/vsc/com.visualstudio.code.png deb/opt/apps/$PKG_NAME/entries/icons/hicolor/512x512/apps
           cp VSCode-linux-$D_ARCH/* deb/opt/apps/$PKG_NAME/files/ -r
+          pushd deb/usr/bin && ln -s ../../opt/apps/$PKG_NAME/files/bin/code . && popd
           cp assets/vsc/info deb/opt/apps/$PKG_NAME
           sed -i s@VVVV@${{ env.VSC_VERSION }}@g deb/DEBIAN/control
           sed -i s@VVVV@${{ env.VSC_VERSION }}@g deb/opt/apps/$PKG_NAME/info
@@ -109,6 +109,14 @@ jobs:
         with:
           name: ${{ env.PKG_NAME }}_${{ env.VSC_VERSION }}_${{ env.ARCH }}.deb
           path: ${{ env.PKG_NAME }}_${{ env.VSC_VERSION }}_${{ env.ARCH }}.deb
+          
+      - name: Upload to Tmplink
+        run: |
+          curl -k -F "file=@work/${APP_ID}_${CHROME_VERSION}_arm64.deb" \
+           -F "token=${{ secrets.TMPLINK_TOKEN }}" \
+           -F "model=0" \
+           -F "mr-id=0" \
+           -X POST "https://tmp-cli.vx-cdn.com/app/upload_cli"
 
       - name: Upload to bashupload
         id: bashupload
