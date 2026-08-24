@@ -55,7 +55,7 @@ jobs:
             libunwind-dev
       - name: Install clang
         run: |
-          apt install lsb-release wget software-properties-common gnupg
+          apt install -y lsb-release wget software-properties-common gnupg
           wget https://apt.llvm.org/llvm.sh
           chmod +x llvm.sh
           ./llvm.sh 20
