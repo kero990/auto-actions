@@ -52,14 +52,7 @@ jobs:
             libxcb-image0-dev libxcb-keysyms1-dev libxcb-randr0-dev \
             libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev \
             libxcb-xinerama0-dev libxkbcommon-dev libxkbcommon-x11-dev \
-            libunwind-dev libudev-dev libgcc-8-dev
-      - name: Install clang
-        run: |
-          wget https://apt.llvm.org/llvm.sh
-          chmod +x llvm.sh
-          apt install lsb-release wget software-properties-common gnupg -y
-          ./llvm.sh 20
-          apt install libclang-20-dev -y
+            libunwind-dev
 
       - name: Install Rust
         run: |
@@ -194,8 +187,11 @@ jobs:
           chmod +x "$APPID_DIR/files/helpers/$RUST_TARGET/"*
 
           # Replace placeholders
-          VERSION="${GITHUB_REF_NAME:-0.0.0}"
+          VERSION=$(curl -s https://api.github.com/repos/AnalyseDeCircuit/oxideterm/releases/latest | grep '"tag_name"' | head -1 | cut -d'"' -f4)
           VERSION="${VERSION#v}"
+          if [[ -z "$VERSION" || ! "$VERSION" =~ ^[0-9] ]]; then
+            VERSION="0.0.0"
+          fi
           sed -i "s/VVVV/$VERSION/g;s/AAAA/$DEB_ARCH/g;s/SSSS/$INSTALLED_SIZE/g" "$PKG_ROOT/DEBIAN/control"
           sed -i "s/VVVV/$VERSION/g;s/AAAA/$DEB_ARCH/g" "$APPID_DIR/info"
 
