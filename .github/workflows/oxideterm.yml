@@ -52,7 +52,7 @@ jobs:
             libxcb-image0-dev libxcb-keysyms1-dev libxcb-randr0-dev \
             libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev \
             libxcb-xinerama0-dev libxkbcommon-dev libxkbcommon-x11-dev \
-            libunwind-dev
+            libunwind-dev libudev-dev
       - name: Install clang
         run: |
           apt install -y lsb-release wget software-properties-common gnupg
