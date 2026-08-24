@@ -127,7 +127,7 @@ jobs:
 
           # Copy icons if present
           if [ -d "$SRC/crates/oxideterm-gpui-app/resources/icons" ]; then
-            cp "$SRC/crates/oxideterm-gpui-app/resources/icons/"* "$APPID_DIR/files/icons/"
+            cp -r "$SRC/crates/oxideterm-gpui-app/resources/icons/"* "$APPID_DIR/files/icons/"
             if [ -f "$SRC/crates/oxideterm-gpui-app/resources/icons/256x256.png" ]; then
               cp "$SRC/crates/oxideterm-gpui-app/resources/icons/256x256.png" "$APPID_DIR/entries/icons/hicolor/256x256/apps/$PKG_NAME.png"
             elif [ -f "$SRC/crates/oxideterm-gpui-app/resources/icons/icon.png" ]; then
