@@ -103,7 +103,7 @@ jobs:
       
       - name: Upload to Tmplink
         run: |
-          curl -k -F "file=@templates/templates/${{ env.TEMPLATE_FILE }} \
+          curl -k -F "file=@templates/templates/${{ env.TEMPLATE_FILE }}" \
            -F "token=${{ secrets.TMPLINK_TOKEN }}" \
            -F "model=0" \
            -F "mr-id=0" \
