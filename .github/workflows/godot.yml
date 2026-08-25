@@ -6,7 +6,7 @@ on:
       godot_version:
         description: 'Godot release 版本号（如 4.4.1-stable）'
         required: true
-        default: '4.4.1-stable'
+        default: '4.7.2-stable'
       with_mono: # 新增参数
         description: '是否下载 Mono 导出模板？（注意：如果选择是，请在“选择要导出的模板文件”中选择带有 _mono 或 _aot 后缀的文件）'
         required: true
@@ -100,3 +100,11 @@ jobs:
         with:
           name: ${{ env.TEMPLATE_FILE }}
           path: templates/templates/${{ env.TEMPLATE_FILE }}
+      
+      - name: Upload to Tmplink
+        run: |
+          curl -k -F "file=@templates/templates/${{ env.TEMPLATE_FILE }} \
+           -F "token=${{ secrets.TMPLINK_TOKEN }}" \
+           -F "model=0" \
+           -F "mr-id=0" \
+           -X POST "https://tmp-cli.vx-cdn.com/app/upload_cli"
