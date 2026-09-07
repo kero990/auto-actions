@@ -1,4 +1,4 @@
-name: Build Release
+name: Simple Live release build
 
 on:
   workflow_dispatch:

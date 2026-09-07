@@ -1,4 +1,4 @@
-name: CI
+name: upterm debug
 on:
   workflow_dispatch:
 jobs:

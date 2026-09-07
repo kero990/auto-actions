@@ -1,4 +1,4 @@
-name: Python Embeddable linux
+name: Python build
 
 on:
   workflow_dispatch:

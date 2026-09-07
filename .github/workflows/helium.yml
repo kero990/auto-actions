@@ -1,4 +1,4 @@
-name: Helium Browser Repack
+name: Helium repack
 
 on:
   workflow_dispatch:

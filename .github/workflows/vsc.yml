@@ -1,4 +1,4 @@
-name: VSC Multi-Arch Repack 
+name: VSC repack
 
 on:
   workflow_dispatch:

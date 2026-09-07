@@ -1,4 +1,4 @@
-name: OnlyOffice DesktopEditors Repack
+name: OnlyOffice repack
 
 on:
   workflow_dispatch:

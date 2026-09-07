@@ -1,4 +1,4 @@
-name: musicfree
+name: MusicFree build
 on: workflow_dispatch
 jobs:
   build:

@@ -1,4 +1,4 @@
-name: Thorium
+name: Thorium repack
 
 on:
   workflow_dispatch:

@@ -1,4 +1,4 @@
-name: clone github
+name: dockerc clone
 
 on:
   workflow_dispatch:

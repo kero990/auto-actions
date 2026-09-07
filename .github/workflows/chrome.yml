@@ -1,4 +1,4 @@
-name: Chrome Repack
+name: Chrome repack
 
 on:
   workflow_dispatch:

@@ -1,4 +1,4 @@
-name: Qt 多版本多架构缓存
+name: Qt build
 
 on:
   workflow_dispatch:

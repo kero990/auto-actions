@@ -1,4 +1,4 @@
-name: Build and Modify Logseq
+name: Logseq build
 
 on:
   workflow_dispatch:

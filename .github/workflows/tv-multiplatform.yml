@@ -1,4 +1,4 @@
-name: TV-Multiplatform Build
+name: TV-Multiplatform build
 on:
   workflow_dispatch:
 

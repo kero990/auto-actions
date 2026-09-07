@@ -1,4 +1,4 @@
-name: Brave Browser Repack 
+name: Brave repack
 
 on:
   workflow_dispatch:

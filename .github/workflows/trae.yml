@@ -1,4 +1,4 @@
-name: Repackage Trae CN for Deepin
+name: Trae repack
 
 on:
   workflow_dispatch:

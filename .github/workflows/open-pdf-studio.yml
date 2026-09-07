@@ -1,4 +1,4 @@
-name: build-open-pdf-studio
+name: Open PDF Studio build
 
 on:
   workflow_dispatch:

@@ -1,4 +1,4 @@
-name: Firefox UOS Repack
+name: Firefox repack
 
 on:
   workflow_dispatch:

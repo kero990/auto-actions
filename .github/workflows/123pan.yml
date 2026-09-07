@@ -1,4 +1,4 @@
-name: Build 123pan
+name: 123pan build
 
 on:
   workflow_dispatch:
