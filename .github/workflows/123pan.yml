@@ -98,7 +98,7 @@ jobs:
           mkdir -p /tmp/123pan_unzip
           unzip -q /tmp/123pan.zip -d /tmp/123pan_unzip
           echo "== zip content =="
-          ls -R /tmp/123pan_unzip | head -50
+          ls -R /tmp/123pan_unzip | head -50 || true
 
           # 解包所有文件到 AppDir/bin（兼容 zip 内单层目录或扁平文件两种情况）
           if [ "$(find /tmp/123pan_unzip -mindepth 1 -maxdepth 1 | wc -l)" -eq 1 ] && [ -d "$(find /tmp/123pan_unzip -mindepth 1 -maxdepth 1)" ]; then
@@ -138,7 +138,7 @@ jobs:
           quick-sharun AppDir/bin/123pan
           echo "== AppDir after quick-sharun =="
           ls -la AppDir
-          ls -lh AppDir/bin | head -30
+          ls -lh AppDir/bin | head -30 || true
 
       - name: Build UOS container deb from AppDir
         env:
@@ -180,7 +180,7 @@ jobs:
             LAUNCHER="/opt/apps/${APP_ID}/files/bin/123pan"
           else
             echo "ERROR: no launcher found in AppDir" >&2
-            ls -R "$APPID_DIR/files" | head -50
+            ls -R "$APPID_DIR/files" | head -50 || true
             exit 1
           fi
           echo "Launcher: $LAUNCHER"
@@ -310,7 +310,7 @@ jobs:
           mkdir -p "$WORK/upstream_unzip"
           unzip -q "$WORK/upstream.zip" -d "$WORK/upstream_unzip"
           echo "== upstream zip content =="
-          ls -R "$WORK/upstream_unzip" | head -50
+          ls -R "$WORK/upstream_unzip" | head -50 || true
 
           echo "== Assembling deepin package tree =="
           APPID_DIR="$PKG_ROOT/opt/apps/${APP_ID}"
@@ -343,7 +343,7 @@ jobs:
               BIN="/opt/apps/${APP_ID}${FOUND#"$APPID_DIR/files"}"
             else
               echo "ERROR: 123pan binary not found" >&2
-              ls -R "$APPID_DIR/files" | head -50
+              ls -R "$APPID_DIR/files" | head -50 || true
               exit 1
             fi
           fi
