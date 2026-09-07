@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=123pan
+Comment=第三方 123 云盘客户端
+Exec=123pan
+Icon=123pan
+Terminal=false
+Type=Application
+Categories=Network;FileTransfer;
+StartupWMClass=123pan

@@ -1,0 +1,226 @@
+name: Build 123pan with quick-sharun
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-and-package:
+    name: Build 123pan (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    container:
+      image: ghcr.io/pkgforge-dev/archlinux:latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-latest
+            asset_arch: x64
+            dearch: amd64
+          - arch: arm64
+            runner: ubuntu-22.04-arm
+            asset_arch: arm64
+            dearch: arm64
+    defaults:
+      run:
+        shell: bash
+
+    env:
+      PKG_NAME: com.github.123pan
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Anylinux tools
+        uses: pkgforge-dev/anylinux-setup-action@0964f2258d6c93d1391359978dde081fd8b3c6af
+
+      - name: Install debloated libs
+        run: |
+          get-debloated-pkgs --add-common --prefer-nano
+
+      - name: Get latest 123pan version and download release
+        run: |
+          set -euo pipefail
+          TAG=$(curl -sL https://api.github.com/repos/123panNextGen/123pan/releases/latest | jq -r '.tag_name')
+          if [ -z "$TAG" ] || [ "$TAG" = "null" ]; then
+            echo "Failed to get latest release tag" >&2
+            exit 1
+          fi
+          VERSION="${TAG#v}"
+          echo "Upstream tag: $TAG, version: $VERSION"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "UPSTREAM_TAG=$TAG" >> "$GITHUB_ENV"
+
+          ASSET_ARCH="${{ matrix.asset_arch }}"
+          URL="https://github.com/123panNextGen/123pan/releases/download/${TAG}/123pan-linux-${ASSET_ARCH}.zip"
+          echo "Downloading $URL"
+          curl -fL --retry 3 -o /tmp/123pan.zip "$URL"
+          ls -lh /tmp/123pan.zip
+
+          rm -rf AppDir
+          mkdir -p AppDir/bin
+          rm -rf /tmp/123pan_unzip
+          mkdir -p /tmp/123pan_unzip
+          unzip -q /tmp/123pan.zip -d /tmp/123pan_unzip
+          echo "== zip content =="
+          ls -R /tmp/123pan_unzip | head -50
+
+          # 解包所有文件到 AppDir/bin（兼容 zip 内单层目录或扁平文件两种情况）
+          if [ "$(find /tmp/123pan_unzip -mindepth 1 -maxdepth 1 | wc -l)" -eq 1 ] && [ -d "$(find /tmp/123pan_unzip -mindepth 1 -maxdepth 1)" ]; then
+            INNER=$(find /tmp/123pan_unzip -mindepth 1 -maxdepth 1)
+            cp -a "$INNER"/. AppDir/bin/
+          else
+            cp -a /tmp/123pan_unzip/. AppDir/bin/
+          fi
+
+          echo "== AppDir/bin content =="
+          ls -lh AppDir/bin
+          # 确保主二进制存在且可执行
+          if [ ! -f AppDir/bin/123pan ]; then
+            FOUND=$(find AppDir/bin -maxdepth 2 -type f -name '123pan*' | head -1 || true)
+            if [ -n "$FOUND" ] && [ "$FOUND" != "AppDir/bin/123pan" ]; then
+              echo "Moving $FOUND -> AppDir/bin/123pan"
+              mv "$FOUND" AppDir/bin/123pan
+            fi
+          fi
+          chmod +x AppDir/bin/123pan
+          ls -lh AppDir/bin/123pan
+          file AppDir/bin/123pan || true
+
+      - name: Bundle with quick-sharun
+        env:
+          DESKTOP: ${{ github.workspace }}/assets/123pan/123pan.desktop
+          ICON: ${{ github.workspace }}/assets/123pan/123pan.png
+          DEPLOY_QT: 1
+        run: |
+          set -euo pipefail
+          echo "DESKTOP=$DESKTOP"
+          echo "ICON=$ICON"
+          echo "DEPLOY_QT=$DEPLOY_QT"
+          ls -lh "$DESKTOP" "$ICON"
+          cat "$DESKTOP"
+          which quick-sharun
+          quick-sharun AppDir/bin/123pan
+          echo "== AppDir after quick-sharun =="
+          ls -la AppDir
+          ls -lh AppDir/bin | head -30
+
+      - name: Assemble deepin deb
+        env:
+          DEB_ARCH: ${{ matrix.dearch }}
+        run: |
+          set -euo pipefail
+          WORK="${GITHUB_WORKSPACE:-$PWD}"
+          VERSION="${VERSION}"
+          [ -n "$VERSION" ] || { echo "VERSION is empty" >&2; exit 1; }
+          echo "Packaging version $VERSION for $DEB_ARCH"
+
+          # arch 容器内可能缺少 dpkg-deb，先安装
+          if ! command -v dpkg-deb >/dev/null 2>&1; then
+            pacman -Syu --noconfirm dpkg
+          fi
+
+          PKG_ROOT="$WORK/deb"
+          OUT_DIR="$WORK/out"
+          APPID_DIR="$PKG_ROOT/opt/apps/$PKG_NAME"
+          rm -rf "$PKG_ROOT" "$OUT_DIR"
+          mkdir -p "$OUT_DIR" \
+                   "$APPID_DIR/files" \
+                   "$APPID_DIR/entries/applications" \
+                   "$APPID_DIR/entries/icons/hicolor/256x256/apps" \
+                   "$PKG_ROOT/DEBIAN"
+
+          # 1) AppDir 的所有文件全部拷贝到 /opt/apps/com.github.123pan/files
+          cp -a "$WORK/AppDir/." "$APPID_DIR/files/"
+          # quick-sharun 会把 desktop/icon 放在 AppDir 顶层，files 下不需要重复存放它们
+          rm -f "$APPID_DIR/files"/*.desktop || true
+
+          # 2) 寻找启动器：优先 AppRun，其次 sharun，最后 bin/123pan
+          LAUNCHER=""
+          if [ -x "$APPID_DIR/files/AppRun" ]; then
+            LAUNCHER="/opt/apps/$PKG_NAME/files/AppRun"
+          elif [ -x "$APPID_DIR/files/sharun" ]; then
+            LAUNCHER="/opt/apps/$PKG_NAME/files/sharun"
+          elif [ -x "$APPID_DIR/files/bin/123pan" ]; then
+            LAUNCHER="/opt/apps/$PKG_NAME/files/bin/123pan"
+          else
+            echo "ERROR: no launcher found in AppDir" >&2
+            ls -R "$APPID_DIR/files" | head -50
+            exit 1
+          fi
+          echo "Launcher: $LAUNCHER"
+          chmod +x "$APPID_DIR/files/AppRun" 2>/dev/null || true
+          chmod +x "$APPID_DIR/files/sharun" 2>/dev/null || true
+          chmod +x "$APPID_DIR/files/bin/123pan" 2>/dev/null || true
+
+          # 3) desktop：使用仓库自带 assets/123pan/123pan.desktop，Exec 重写为绝对路径
+          sed -E "s#^Exec=.*#Exec=${LAUNCHER} %F#" "$WORK/assets/123pan/123pan.desktop" \
+            | sed -E "s#^Icon=.*#Icon=${PKG_NAME}#" \
+            > "$APPID_DIR/entries/applications/${PKG_NAME}.desktop"
+          cat "$APPID_DIR/entries/applications/${PKG_NAME}.desktop"
+
+          # 4) icon
+          cp "$WORK/assets/123pan/123pan.png" "$APPID_DIR/entries/icons/hicolor/256x256/apps/${PKG_NAME}.png"
+
+          # 5) deepin info
+          cat > "$APPID_DIR/info" <<EOF
+          {
+              "appid": "$PKG_NAME",
+              "name": "123pan",
+              "version": "$VERSION",
+              "arch": ["$DEB_ARCH"],
+              "permissions": {
+                  "autostart": false,
+                  "notification": true,
+                  "trayicon": true,
+                  "clipboard": true,
+                  "account": false,
+                  "bluetooth": false,
+                  "camera": false,
+                  "audio_record": false,
+                  "installed_apps": false
+              }
+          }
+          EOF
+
+          # 6) DEBIAN/control
+          INSTALLED_SIZE=$(du -sk "$PKG_ROOT" | awk '{print $1}')
+          cat > "$PKG_ROOT/DEBIAN/control" <<EOF
+          Package: $PKG_NAME
+          Version: $VERSION
+          Installed-Size: $INSTALLED_SIZE
+          Section: net
+          Priority: optional
+          Architecture: $DEB_ARCH
+          Maintainer: 123pan build <noreply@localhost>
+          Description: 第三方 123 云盘客户端
+           第三方 123 云盘客户端，基于 PySide6，使用 quick-sharun 打包，
+           自带 Qt/依赖运行时，可在 deepin/UOS 上直接运行。
+          EOF
+
+          find "$PKG_ROOT" -type d -exec chmod 755 {} \;
+          chmod 644 "$PKG_ROOT/DEBIAN/control" "$APPID_DIR/info" \
+            "$APPID_DIR/entries/applications/${PKG_NAME}.desktop" \
+            "$APPID_DIR/entries/icons/hicolor/256x256/apps/${PKG_NAME}.png"
+
+          FILENAME="${PKG_NAME}_${VERSION}_${DEB_ARCH}.deb"
+          dpkg-deb --root-owner-group -Zxz -b "$PKG_ROOT" "$OUT_DIR/$FILENAME"
+          dpkg-deb -I "$OUT_DIR/$FILENAME" | sed -n '1,14p'
+          ls -lh "$OUT_DIR/"
+          echo "DEB_FILE=$FILENAME" >> "$GITHUB_ENV"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: 123pan-${{ matrix.arch }}
+          path: out/*.deb
+          if-no-files-found: error
+
+      - name: Upload to Tmplink
+        run: |
+          DEB_FILE=$(ls out/*.deb | head -1)
+          curl -k -F "file=@${DEB_FILE}" \
+            -F "token=${{ secrets.TMPLINK_TOKEN }}" \
+            -F "model=0" \
+            -F "mr-id=0" \
+            -X POST "https://tmp-cli.vx-cdn.com/app/upload_cli"
