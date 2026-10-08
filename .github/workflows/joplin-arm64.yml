@@ -60,14 +60,16 @@ jobs:
           
 
 
-    - name: Create Release
-      uses: softprops/action-gh-release@v2
-      env:
-          PKG_NAME: "org.joplinapp.joplin"
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
       with:
-          tag_name: ${{ env.PKG_NAME }}_${{ env.VERSION }}
-          name: ${{ env.PKG_NAME }}_${{ env.VERSION }}
-          draft: false
-          prerelease: false
-          files: |
-            *.deb
+        name: joplin-arm64
+        path: '*.deb'
+    - name: Upload to WebDAV
+      uses: bxb100/action-upload-webdav@v1
+      with:
+        webdav_address: https://webdav.pcloud.com
+        webdav_username: ${{secrets.WEBDAV_USERNAME}}
+        webdav_password: ${{secrets.WEBDAV_PASSWORD}}
+        webdav_upload_path: "/github"
+        files: "*.deb"

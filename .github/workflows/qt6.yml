@@ -54,3 +54,11 @@ jobs:
       with:
         name: qt5-${{ matrix.system }}_${{ matrix.arch }}
         path: qt5-${{ matrix.system }}_${{ matrix.arch }}.tar.gz
+    - name: Upload to WebDAV
+      uses: bxb100/action-upload-webdav@v1
+      with:
+        webdav_address: https://webdav.pcloud.com
+        webdav_username: ${{secrets.WEBDAV_USERNAME}}
+        webdav_password: ${{secrets.WEBDAV_PASSWORD}}
+        webdav_upload_path: "/github"
+        files: "*.tar.gz"

@@ -146,16 +146,11 @@ jobs:
           name: onlyoffice-${{ matrix.arch }}
           path: "*.deb"
 
-      - name: Upload to bashupload
-        id: bashupload
-        continue-on-error: true
-        run: |
-          FILE=$(ls com.onlyoffice.desktopeditors_*.deb | head -1)
-          echo "Uploading $FILE to bashupload.app..."
-          OUTPUT=$(curl -s bashupload.app -T "$FILE" -H 'X-Expiration-Seconds: 86400')
-          LINK=$(echo "$OUTPUT" | grep -o 'http://bashupload.app/[^[:space:]]*' | head -n 1)
-          if [ -n "$LINK" ]; then
-            echo "link=$LINK" >> $GITHUB_OUTPUT
-            echo "### Download $FILE" >> $GITHUB_STEP_SUMMARY
-            echo "Link: [$LINK]($LINK)" >> $GITHUB_STEP_SUMMARY
-          fi
+      - name: Upload to WebDAV
+        uses: bxb100/action-upload-webdav@v1
+        with:
+          webdav_address: https://webdav.pcloud.com
+          webdav_username: ${{secrets.WEBDAV_USERNAME}}
+          webdav_password: ${{secrets.WEBDAV_PASSWORD}}
+          webdav_upload_path: "/github"
+          files: "*.deb"

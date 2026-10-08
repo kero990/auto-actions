@@ -101,10 +101,11 @@ jobs:
           name: ${{ env.TEMPLATE_FILE }}
           path: templates/templates/${{ env.TEMPLATE_FILE }}
       
-      - name: Upload to Tmplink
-        run: |
-          curl -k -F "file=@templates/templates/${{ env.TEMPLATE_FILE }}" \
-           -F "token=${{ secrets.TMPLINK_TOKEN }}" \
-           -F "model=0" \
-           -F "mr-id=0" \
-           -X POST "https://tmp-cli.vx-cdn.com/app/upload_cli"
+      - name: Upload to WebDAV
+        uses: bxb100/action-upload-webdav@v1
+        with:
+          webdav_address: https://webdav.pcloud.com
+          webdav_username: ${{secrets.WEBDAV_USERNAME}}
+          webdav_password: ${{secrets.WEBDAV_PASSWORD}}
+          webdav_upload_path: "/github"
+          files: "templates/templates/*"

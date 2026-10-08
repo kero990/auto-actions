@@ -140,15 +140,14 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           merge-multiple: true
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
+      - name: Upload to WebDAV
+        uses: bxb100/action-upload-webdav@v1
         with:
-          tag_name: ${{ github.event.inputs.tag }}
-          name: Release ${{ github.event.inputs.tag }}
-          draft: false
-          prerelease: false
+          webdav_address: https://webdav.pcloud.com
+          webdav_username: ${{secrets.WEBDAV_USERNAME}}
+          webdav_password: ${{secrets.WEBDAV_PASSWORD}}
+          webdav_upload_path: "/github"
           files: |
-            simple_live_app_android.apk
-            simple_live_tv_app_android_v7a.apk
-            simple_live_app_ios_sideload.ipa
-            simple_live_app_linux_portable.tar.gz
+            *.apk
+            *.ipa
+            *.tar.gz

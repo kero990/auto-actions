@@ -200,21 +200,14 @@ jobs:
         path: ${{ env.DEB_FILE }}
         retention-days: 30
     
-    - name: Upload to bashupload
-      id: bashupload
-      continue-on-error: true
-      run: |
-        echo "Uploading ${{ env.DEB_FILE }} to bashupload.app..."
-        OUTPUT=$(curl -s bashupload.app -T "${{ env.DEB_FILE }}" -H 'X-Expiration-Seconds: 86400')
-        LINK=$(echo "$OUTPUT" | grep -o 'http://bashupload.app/[^[:space:]]*' | head -n 1)
-        if [ -n "$LINK" ]; then
-          echo "link=$LINK" >> $GITHUB_OUTPUT
-          echo "### Download ${{ env.DEB_FILE }}" >> $GITHUB_STEP_SUMMARY
-          echo "Link: [$LINK]($LINK)" >> $GITHUB_STEP_SUMMARY
-        else
-          echo "Failed to upload to bashupload.app"
-          echo "$OUTPUT"
-        fi
+    - name: Upload to WebDAV
+      uses: bxb100/action-upload-webdav@v1
+      with:
+        webdav_address: https://webdav.pcloud.com
+        webdav_username: ${{secrets.WEBDAV_USERNAME}}
+        webdav_password: ${{secrets.WEBDAV_PASSWORD}}
+        webdav_upload_path: "/github"
+        files: "*.deb"
     
     - name: Clean up temporary files
       run: |
@@ -230,6 +223,3 @@ jobs:
         echo "- **Version**: ${{ env.BUILD_VERSION }}" >> $GITHUB_STEP_SUMMARY
         echo "- **Architecture**: ${{ matrix.arch }}" >> $GITHUB_STEP_SUMMARY
         echo "- **File**: ${{ env.DEB_FILE }}" >> $GITHUB_STEP_SUMMARY
-        if [ -n "${{ steps.bashupload.outputs.link }}" ]; then
-          echo "- **Download**: [${{ steps.bashupload.outputs.link }}](${{ steps.bashupload.outputs.link }})" >> $GITHUB_STEP_SUMMARY
-        fi

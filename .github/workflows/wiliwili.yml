@@ -154,10 +154,11 @@ jobs:
           pattern: wiliwili-*
           merge-multiple: true # 将所有下载的文件解压到同个目录
 
-      - name: Create Combined Release
-        uses: ncipollo/release-action@v1
+      - name: Upload to WebDAV
+        uses: bxb100/action-upload-webdav@v1
         with:
-          name: wiliwili ${{ env.VERSION }}
-          tag: wiliwili_${{ env.VERSION }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-          artifacts: "*.deb"
+          webdav_address: https://webdav.pcloud.com
+          webdav_username: ${{secrets.WEBDAV_USERNAME}}
+          webdav_password: ${{secrets.WEBDAV_PASSWORD}}
+          webdav_upload_path: "/github"
+          files: "*.deb"

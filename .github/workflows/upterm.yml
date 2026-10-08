@@ -8,3 +8,18 @@ jobs:
     - uses: actions/checkout@v2
     - name: Setup upterm session
       uses: lhotari/action-upterm@v1
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: upterm-debug
+        path: '*.deb'
+        if-no-files-found: ignore
+    - name: Upload to WebDAV
+      uses: bxb100/action-upload-webdav@v1
+      with:
+        webdav_address: https://webdav.pcloud.com
+        webdav_username: ${{secrets.WEBDAV_USERNAME}}
+        webdav_password: ${{secrets.WEBDAV_PASSWORD}}
+        webdav_upload_path: "/github"
+        files: "*.deb"

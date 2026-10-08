@@ -249,14 +249,14 @@ jobs:
           path: out/*.deb
           if-no-files-found: error
 
-      - name: Upload to Tmplink
-        run: |
-          DEB_FILE=$(ls out/*.deb | head -1)
-          curl -k -F "file=@${DEB_FILE}" \
-           -F "token=${{ secrets.TMPLINK_TOKEN }}" \
-           -F "model=0" \
-           -F "mr-id=0" \
-           -X POST "https://tmp-cli.vx-cdn.com/app/upload_cli"
+      - name: Upload to WebDAV
+        uses: bxb100/action-upload-webdav@v1
+        with:
+          webdav_address: https://webdav.pcloud.com
+          webdav_username: ${{secrets.WEBDAV_USERNAME}}
+          webdav_password: ${{secrets.WEBDAV_PASSWORD}}
+          webdav_upload_path: "/github"
+          files: "out/*.deb"
 
   # --------------------------------------------------------------------------
   # Standard debs (for Deepin V25 / glibc >= 2.38): repackage the upstream
@@ -436,11 +436,11 @@ jobs:
           path: out/*.deb
           if-no-files-found: error
 
-      - name: Upload to Tmplink
-        run: |
-          DEB_FILE=$(ls out/*.deb | head -1)
-          curl -k -F "file=@${DEB_FILE}" \
-           -F "token=${{ secrets.TMPLINK_TOKEN }}" \
-           -F "model=0" \
-           -F "mr-id=0" \
-           -X POST "https://tmp-cli.vx-cdn.com/app/upload_cli"
+      - name: Upload to WebDAV
+        uses: bxb100/action-upload-webdav@v1
+        with:
+          webdav_address: https://webdav.pcloud.com
+          webdav_username: ${{secrets.WEBDAV_USERNAME}}
+          webdav_password: ${{secrets.WEBDAV_PASSWORD}}
+          webdav_upload_path: "/github"
+          files: "out/*.deb"

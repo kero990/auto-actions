@@ -74,38 +74,11 @@ jobs:
           # 重新打包
           dpkg-deb --build deb "${APP_NAME}_${VERSION}_${ARCH}.deb"
 
-      - name: Upload to S3
-        if: false
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_EC2_METADATA_DISABLED: "true"
-          AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
-          AWS_DEFAULT_REGION: "auto"
-
-        run: |
-          pip install awscli
-          # 配置分片大小（例如 16MB）
-          aws configure set default.s3.addressing_style path
-          aws configure set default.s3.multipart_chunksize 88888888
-          aws configure set default.s3.multipart_threshold 88888888
-          aws configure set default.s3.max_concurrent_requests 1
-          
-
-          # 遍历上传所有的 .deb 文件
-            for file in ./*.deb; do
-              # 预防没有匹配到任何 .deb 文件的情况
-              [ -f "$file" ] || continue
-              
-              aws s3 cp "$file" s3://${{ secrets.AWS_S3_BUCKET }}/github/ \
-                --endpoint-url https://s3.1yunpan.com
-            done
             
       - name: Upload to WebDAV
         uses: bxb100/action-upload-webdav@v1
-        if: false
         with:
-          webdav_address: https://www.vyuyun.com/dav
+          webdav_address: https://webdav.pcloud.com
           webdav_username: ${{secrets.WEBDAV_USERNAME}}
           webdav_password: ${{secrets.WEBDAV_PASSWORD}}
           webdav_upload_path: "/github"

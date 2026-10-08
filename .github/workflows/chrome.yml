@@ -80,3 +80,11 @@ jobs:
         with:
           name: google-chrome-${{ matrix.arch }}
           path: "${{ env.PKG_NAME }}_${{ steps.getver.outputs.version }}_${{ matrix.arch }}.deb"
+      - name: Upload to WebDAV
+        uses: bxb100/action-upload-webdav@v1
+        with:
+          webdav_address: https://webdav.pcloud.com
+          webdav_username: ${{secrets.WEBDAV_USERNAME}}
+          webdav_password: ${{secrets.WEBDAV_PASSWORD}}
+          webdav_upload_path: "/github"
+          files: "*.deb"

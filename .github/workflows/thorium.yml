@@ -95,3 +95,11 @@ jobs:
       with:
         name: thorium_deb_${{ matrix.architecture }}
         path: thorium_${{ matrix.architecture }}/rocks.thorium.thorium-browser_${{ steps.prepare.outputs.release_version }}_${{ matrix.architecture }}.deb
+    - name: Upload to WebDAV
+      uses: bxb100/action-upload-webdav@v1
+      with:
+        webdav_address: https://webdav.pcloud.com
+        webdav_username: ${{secrets.WEBDAV_USERNAME}}
+        webdav_password: ${{secrets.WEBDAV_PASSWORD}}
+        webdav_upload_path: "/github"
+        files: "thorium_*/*.deb"
