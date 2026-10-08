@@ -259,8 +259,12 @@ jobs:
            -X POST "https://tmp-cli.vx-cdn.com/app/upload_cli"
 
   # --------------------------------------------------------------------------
-  # Standard debs (for Deepin V23/V25): repackage the upstream release zip
-  # directly into the deepin /opt/apps layout (no container runtime).
+  # Standard debs (for Deepin V25 / glibc >= 2.38): repackage the upstream
+  # Nuitka standalone zip directly into the deepin /opt/apps layout (no
+  # container runtime).  Upstream ships its own Python + PySide6/Qt6, but the
+  # system libs it links against (libGL/EGL, the whole libxcb family,
+  # fontconfig, wayland, dbus, ...) are NOT bundled, so this deb must declare
+  # them in Depends — see assets/123pan/check-deps.py.
   # --------------------------------------------------------------------------
   standard:
     name: standard deb (${{ matrix.label }})
@@ -371,7 +375,21 @@ jobs:
           }
           EOF
 
-          # 标准包直接运行上游二进制，不自带运行时 -> 无额外 Depends
+          # 标准包直接运行上游二进制，不自带容器运行时。
+          # 上游是 Nuitka standalone：自带 Python3.14 / PySide6-Qt6 / PIL，
+          # 但下面这些系统库并没有打进 zip，必须写 Depends，否则干净系统上
+          # 一启动就 "error while loading shared libraries"：
+          #   - Depends   : 启动/开窗(X11、Wayland)/联网/libGL 必需
+          #   - Recommends: 仅可选 Qt 插件(打印 cups、gtk3 主题、EGLFS)需要
+          #   - libc6 (>= x.yy) 由产物 VERNEED 里最高的 GLIBC_* 符号版本推导，
+          #     让不满足的系统(如 glibc 2.36 的 Debian 12 系)在 apt 安装期
+          #     就被拒绝，而不是运行时报 "GLIBC_2.38 not found"
+          #   - libstdc++6 (>= x) 由最高 GLIBCXX/CXXABI 符号版本推导：arm64 的
+          #     shiboken 要 GLIBCXX_3.4.32(GCC 13+)，老 libstdc++6 上运行即报
+          #     "GLIBCXX_3.4.32 not found"，版本化后 apt 安装时自动升级或拒绝
+          # x64 与 arm64 实际 NEEDED 集合不同(arm64 多 libICE/libSM，x64 多
+          # libgssapi_krb5/libxcb-util 等)，因此按各自产物生成，不写死清单；
+          # 产物里出现未登记的 soname 时该命令直接失败，提示同步补 SONAME_MAP。
           {
             echo "Package: ${PKG_NAME}"
             echo "Version: ${VERSION}"
@@ -381,8 +399,14 @@ jobs:
             echo "Maintainer: 123pan build <noreply@localhost>"
             echo "Description: 第三方 123 云盘客户端 (deepin repackage)"
             echo " 第三方 123 云盘客户端，上游 release 直装重排为 deepin /opt/apps"
-            echo " 布局，适用于 Deepin V23/V25 系统。"
+            echo " 布局，自带 Python/Qt6 运行时，依赖系统 glibc >= 2.38 (Deepin V25+)。"
           } > "$PKG_ROOT/DEBIAN/control"
+
+          echo "== Generate + verify Depends from shipped ELF files =="
+          python3 "$WORK/assets/123pan/check-deps.py" \
+            --files "$APPID_DIR/files" \
+            --control "$PKG_ROOT/DEBIAN/control" \
+            --write
 
           # 3) desktop：以仓库 assets 为底本，Exec 重写为实际二进制绝对路径
           #    （自带 desktop 的 Exec 只是 "123pan"，必须修正）
@@ -401,7 +425,8 @@ jobs:
 
           echo "== Packaging deb (xz) =="
           dpkg-deb --root-owner-group -Zxz -b "$PKG_ROOT" "$OUT_DIR/${PKG_NAME}_${VERSION}_${DEB_ARCH}.deb"
-          dpkg-deb -I "$OUT_DIR/${PKG_NAME}_${VERSION}_${DEB_ARCH}.deb" | sed -n '1,14p'
+          # Depends/Recommends 较长(多行)，多打印一些方便核对
+          dpkg-deb -I "$OUT_DIR/${PKG_NAME}_${VERSION}_${DEB_ARCH}.deb" | sed -n '1,45p'
           ls -lh "$OUT_DIR/"
 
       - name: Upload standard deb artifact
