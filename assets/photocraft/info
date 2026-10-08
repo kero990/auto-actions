@@ -1,0 +1,17 @@
+{
+    "appid": "ai.storyteller.photocraft",
+    "name": "PhotoCraft",
+    "version": "VVVV",
+    "arch": ["AAAA"],
+    "permissions": {
+        "autostart": false,
+        "notification": false,
+        "trayicon": false,
+        "clipboard": true,
+        "account": false,
+        "bluetooth": false,
+        "camera": true,
+        "audio_record": false,
+        "installed_apps": true
+    }
+}

@@ -1,0 +1,279 @@
+name: photocraft build
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Optional version override (e.g. 0.3.0). Leave empty to use the latest upstream release."
+        required: false
+        default: ""
+
+permissions: {}
+
+env:
+  PKG_NAME: ai.storyteller.photocraft
+  UPSTREAM: storytold/photocraft
+  FONTS_REPO: storytold/craft-fonts
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  # --------------------------------------------------------------------------
+  # Resolve the version to package: prefer the workflow override, otherwise
+  # take the latest published upstream release (never a draft/prerelease).
+  # The tag is v<version>, and the release deb assets are
+  # photocraft-<version>-linux-{x86_64,aarch64}.deb.
+  # --------------------------------------------------------------------------
+  resolve-version:
+    name: Resolve upstream release version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.resolve.outputs.version }}
+    steps:
+      - name: Resolve version
+        id: resolve
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          if [ -n "$INPUT_VERSION" ]; then
+            VERSION="$INPUT_VERSION"
+          else
+            VERSION="$(curl -fsSL "https://api.github.com/repos/${UPSTREAM}/releases/latest" \
+              | python3 -c 'import sys,json; sys.stdout.write(json.load(sys.stdin)["tag_name"].lstrip("v"))' || true)"
+          fi
+          [ -n "$VERSION" ] || { echo "ERROR: could not resolve version" >&2; exit 1; }
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Resolved version: ${VERSION}"
+
+  # --------------------------------------------------------------------------
+  # Compile from source in the Debian 10 (glibc 2.28) container so the binaries
+  # run on UOS / Deepin V20 — upstream's own release deb is built on Ubuntu 22.04
+  # (glibc 2.35) and will not start there.
+  # --------------------------------------------------------------------------
+  build:
+    name: Build deb (${{ matrix.label }})
+    needs: resolve-version
+    runs-on: ${{ matrix.runner }}
+    container:
+      image: python:3.11-buster
+    env:
+      VERSION: ${{ needs.resolve-version.outputs.version }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: amd64
+            dearch: amd64
+            runner: ubuntu-latest
+            asset_arch: x86_64
+          - label: arm64
+            dearch: arm64
+            runner: ubuntu-22.04-arm
+            asset_arch: aarch64
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fix buster sources
+        run: |
+          set -euo pipefail
+          # Debian 10 is archived: main + security move to archive.debian.org
+          # (deb.debian.org/security.debian.org no longer serve buster), the
+          # unneeded buster-updates is dropped, and the Valid-Until check is
+          # switched off in case an archived Release file carries an expired one.
+          sed -i \
+            -e 's|deb.debian.org|archive.debian.org|g' \
+            -e 's|security.debian.org|archive.debian.org|g' \
+            -e '/buster-updates/d' \
+            /etc/apt/sources.list
+          echo 'Acquire::Check-Valid-Until "false";' > /etc/apt/apt.conf.d/99-archive-no-valid-until
+          cat /etc/apt/sources.list
+
+      - name: Install build dependencies
+        run: |
+          set -euo pipefail
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            build-essential pkg-config binutils file dpkg-dev \
+            curl wget git ca-certificates \
+            libxkbcommon-dev libwayland-dev libx11-dev libxrandr-dev libxi-dev libgl1-mesa-dev
+
+      - name: Install Rust
+        run: |
+          set -euo pipefail
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+          "$HOME/.cargo/bin/rustc" --version
+          "$HOME/.cargo/bin/cargo" --version
+
+      - name: Clone PhotoCraft at the release tag
+        run: |
+          set -euo pipefail
+          WORK="${GITHUB_WORKSPACE:-$PWD}"
+          rm -rf "$WORK/src" "$WORK/fonts"
+          if git clone --depth 1 --branch "v${VERSION}" "https://github.com/${UPSTREAM}.git" "$WORK/src"; then
+            echo "checked out tag v${VERSION}"
+          else
+            echo "tag v${VERSION} not found, building the default branch instead"
+            rm -rf "$WORK/src"
+            git clone --depth 1 "https://github.com/${UPSTREAM}.git" "$WORK/src"
+          fi
+          grep -m1 '^version' "$WORK/src/Cargo.toml" || true
+          git -C "$WORK/src" log -1 --format='source: %h %s'
+
+          # Optional but part of every official Linux release: the Japanese
+          # UI/Type fonts from craft-fonts (AGENTS.md, docs/development.md).
+          if git clone --depth 1 "https://github.com/${FONTS_REPO}.git" "$WORK/fonts" \
+             && [ -f "$WORK/fonts/fonts/manifest.txt" ]; then
+            echo "CRAFT_FONTS_DIR=$WORK/fonts" >> "$GITHUB_ENV"
+            echo "craft-fonts manifest: $(wc -l < "$WORK/fonts/fonts/manifest.txt") entries"
+          else
+            echo "warning: craft-fonts unavailable, building without embedded fonts"
+          fi
+
+      - name: Build photocraft and photocraft-cli
+        working-directory: src
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.cargo/bin:$PATH"
+          rustc --version
+          cargo --version
+          echo "CRAFT_FONTS_DIR=${CRAFT_FONTS_DIR:-<unset>}"
+          # README's `cargo run --release -p photocraft -- image.psd` is a RUN
+          # command: `-- image.psd` may not be repeated after `build` (cargo
+          # would hand it to rustc and fail with "unexpected argument"). The CLI
+          # is a separate package, so the official command from
+          # packaging/linux/package.sh builds both binaries in one go.
+          #
+          # Whether that command carries `--features heif` depends on the tree we
+          # checked out: HEIF support (crates/heif) landed AFTER the v0.3.0 tag,
+          # where `cargo build --features heif` dies with "none of the selected
+          # packages contains this feature". Mirror whatever this checkout has.
+          FEATURES=""
+          if grep -qE '^heif *=' apps/photocraft/Cargo.toml \
+             && grep -qE '^heif *=' apps/photocraft-cli/Cargo.toml; then
+            FEATURES="--features heif"
+          fi
+          echo "cargo features: ${FEATURES:-<none>}"
+          cargo build --release --locked -p photocraft -p photocraft-cli $FEATURES
+          strip target/release/photocraft target/release/photocraft-cli || true
+          ls -lh target/release/photocraft target/release/photocraft-cli
+          ./target/release/photocraft-cli --version
+          echo "== highest GLIBC symbol demanded (must stay <= 2.28) =="
+          { objdump -T target/release/photocraft | grep -o 'GLIBC_[0-9.]*' | sort -uV | tail -3; } || true
+
+      - name: Package as deepin deb
+        id: package
+        env:
+          DEB_ARCH: ${{ matrix.dearch }}
+          ASSET_ARCH: ${{ matrix.asset_arch }}
+        run: |
+          set -euo pipefail
+          WORK="${GITHUB_WORKSPACE:-$PWD}"
+          SRC="$WORK/src"
+          PKG_ROOT="$WORK/pkg"
+          OUT_DIR="$WORK/out"
+          UP_DEB="$WORK/upstream.deb"
+          UP_DIR="$WORK/upstream"
+          APPID_DIR="$PKG_ROOT/opt/apps/$PKG_NAME"
+
+          rm -rf "$PKG_ROOT" "$UP_DIR"
+          mkdir -p "$OUT_DIR" \
+                   "$APPID_DIR/files" \
+                   "$APPID_DIR/entries/applications" \
+                   "$APPID_DIR/entries/icons/hicolor" \
+                   "$PKG_ROOT/DEBIAN"
+
+          # 1) binaries into /opt/apps/<id>/files
+          install -Dm755 "$SRC/target/release/photocraft" "$APPID_DIR/files/photocraft"
+          install -Dm755 "$SRC/target/release/photocraft-cli" "$APPID_DIR/files/photocraft-cli"
+
+          # The point of building in this container is a glibc 2.28 binary: a
+          # newer GLIBC_* symbol than the build host's would only show up as
+          # "version `GLIBC_2.xx' not found" on UOS/Deepin V20, so refuse it here.
+          SYS_GLIBC="$(ldd --version 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+$' || true)"
+          for bin in "$APPID_DIR/files/photocraft" "$APPID_DIR/files/photocraft-cli"; do
+            MAX_GLIBC="$(objdump -T "$bin" | grep -o 'GLIBC_[0-9.]*' | sed 's/^GLIBC_//' | sort -uV | tail -1 || true)"
+            if [ -z "$MAX_GLIBC" ] || [ -z "$SYS_GLIBC" ]; then
+              echo "skip glibc check for $(basename "$bin") (max='$MAX_GLIBC' host='$SYS_GLIBC')"
+              continue
+            fi
+            BIGGEST="$(printf '%s\n%s\n' "$SYS_GLIBC" "$MAX_GLIBC" | sort -uV | tail -1)"
+            if [ "$BIGGEST" != "$SYS_GLIBC" ]; then
+              echo "ERROR: $(basename "$bin") needs GLIBC_$MAX_GLIBC but this container has $SYS_GLIBC" >&2
+              exit 1
+            fi
+            echo "$(basename "$bin"): max GLIBC_$MAX_GLIBC (container glibc $SYS_GLIBC)"
+          done
+
+          # 2) desktop + icons: take the resources from the OFFICIAL release deb
+          #    (same version, arch-independent) and rewrite their paths, the
+          #    upstream Exec/TryExec are bare PATH commands deepin cannot launch.
+          UP_URL="https://github.com/${UPSTREAM}/releases/download/v${VERSION}/photocraft-${VERSION}-linux-${ASSET_ARCH}.deb"
+          DESKTOP_SRC=""
+          ICONS_SRC=""
+          echo "== Fetching official release deb for the desktop/icon resources: $UP_URL"
+          if curl -fL --retry 3 -o "$UP_DEB" "$UP_URL"; then
+            dpkg-deb -x "$UP_DEB" "$UP_DIR"
+            DESKTOP_SRC="$UP_DIR/usr/share/applications/$PKG_NAME.desktop"
+            ICONS_SRC="$UP_DIR/usr/share/icons/hicolor"
+          fi
+          if [ ! -f "$DESKTOP_SRC" ]; then
+            echo "warning: release deb unavailable, falling back to the source tree resources"
+            DESKTOP_SRC="$SRC/packaging/linux/$PKG_NAME.desktop"
+            ICONS_SRC="$SRC/assets/app-icon/hicolor"
+          fi
+          [ -f "$DESKTOP_SRC" ] || { echo "ERROR: desktop file not found: $DESKTOP_SRC" >&2; exit 1; }
+          [ -d "$ICONS_SRC" ] || { echo "ERROR: icon dir not found: $ICONS_SRC" >&2; exit 1; }
+          cat "$DESKTOP_SRC"
+
+          sed -E "s#^Exec=.*#Exec=/opt/apps/$PKG_NAME/files/photocraft %F#; s#^TryExec=.*#TryExec=/opt/apps/$PKG_NAME/files/photocraft#; s#^Icon=.*#Icon=$PKG_NAME#" \
+            "$DESKTOP_SRC" > "$APPID_DIR/entries/applications/$PKG_NAME.desktop"
+          cp -a "$ICONS_SRC/." "$APPID_DIR/entries/icons/hicolor/"
+          test -f "$APPID_DIR/entries/icons/hicolor/256x256/apps/$PKG_NAME.png"
+          find "$APPID_DIR/entries/icons" -type f \( -name "*.png" -o -name "*.svg" \) | sort
+
+          # 3) deepin info + deb control (VVVV/AAAA/SSSS placeholders) and the
+          #    maintainer scripts that install/remove /usr/bin/photocraft-cli
+          cp "$WORK/assets/photocraft/info" "$APPID_DIR/info"
+          cp "$WORK/assets/photocraft/control" "$PKG_ROOT/DEBIAN/control"
+          cp "$WORK/assets/photocraft/postinst" "$PKG_ROOT/DEBIAN/postinst"
+          cp "$WORK/assets/photocraft/postrm" "$PKG_ROOT/DEBIAN/postrm"
+          chmod 755 "$PKG_ROOT/DEBIAN/postinst" "$PKG_ROOT/DEBIAN/postrm"
+
+          INSTALLED_SIZE="$(du -sk "$APPID_DIR" | awk '{print $1}')"
+          sed -i "s/VVVV/$VERSION/g;s/AAAA/$DEB_ARCH/g;s/SSSS/$INSTALLED_SIZE/g" "$PKG_ROOT/DEBIAN/control"
+          sed -i "s/VVVV/$VERSION/g;s/AAAA/$DEB_ARCH/g" "$APPID_DIR/info"
+
+          find "$PKG_ROOT" -type d -exec chmod 755 {} \;
+          chmod 644 "$PKG_ROOT/DEBIAN/control" "$APPID_DIR/info" \
+            "$APPID_DIR/entries/applications/$PKG_NAME.desktop"
+
+          # 4) build the deb (xz, root-owned: Debian 10's dpkg understands both)
+          FILENAME="${PKG_NAME}_${VERSION}_${DEB_ARCH}.deb"
+          dpkg-deb --root-owner-group -Zxz -b "$PKG_ROOT" "$OUT_DIR/$FILENAME"
+          echo "== control =="
+          dpkg-deb -I "$OUT_DIR/$FILENAME" | sed -n '1,30p'
+          echo "== contents =="
+          dpkg-deb -c "$OUT_DIR/$FILENAME"
+          ls -lh "$OUT_DIR/"
+          echo "filename=$FILENAME" >> "$GITHUB_OUTPUT"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: photocraft-${{ matrix.dearch }}
+          path: out/*.deb
+          if-no-files-found: error
+
+      - name: Upload to WebDAV
+        uses: bxb100/action-upload-webdav@v1
+        with:
+          webdav_address: https://webdav.pcloud.com
+          webdav_username: ${{secrets.WEBDAV_USERNAME}}
+          webdav_password: ${{secrets.WEBDAV_PASSWORD}}
+          webdav_upload_path: "/github"
+          files: "out/*.deb"
