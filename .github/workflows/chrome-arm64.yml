@@ -129,30 +129,6 @@ jobs:
           SIZE="$(du -sk --exclude=DEBIAN . | cut -f1)"
           sed -i "s/^Installed-Size:.*/Installed-Size: ${SIZE}/" DEBIAN/control
 
-          # 8. DEBIAN maintainer scripts
-          cat > DEBIAN/postinst <<'EOF'
-          #!/bin/sh
-          set -e
-          APP_DIR=/opt/apps/com.google.chrome
-          if command -v update-desktop-database >/dev/null 2>&1; then
-            update-desktop-database "$APP_DIR/entries/applications" >/dev/null 2>&1 || true
-          fi
-          if command -v gtk-update-icon-cache >/dev/null 2>&1; then
-            gtk-update-icon-cache -f "$APP_DIR/entries/icons" >/dev/null 2>&1 || true
-          fi
-          exit 0
-          EOF
-          cat > DEBIAN/prerm <<'EOF'
-          #!/bin/sh
-          set -e
-          exit 0
-          EOF
-          cat > DEBIAN/postrm <<'EOF'
-          #!/bin/sh
-          set -e
-          exit 0
-          EOF
-          chmod 755 DEBIAN/postinst DEBIAN/prerm DEBIAN/postrm
 
       - name: Build Deepin deb (xz compression, dpkg-1.19 / Debian 10 compatible)
         run: |
