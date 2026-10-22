@@ -76,14 +76,23 @@ jobs:
 
           # 4. deepin info file
           cat > "${REL_DIR}/info" <<EOF
-          format=2
-          appid=${APP_ID}
-          name=Google Chrome
-          name[zh_CN]=谷歌浏览器
-          version=${CHROME_VERSION}
-          arch=$(dpkg --print-architecture)
-          description=Google Chrome is a fast, simple, and secure web browser for Linux ARM64.
-          package=${APP_ID}
+          {
+              "appid": "${APP_ID}",
+              "name": "Google Chrome",
+              "version": "${CHROME_VERSION}",
+              "arch": ["arm64"],
+              "permissions": {
+                  "autostart": true,
+                  "notification": true,
+                  "trayicon": true,
+                  "clipboard": true,
+                  "account": true,
+                  "bluetooth": true,
+                  "camera": true,
+                  "audio_record": true,
+                  "installed_apps": true
+              }
+          }
           EOF
 
           # 5. deepin desktop entry
