@@ -131,7 +131,27 @@ jobs:
             sed -i "s#/opt/google/chrome#${APP_DIR}/files#g" "$f"
           done
 
-          # 7. update DEBIAN control: package name + version-related fields
+          # 7. drop Google's maintainer scripts (postinst / prerm / postrm)
+          #    deepin 包不需要它们，留着反而必然报错：
+          #      · postinst 开头 set -e，先用 xdg-icon-resource 装 /opt/google/chrome/
+          #        下的 7 个图标 —— 二进制已搬进 files/，旧路径下没有这些文件，
+          #        xdg-icon-resource 退出 2，postinst 整个中断，dpkg 返回错误
+          #      · update_defaults_list 会 grep 已被删掉的
+          #        /usr/share/applications/google-chrome.desktop，同样在 set -e 下中断
+          #      · postinst 往系统注入 Google 的 apt 源和 PGP keyring，装完后 apt 里
+          #        会同时出现 google-chrome-stable，和本包打架
+          #      · update-alternatives 把 x-www-browser/google-chrome 指向
+          #        /usr/bin/google-chrome-stable，而上面已 rm -rf usr 删掉该文件，
+          #        三个 alternatives 全指向空
+          #      · AppArmor profile 绑定 /opt/google/chrome/chrome，与本布局不符，
+          #        装了也不 attach；prerm 的 alternatives --remove 在 set -e 下若
+          #        未注册过同样会失败，必须与 postinst 成对处理
+          #    图标走 entries/icons、MIME 走 entries/applications，deepin 都不依赖
+          #    这些维护脚本，所以整个删掉。
+          rm -f DEBIAN/postinst DEBIAN/prerm DEBIAN/postrm
+          ls -la DEBIAN/
+
+          # 8. update DEBIAN control: package name + version-related fields
           sed -i "s/^Package:.*/Package: ${APP_ID}/" DEBIAN/control
           sed -i '/^Replaces:/d; /^Conflicts:/d' DEBIAN/control
           sed -i '/^Provides: www-browser$/a Replaces: google-chrome-stable\nConflicts: google-chrome-stable' DEBIAN/control
